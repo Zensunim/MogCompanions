@@ -1,0 +1,53 @@
+name: Build Release Zip
+
+on:
+  push:
+    tags:
+      - '*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get tag name
+        id: tag
+        shell: bash
+        run: |
+          echo "tag=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+
+      - name: Build zip
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          artifact_name="MogMount-Zensunim-${{ steps.tag.outputs.tag }}.zip"
+          staging_dir="$RUNNER_TEMP/package"
+          addon_dir="$staging_dir/MogMount-Zensunim"
+
+          rm -rf "$staging_dir"
+          mkdir -p "$addon_dir"
+
+          rsync -a ./ "$addon_dir"/ \
+            --exclude='.git/' \
+            --exclude='.github/' \
+            --exclude='AGENTS.md'
+
+          cd "$staging_dir"
+          zip -r "$GITHUB_WORKSPACE/$artifact_name" MogMount-Zensunim
+
+      - name: Create or update release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          files: MogMount-Zensunim-${{ steps.tag.outputs.tag }}.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
