@@ -269,6 +269,9 @@ end
 
 
 function MogMount:GetHearthstoneToyInfo(itemID)
+	if itemID == nil or itemID <= 1 then
+		return nil;
+	end
 
 	local toyName;
 	local icon;
@@ -303,11 +306,8 @@ function MogMount:GetHearthstoneToyInfo(itemID)
 	toy.id = itemID;
 
 	return toy;
-
 end
-
-
-
+ 
 function MogMount:getSortedHearthstoneToys(ignoreSearch)
 
 	local toys = {};

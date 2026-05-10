@@ -14,9 +14,7 @@ This version includes modifications, maintenance updates, and additional functio
 
 ## Version History
 
-### 1.1
-* Added Hearthstones tab support for selecting an owned Hearthstone toy per outfit.
-* Added `/mmz hs` and `/mmzhs` commands to use the selected outfit Hearthstone toy, or a random owned Hearthstone toy when none is selected.
-
 ### 1.0
 * Initial release
+* Added `/mmz` slash command
+* Added Hearthstones tab support for selecting an owned Hearthstone toy per outfit.

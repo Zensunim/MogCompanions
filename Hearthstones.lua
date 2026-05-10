@@ -59,6 +59,13 @@ local function GetSelectedHearthstoneToy(outfitID)
 end
 
 local function UpdateSelectedHearthstoneDetails(itemID)
+	if itemID == nil or itemID <= 1 then
+		MogMountSelectedHearthstone.name = nil;
+		MogMountSelectedHearthstone.icon = nil;
+		MogMountSelectedHearthstone.id = nil;
+		return;
+	end
+
 	local toy = MogMount:GetHearthstoneToyInfo(itemID);
 
 	if toy == nil then
@@ -308,7 +315,12 @@ local function CreateHearthstonesPanel(collection)
 		button.Icon = button:CreateTexture(nil, "ARTWORK");
 		button.Icon:SetSize(18, 18);
 		button.Icon:SetPoint("LEFT", button, "LEFT", 0, 0);
+
+		button.Text = button.Name;
+		button.Text:ClearAllPoints();
 		button.Text:SetPoint("LEFT", button.Icon, "RIGHT", 6, -1);
+		button.Text:SetPoint("RIGHT", button, "RIGHT", -4, -1);
+
 		button:SetScript("OnClick", function(self)
 			if self.toy ~= nil then
 				SetSelectedHearthstone(self.toy.id);

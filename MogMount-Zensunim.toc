@@ -1,7 +1,7 @@
 ## Interface: 120005
 ## Title: MogMount /w Zensunim's Enhancements
 ## IconTexture: 1769015
-## Version: 1.1
+## Version: 1.0
 
 ## SavedVariables: MogMountSaved
 ## SavedVariablesPerCharacter: MogMountCharacterSaved
