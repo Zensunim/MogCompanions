@@ -1,7 +1,7 @@
 ## Interface: 120005
 ## Title: MogMount /w Zensunim's Enhancements
 ## IconTexture: 1769015
-## Version: 1.0
+## Version: 1.1
 
 ## SavedVariables: MogMountSaved
 ## SavedVariablesPerCharacter: MogMountCharacterSaved
@@ -12,5 +12,6 @@ Locales/Localization.xml
 Core.lua
 Core.xml
 Shared.lua
+Hearthstones.lua
 Settings.lua
 Settings.xml
