@@ -261,6 +261,34 @@ function MogMountSummon()
 
 end
 
+local function OpenSettingsToMogMountSlash()
+	Settings.OpenToCategory("MogMount");
+end
+
+local function PrintSlashHelp()
+	print("|cFF00CCFFMogMount-Zensunim commands:|r");
+	print("|cFFFFFFFF/mmz mount|r - "..L["Slash Help Mount"]);
+	print("|cFFFFFFFF/mmz options|r - "..L["Slash Help Options"]);
+	print("|cFFFFFFFF/mmz hs|r - "..L["Slash Help Hearthstone"]);
+end
+
+SLASH_MOGMOUNTZENSUNIM1 = "/mmz";
+SlashCmdList["MOGMOUNTZENSUNIM"] = function(msg)
+	local command = string.lower(string.match(msg or "", "^%s*(.-)%s*$"));
+
+	if command == "" or command == "help" then
+		PrintSlashHelp();
+	elseif command == "mount" then
+		MogMountSummon();
+	elseif command == "options" then
+		OpenSettingsToMogMountSlash();
+	elseif command == "hs" then
+		print(L["Slash Hearthstone Placeholder"]);
+	else
+		PrintSlashHelp();
+	end
+end
+
 
 
 local function OnSettingChanged(setting, value)
@@ -429,7 +457,7 @@ local function CreateMacroButton(Parent)
 	end
 
 	if not macroId then
-		macroId = CreateMacro("MogMount", 1769015, "/run MogMountSummon();", nil);
+		macroId = CreateMacro("MogMount", 1769015, "/mmz mount", nil);
 	end
 
 	MogMountSaved["MacroID"] = macroId;

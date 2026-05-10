@@ -24,6 +24,10 @@ L["Create Macro"] = "Create Macro";
 L["Setup Reminder"] = "Set up a MogMount keybind and/or macro";
 L["Drop Macro Tooltip"] = "Drop this macro in |nyour action bar";
 L["Show Flying In Ground Toggle"] = "Show flying mounts in ground mount list";
+L["Slash Help Mount"] = "Summon or dismount using MogMount";
+L["Slash Help Options"] = "Open the MogMount options panel";
+L["Slash Help Hearthstone"] = "Reserved for future random hearthstone support";
+L["Slash Hearthstone Placeholder"] = "Hearthstone command placeholder. Random hearthstone support is coming soon.";
 
 
 
