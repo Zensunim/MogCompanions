@@ -289,6 +289,11 @@ SlashCmdList["MOGMOUNTZENSUNIM"] = function(msg)
 	end
 end
 
+SLASH_MOGMOUNTZENSUNIM_MOUNT1 = "/mmzm";
+SlashCmdList["MOGMOUNTZENSUNIM_MOUNT"] = function()
+	MogMountSummon();
+end
+
 
 
 local function OnSettingChanged(setting, value)
