@@ -30,8 +30,6 @@ L["Drop Hearthstone Macro Tooltip"] = "Drop this Hearthstone macro in |nyour act
 L["Show Flying In Ground Toggle"] = "Show flying mounts in ground mount list";
 L["Slash Help Mount"] = "Summon or dismount using MogMount";
 L["Slash Help Options"] = "Open the MogMount options panel";
-L["Slash Help Hearthstone"] = "Use the outfit's selected Hearthstone toy, or a random owned Hearthstone toy if none is selected";
-L["Slash Hearthstone Placeholder"] = "Hearthstone command placeholder. Random hearthstone support is coming soon.";
 L["No Hearthstone Toys"] = "No Hearthstone toys are available.";
 L["Macro Combat Error"] = "MogMount cannot create macros while you are in combat.";
 
