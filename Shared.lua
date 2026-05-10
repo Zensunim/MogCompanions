@@ -207,6 +207,147 @@ end
 
 
 
+MogMount.EmptyHearthstoneIcon = 134414;
+MogMount.HearthstoneToyItemIDs = {
+	54452, -- Ethereal Portal
+	64488, -- The Innkeeper's Daughter
+	93672, -- Dark Portal
+	142542, -- Tome of Town Portal
+	162973, -- Greatfather Winter's Hearthstone
+	163045, -- Headless Horseman's Hearthstone
+	165669, -- Lunar Elder's Hearthstone
+	165670, -- Peddlefeet's Lovely Hearthstone
+	165802, -- Noble Gardener's Hearthstone
+	166746, -- Fire Eater's Hearthstone
+	166747, -- Brewfest Reveler's Hearthstone
+	168907, -- Holographic Digitalization Hearthstone
+	172179, -- Eternal Traveler's Hearthstone
+	180290, -- Night Fae Hearthstone
+	182773, -- Necrolord Hearthstone
+	183716, -- Venthyr Sinstone
+	184353, -- Kyrian Hearthstone
+	188952, -- Dominated Hearthstone
+	190196, -- Enlightened Hearthstone
+	190237, -- Broker Translocation Matrix
+	193588, -- Timewalker's Hearthstone
+	200630, -- Ohn'ir Windsage's Hearthstone
+	206195, -- Path of the Naaru
+	209035, -- Hearthstone of the Flame
+	212337 -- Stone of the Hearth
+};
+
+
+
+function MogMount:listHearthstoneSearchString(name)
+
+	if MogMount.HearthstoneSearchString == "" or MogMount.HearthstoneSearchString == nil or string.len(MogMount.HearthstoneSearchString) < 2 then
+		return true;
+	elseif string.len(MogMount.HearthstoneSearchString) >= 2 and string.find(name:lower(), MogMount.HearthstoneSearchString:lower()) then
+		return true;
+	else
+		return false;
+	end
+
+end
+
+
+
+function MogMount:IsHearthstoneToyCollected(itemID)
+
+	if itemID == nil or itemID <= 1 then
+		return false;
+	end
+
+	if PlayerHasToy then
+		return PlayerHasToy(itemID);
+	end
+
+	return false;
+
+end
+
+
+
+function MogMount:GetHearthstoneToyInfo(itemID)
+
+	local toyName;
+	local icon;
+
+	if C_ToyBox and C_ToyBox.GetToyInfo then
+		local _, name, toyIcon = C_ToyBox.GetToyInfo(itemID);
+		toyName = name;
+		icon = toyIcon;
+	end
+
+	if toyName == nil then
+		local itemName, _, _, _, _, _, _, _, _, itemIcon;
+
+		if C_Item and C_Item.GetItemInfo then
+			itemName, _, _, _, _, _, _, _, _, itemIcon = C_Item.GetItemInfo(itemID);
+		else
+			itemName, _, _, _, _, _, _, _, _, itemIcon = GetItemInfo(itemID);
+		end
+
+		toyName = itemName;
+		icon = itemIcon;
+	end
+
+	if toyName == nil then
+		return nil;
+	end
+
+	local toy = {};
+	toy.name = toyName;
+	toy.icon = icon or MogMount.EmptyHearthstoneIcon;
+	toy.nameAndIcon = "|T"..toy.icon..":18|t "..toyName;
+	toy.id = itemID;
+
+	return toy;
+
+end
+
+
+
+function MogMount:getSortedHearthstoneToys(ignoreSearch)
+
+	local toys = {};
+
+	for i = 1, #MogMount.HearthstoneToyItemIDs do
+		local itemID = MogMount.HearthstoneToyItemIDs[i];
+
+		if MogMount:IsHearthstoneToyCollected(itemID) then
+			local toy = MogMount:GetHearthstoneToyInfo(itemID);
+
+			if toy ~= nil and (ignoreSearch or MogMount:listHearthstoneSearchString(toy.name)) then
+				table.insert(toys, toy);
+			end
+		end
+	end
+
+	table.sort(toys, MogMountSortAlphabetical);
+
+	return toys;
+
+end
+
+
+
+function MogMount:getRandomHearthstoneToy()
+
+	local toys = MogMount:getSortedHearthstoneToys(true);
+
+	if #toys == 0 then
+		return nil;
+	end
+
+	local rand = math.random(1, #toys);
+
+	return toys[rand];
+
+end
+
+
+
 local function CreateDisplayTitle(titleID)
 
 	local title, _ = GetTitleName(titleID);
@@ -271,7 +412,10 @@ function MogMount:CreateEmptyOutfit(id)
 		MogMountCharacterSaved["Outfit"..id] = {};
 		MogMountCharacterSaved["Outfit"..id].Flying = 1;
 		MogMountCharacterSaved["Outfit"..id].Ground = 1;
+		MogMountCharacterSaved["Outfit"..id].Hearthstone = 1;
 		MogMountCharacterSaved["Outfit"..id].Title = 0;
+	elseif MogMountCharacterSaved ~= nil and MogMountCharacterSaved["Outfit"..id].Hearthstone == nil then
+		MogMountCharacterSaved["Outfit"..id].Hearthstone = 1;
 	end
 
 end
