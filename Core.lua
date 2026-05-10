@@ -268,6 +268,12 @@ local function PrintSlashHelp()
 	print("|cFFFFFFFF/mmz hs|r - "..L["Slash Help Hearthstone"]);
 end
 
+local function OpenSettingsToMogMount()
+	if MogMountSettingsCategoryID > 0 then
+		Settings.OpenToCategory(MogMountSettingsCategoryID);
+	end
+end
+
 SLASH_MOGMOUNTZENSUNIM1 = "/mmz";
 SlashCmdList["MOGMOUNTZENSUNIM"] = function(msg)
 	local command = string.lower(string.match(msg or "", "^%s*(.-)%s*$"));
@@ -397,13 +403,6 @@ end
 
 
 
-local function OpenSettingsToMogMount()
-
-	if MogMountSettingsCategoryID > 0 then
-   		Settings.OpenToCategory(MogMountSettingsCategoryID);
-   	end
-
-end
 
 
 
