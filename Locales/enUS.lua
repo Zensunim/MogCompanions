@@ -9,13 +9,16 @@ L["Character Title Tooltip"] = "Character Title";
 -- Slots
 L["Item Slot Flying Mount Title"] = "Flying Mount";
 L["Item Slot Ground Mount Title"] = "Ground Mount";
+L["Item Slot Hearthstone Title"] = "Hearthstone";
 L["Item Slot Flying Mount Clear Tooltip"] = "Clear Flying Mount";
 L["Item Slot Ground Mount Clear Tooltip"] = "Clear Ground Mount";
+L["Item Slot Hearthstone Clear Tooltip"] = "Clear Hearthstone";
 
 -- Tab
 L["Mount Tab Title"] = "Mounts";
 L["Mount Tab Flying Section Title"] = "Flying";
 L["Mount Tab Ground Section Title"] = "Ground";
+L["Hearthstone Tab Title"] = "Hearthstones";
 
 -- Settings buttons
 L["Open Settings"] = "Open Options";
@@ -23,11 +26,14 @@ L["Open Keybinds"] = "Open Keybinds";
 L["Create Macro"] = "Create Macro";
 L["Setup Reminder"] = "Set up a MogMount keybind and/or macro";
 L["Drop Macro Tooltip"] = "Drop this macro in |nyour action bar";
+L["Drop Hearthstone Macro Tooltip"] = "Drop this Hearthstone macro in |nyour action bar";
 L["Show Flying In Ground Toggle"] = "Show flying mounts in ground mount list";
 L["Slash Help Mount"] = "Summon or dismount using MogMount";
 L["Slash Help Options"] = "Open the MogMount options panel";
-L["Slash Help Hearthstone"] = "Reserved for future random hearthstone support";
+L["Slash Help Hearthstone"] = "Use the outfit's selected Hearthstone toy, or a random owned Hearthstone toy if none is selected";
 L["Slash Hearthstone Placeholder"] = "Hearthstone command placeholder. Random hearthstone support is coming soon.";
+L["No Hearthstone Toys"] = "No Hearthstone toys are available.";
+L["Macro Combat Error"] = "MogMount cannot create macros while you are in combat.";
 
 
 
