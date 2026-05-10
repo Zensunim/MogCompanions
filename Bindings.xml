@@ -1,0 +1,7 @@
+<Bindings>
+    <Binding name="Mount/Dismount" runOnUp="true" default="" category="MogMount">
+        if keystate == "down" then
+            MogMountBindingClicked();
+        end
+    </Binding>
+</Bindings>

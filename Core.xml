@@ -1,0 +1,27 @@
+<Ui xmlns="http://www.blizzard.com/wow/ui/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.blizzard.com/wow/ui/
+..\Blizzard_SharedXML\UI.xsd">
+
+  <Button name="MogMountListButtonTemplate" inherits="SecureActionButtonTemplate" virtual="true">
+    <Size x="100" y="24"/>
+    <Layers>
+      <Layer level="HIGH">
+        <FontString parentKey="Name" inherits="GameTooltipText" justifyH="LEFT"><!-- GameFontNormalMed1 -->
+          <Color r="1" g="1" b="1"/>
+          <FontHeight>
+            <AbsValue val="16"/>
+          </FontHeight>
+          <Anchors>
+            <Anchor point="LEFT" x= "0" y="-1"/>
+          </Anchors>
+        </FontString>
+      </Layer>
+    </Layers>
+    <Scripts>
+      <OnEnter>
+      </OnEnter>
+      <OnLeave>
+      </OnLeave>
+    </Scripts>    
+  </Button>
+
+</Ui>

@@ -11,3 +11,8 @@ Original license:
 Creative Commons Attribution 4.0 International Public License
 
 This version includes modifications, maintenance updates, and additional functionality. It is not affiliated with, endorsed by, sponsored by, or maintained by the original author.
+
+## Version History
+
+### 1.0
+* Initial release
