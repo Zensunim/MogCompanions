@@ -265,7 +265,6 @@ local function PrintSlashHelp()
 	print("|cFF00CCFFMogMount-Zensunim commands:|r");
 	print("|cFFFFFFFF/mmz mount|r - "..L["Slash Help Mount"]);
 	print("|cFFFFFFFF/mmz options|r - "..L["Slash Help Options"]);
-	print("|cFFFFFFFF/mmz hs|r - "..L["Slash Help Hearthstone"]);
 end
 
 local function OpenSettingsToMogMount()
@@ -284,8 +283,6 @@ SlashCmdList["MOGMOUNTZENSUNIM"] = function(msg)
 		MogMountSummon();
 	elseif command == "options" then
 		OpenSettingsToMogMount();
-	elseif command == "hs" then
-		print(L["Slash Hearthstone Placeholder"]);
 	else
 		PrintSlashHelp();
 	end
