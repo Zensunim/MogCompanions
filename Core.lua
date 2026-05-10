@@ -261,10 +261,6 @@ function MogMountSummon()
 
 end
 
-local function OpenSettingsToMogMountSlash()
-	Settings.OpenToCategory("MogMount");
-end
-
 local function PrintSlashHelp()
 	print("|cFF00CCFFMogMount-Zensunim commands:|r");
 	print("|cFFFFFFFF/mmz mount|r - "..L["Slash Help Mount"]);
@@ -281,7 +277,7 @@ SlashCmdList["MOGMOUNTZENSUNIM"] = function(msg)
 	elseif command == "mount" then
 		MogMountSummon();
 	elseif command == "options" then
-		OpenSettingsToMogMountSlash();
+		OpenSettingsToMogMount();
 	elseif command == "hs" then
 		print(L["Slash Hearthstone Placeholder"]);
 	else
