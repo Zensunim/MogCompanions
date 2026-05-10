@@ -17,7 +17,8 @@ local HearthstonesButtons = {};
 local HearthstonesScrollFrame;
 local HearthstonesOffset = 0;
 local HearthstonesInitialized = false;
-local SavedSlashHandler = SlashCmdList["MOGMOUNTZENSUNIM"];
+local HearthstoneSecureButton;
+local HearthstonePendingItemID;
 
 MogMount.HearthstoneSearchString = "";
 MogMountSelectedHearthstone = {};
@@ -56,6 +57,70 @@ local function GetSelectedHearthstoneToy(outfitID)
 	end
 
 	return nil;
+end
+
+local function EnsureHearthstoneSecureButton()
+	if HearthstoneSecureButton ~= nil then
+		return;
+	end
+
+	HearthstoneSecureButton = CreateFrame("Button", "MogMountHearthstoneSecureButton", UIParent, "SecureActionButtonTemplate");
+	HearthstoneSecureButton:SetAttribute("type", "item");
+	HearthstoneSecureButton:SetAttribute("item", nil);
+	HearthstoneSecureButton:Hide();
+end
+
+local function GetHearthstoneItemIDForOutfit(outfitID)
+	local outfit = GetOutfitTable(outfitID);
+
+	if outfit ~= nil and outfit.Hearthstone ~= nil and outfit.Hearthstone > 1 and MogMount:IsHearthstoneToyCollected(outfit.Hearthstone) then
+		return outfit.Hearthstone;
+	end
+
+	local randomToy = MogMount:getRandomHearthstoneToy();
+
+	if randomToy ~= nil then
+		return randomToy.id;
+	end
+
+	return nil;
+end
+
+local function SetHearthstoneSecureButtonItem(itemID)
+	EnsureHearthstoneSecureButton();
+
+	if InCombatLockdown and InCombatLockdown() then
+		HearthstonePendingItemID = itemID;
+		return false;
+	end
+
+	if itemID ~= nil then
+		HearthstoneSecureButton:SetAttribute("type", "item");
+		HearthstoneSecureButton:SetAttribute("item", "item:"..itemID);
+	else
+		HearthstoneSecureButton:SetAttribute("item", nil);
+	end
+
+	HearthstonePendingItemID = nil;
+
+	return true;
+end
+
+local function RefreshHearthstoneSecureButton()
+	local itemID = GetHearthstoneItemIDForOutfit(GetActiveOutfitID());
+	SetHearthstoneSecureButtonItem(itemID);
+end
+
+function MogMountPrepareHearthstone()
+	local itemID = GetHearthstoneItemIDForOutfit(GetActiveOutfitID());
+
+	if itemID == nil then
+		SetHearthstoneSecureButtonItem(nil);
+		print(L["No Hearthstone Toys"]);
+		return;
+	end
+
+	SetHearthstoneSecureButtonItem(itemID);
 end
 
 local function UpdateSelectedHearthstoneDetails(itemID)
@@ -129,36 +194,11 @@ local function SetSelectedHearthstone(itemID)
 
 	outfit.Hearthstone = itemID;
 	UpdateHearthstoneSlot();
+	RefreshHearthstoneSecureButton();
 end
 
 function ClearSelectedHearthstone()
 	SetSelectedHearthstone(1);
-end
-
-function MogMountSummonHearthstone()
-	local itemID = nil;
-	local outfit = GetOutfitTable(GetActiveOutfitID());
-
-	if outfit ~= nil and outfit.Hearthstone ~= nil and outfit.Hearthstone > 1 and MogMount:IsHearthstoneToyCollected(outfit.Hearthstone) then
-		itemID = outfit.Hearthstone;
-	else
-		local randomToy = MogMount:getRandomHearthstoneToy();
-
-		if randomToy ~= nil then
-			itemID = randomToy.id;
-		end
-	end
-
-	if itemID == nil then
-		print(L["No Hearthstone Toys"]);
-		return;
-	end
-
-	if C_ToyBox and C_ToyBox.UseToy then
-		C_ToyBox.UseToy(itemID);
-	elseif UseToy then
-		UseToy(itemID);
-	end
 end
 
 local function CreateHearthstoneMacro(parent)
@@ -167,6 +207,10 @@ local function CreateHearthstoneMacro(parent)
 		return;
 	end
 
+	EnsureHearthstoneSecureButton();
+	MogMountPrepareHearthstone();
+
+	local macroBody = "/run MogMountPrepareHearthstone()\n/click MogMountHearthstoneSecureButton";
 	local macroId = false;
 
 	for i = 1, 120 do
@@ -176,7 +220,9 @@ local function CreateHearthstoneMacro(parent)
 	end
 
 	if not macroId then
-		macroId = CreateMacro("MogMount HS", MogMount.EmptyHearthstoneIcon, "/mmz hs", nil);
+		macroId = CreateMacro("MogMount HS", MogMount.EmptyHearthstoneIcon, macroBody, nil);
+	else
+		EditMacro(macroId, "MogMount HS", MogMount.EmptyHearthstoneIcon, macroBody, nil);
 	end
 
 	PickupMacro(macroId);
@@ -485,6 +531,8 @@ local function InitializeHearthstones()
 	CreateHearthstoneSlot();
 	CreateHearthstonesTab(TransmogFrame.WardrobeCollection);
 	CreateHearthstonesPanel(TransmogFrame.WardrobeCollection);
+	EnsureHearthstoneSecureButton();
+	RefreshHearthstoneSecureButton();
 	UpdateHearthstoneSlot();
 	RefreshHearthstoneList();
 
@@ -506,10 +554,16 @@ local HearthstoneEventFrame = CreateFrame("Frame");
 HearthstoneEventFrame:RegisterEvent("PLAYER_ENTERING_WORLD");
 HearthstoneEventFrame:RegisterEvent("TOYS_UPDATED");
 HearthstoneEventFrame:RegisterEvent("TRANSMOG_COLLECTION_UPDATED");
-HearthstoneEventFrame:SetScript("OnEvent", function()
+HearthstoneEventFrame:RegisterEvent("PLAYER_REGEN_ENABLED");
+HearthstoneEventFrame:SetScript("OnEvent", function(self, event)
+	if event == "PLAYER_REGEN_ENABLED" and HearthstonePendingItemID ~= nil then
+		SetHearthstoneSecureButtonItem(HearthstonePendingItemID);
+	end
+
 	EnsureOutfitHearthstoneSaved();
 	ScheduleInitializeHearthstones();
 	UpdateHearthstoneSlot();
+	RefreshHearthstoneSecureButton();
 	RefreshHearthstoneList();
 end)
 
@@ -524,19 +578,36 @@ local function HookTransmogFrame()
 	end
 end
 
-HookTransmogFrame();
+local function PrintSlashHelp()
+	print("|cFF00CCFFMogMount-Zensunim commands:|r");
+	print("|cFFFFFFFF/mmz mount|r - "..L["Slash Help Mount"]);
+	print("|cFFFFFFFF/mmz options|r - "..L["Slash Help Options"]);
+end
 
-SlashCmdList["MOGMOUNTZENSUNIM"] = function(msg)
-	local command = string.lower(string.match(msg or "", "^%s*(.-)%s*$"));
-
-	if command == "hs" then
-		MogMountSummonHearthstone();
-	elseif SavedSlashHandler ~= nil then
-		SavedSlashHandler(msg);
+local function OpenSettingsToMogMount()
+	if MogMountSettingsCategoryID > 0 then
+		Settings.OpenToCategory(MogMountSettingsCategoryID);
 	end
 end
 
-SLASH_MOGMOUNTZENSUNIM_HEARTHSTONE1 = "/mmzhs";
-SlashCmdList["MOGMOUNTZENSUNIM_HEARTHSTONE"] = function()
-	MogMountSummonHearthstone();
+local function ReplaceSlashCommands()
+	SLASH_MOGMOUNTZENSUNIM_HEARTHSTONE1 = nil;
+	SlashCmdList["MOGMOUNTZENSUNIM_HEARTHSTONE"] = nil;
+
+	SlashCmdList["MOGMOUNTZENSUNIM"] = function(msg)
+		local command = string.lower(string.match(msg or "", "^%s*(.-)%s*$"));
+
+		if command == "" or command == "help" then
+			PrintSlashHelp();
+		elseif command == "mount" then
+			MogMountSummon();
+		elseif command == "options" then
+			OpenSettingsToMogMount();
+		else
+			PrintSlashHelp();
+		end
+	end
 end
+
+HookTransmogFrame();
+ReplaceSlashCommands();
