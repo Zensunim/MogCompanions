@@ -50,7 +50,6 @@ MogCompanionsSelectedMount.Ground = {}
 -- Returns race-appropriate placeholder icons for the flying and ground mount slots.
 -- Used when no mount has been selected (slot shows a desaturated icon).
 local function getEmptyMountIcon()
-	local factionName = UnitFactionGroup("Player");
 	local _, raceName, raceID = UnitRace("Player");
 
 	local emptyFlyingMountIcon = 0;

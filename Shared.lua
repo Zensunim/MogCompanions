@@ -399,7 +399,9 @@ end
 
 -- Ensures a saved-variable entry exists for outfit 'id' in MogCompanionsCharacterSaved.
 -- Called defensively any time an outfit ID is encountered that may be new.
--- Sentinel values: Flying/Ground/Hearthstone = 1 means "use default"; Title = 0 means "no title".
+-- Sentinel values: Flying/Ground/Hearthstone = 1 means "use default";
+--   Title = 0 means "[Default Title]" (do not change the title);
+--   Title = -1 means "no title" (clear to bare player name).
 -- Safe to call multiple times; only writes when the entry is missing or incomplete.
 function MogCompanions:CreateEmptyOutfit(id)
 	if MogCompanionsCharacterSaved ~= nil and MogCompanionsCharacterSaved["Outfit"..id] == nil then

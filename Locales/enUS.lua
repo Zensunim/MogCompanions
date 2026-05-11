@@ -8,6 +8,7 @@ local L = MogCompanionsLocales;
 
 -- Character Title
 L["Character Title Tooltip"] = "Character Title";
+L["Default Title"] = "[Don't Change Title]";
 
 -- Slots
 L["Item Slot Flying Mount Title"] = "Flying Mount";

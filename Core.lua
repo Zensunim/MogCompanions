@@ -21,15 +21,26 @@ local TitleDropdown;
 
 -- Applies the saved per-outfit title for the currently active outfit.
 -- Called after mounting and after the player changes the title dropdown selection.
--- A saved value of -1 clears the title; 0 is treated as "no change" by comparison.
+-- Title = 0 or nil: [Default Title] — do not change the title.
+-- Title = -1: clear the title (show bare player name).
+-- Title > 0: apply that specific title ID.
 function MogCompanions:UpdateTitle()
-	local SavedCurrentTitle = -1;
+	local outfitData = MogCompanionsCharacterSaved and MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetActiveOutfitID()];
+	if not outfitData then return; end
 
-	if MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetActiveOutfitID()].Title > 0 then
-		SavedCurrentTitle = MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetActiveOutfitID()].Title
+	local outfitTitle = outfitData.Title;
+	if outfitTitle == nil or outfitTitle == 0 then
+		return;
 	end
 
-	if SavedCurrentTitle ~= nil and GetCurrentTitle() ~= SavedCurrentTitle and (SavedCurrentTitle == -1 or IsTitleKnown(SavedCurrentTitle)) then
+	local SavedCurrentTitle;
+	if outfitTitle > 0 then
+		SavedCurrentTitle = outfitTitle;
+	else
+		SavedCurrentTitle = -1;
+	end
+
+	if GetCurrentTitle() ~= SavedCurrentTitle and (SavedCurrentTitle == -1 or IsTitleKnown(SavedCurrentTitle)) then
 		SetCurrentTitle(SavedCurrentTitle);
 	end
 end
@@ -90,13 +101,20 @@ end
 
 -- Formats a title ID into a displayable string for the dropdown button label.
 -- Mirrors the helper of the same name in Shared.lua but is local to Core.lua.
+-- titleID nil or 0: "[Default Title]" (do not change title).
+-- titleID -1: bare player name (no title).
+-- titleID > 0: formatted title string.
 local function CreateDisplayTitle(titleID)
-	local title, _ = GetTitleName(titleID);
-	local displayTitle = "";
+	if titleID == nil or titleID == 0 then
+		return L["Default Title"];
+	end
 
-	if titleID == 0 then
+	if titleID == -1 then
 		return playerName;
 	end
+
+	local title, _ = GetTitleName(titleID);
+	local displayTitle = "";
 
 	if title:sub(-1) == " " then
 		displayTitle = title..playerName;
@@ -108,7 +126,7 @@ local function CreateDisplayTitle(titleID)
 end
 
 -- Saves the chosen title for the currently viewed outfit and immediately applies it.
--- value: title ID (0 = no title / bare player name).
+-- value: title ID (0 = [Default Title] / do not change, -1 = bare player name).
 local function SetSelectedTitle(value)
 	titleLoaded = false;
 	TitleDropdown:SetDefaultText(CreateDisplayTitle(value));
@@ -124,7 +142,8 @@ local function GetTitles()
 	TitleDropdown = CreateFrame("DropdownButton", nil, TransmogFrame.CharacterPreview, "WowStyle1DropdownTemplate");
 
 	local function GeneratorFunctionTitles(dropdown, rootDescription)
-		rootDescription:CreateButton(playerName, SetSelectedTitle, 0);
+		rootDescription:CreateButton(L["Default Title"], SetSelectedTitle, 0);
+		rootDescription:CreateButton(playerName, SetSelectedTitle, -1);
 
 		local titlesRaw = {};
 		local count = 1;
@@ -153,11 +172,7 @@ local function GetTitles()
 
 	TransmogFrame.CharacterPreview.ModelScene.ControlFrame:SetPoint("TOP", 0, -64);
 
-	if MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Title == 0 then
-		TitleDropdown:SetDefaultText(playerName);
-	else
-		TitleDropdown:SetDefaultText(CreateDisplayTitle(MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Title));
-	end
+	TitleDropdown:SetDefaultText(CreateDisplayTitle(MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Title));
 
 	TitleDropdown:SetWidth(240);
 	TitleDropdown:SetPoint("TOP", TransmogFrame.CharacterPreview, "TOP", 0, -27);
@@ -211,11 +226,7 @@ end
 local function InitTitles(reset)
 	if not reset then
 
-		if MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Title == 0 then
-			TitleDropdown:SetDefaultText(playerName);
-		else
-			TitleDropdown:SetDefaultText(CreateDisplayTitle(MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Title));
-		end
+		TitleDropdown:SetDefaultText(CreateDisplayTitle(MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Title));
 
 		TitleDropdown:GenerateMenu();
 
