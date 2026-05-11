@@ -1228,10 +1228,18 @@ end
 -- Called from Core.lua after VIEWED_TRANSMOG_OUTFIT_CHANGED to sync the UI
 -- with the newly viewed outfit's saved mount selections.
 function UpdateSelectedMountRow()
+    if TransmogFrame == nil
+        or TransmogFrame.WardrobeCollection == nil
+        or not TransmogFrame:IsShown()
+        or FlyingMountListScrollBox == nil
+        or FlyingMountSelectionBehavior == nil
+        or GroundMountListScrollBox == nil
+        or GroundMountSelectionBehavior == nil then
+        return;
+    end
+
 	if FlyingMountListScrollBox then
-
 		ClearSelectedFlyingMount();
-
 		mounts = MogCompanions:getSortedFlyingMounts();
 
 		for i = 1, #mounts do
@@ -1257,9 +1265,7 @@ function UpdateSelectedMountRow()
 	end
 
 	if GroundMountListScrollBox then
-
 		ClearSelectedGroundMount();
-
 		mounts = MogCompanions:getSortedGroundMounts();
 
 		for i = 1, #mounts do

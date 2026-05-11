@@ -168,8 +168,13 @@ end
 -- Returns a random mount table from the specified category string.
 -- type: "flying" | "ground" | "aquatic" | "special" | "alternative"
 -- Returns nil if the category list is empty (safe to call with no mounts collected).
+-- The UI search filter (MountSearchString) is bypassed here so that the random pool
+-- is always the full category, not whatever the player last typed in the search box.
 function MogCompanions:getRandomMount(type)
 	local mounts = {}
+
+	local savedSearch = MogCompanions.MountSearchString;
+	MogCompanions.MountSearchString = "";
 
 	if type == "flying" then
 		mounts = MogCompanions:getSortedFlyingMounts();
@@ -184,7 +189,9 @@ function MogCompanions:getRandomMount(type)
 	else
 		mounts = MogCompanions:getSortedFlyingMounts();
 	end
-	
+
+	MogCompanions.MountSearchString = savedSearch;
+
 	if #mounts == 0 then
 		return nil;
 	end

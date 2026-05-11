@@ -293,7 +293,9 @@ function MogCompanions:OnEvent(event, addOnName)
 		InitTitles(firstLoad);
 
 		C_Timer.After(0.1, function()
-			UpdateSelectedMountRow();
+			if UpdateSelectedMountRow ~= nil then
+				UpdateSelectedMountRow();
+    		end
 		end)
 
 		firstLoad = false;
