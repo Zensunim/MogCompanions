@@ -125,6 +125,28 @@ local function RefreshHearthstoneSecureButton()
 	SetHearthstoneSecureButtonItem(itemID);
 end
 
+local hearthstonePostClickRegistered = false;
+
+local function EnsureHearthstonePostClick()
+	if hearthstonePostClickRegistered then
+		return;
+	end
+	if HearthstoneSecureButton == nil then
+		return;
+	end
+	hearthstonePostClickRegistered = true;
+	HearthstoneSecureButton:SetScript("PostClick", function()
+		if InCombatLockdown and InCombatLockdown() then
+			return;
+		end
+		-- Re-randomize for next press when no specific toy is pinned to this outfit
+		local outfit = GetOutfitTable(GetActiveOutfitID());
+		if outfit == nil or outfit.Hearthstone == nil or outfit.Hearthstone <= 1 then
+			SetHearthstoneSecureButtonItem(GetHearthstoneItemIDForOutfit(GetActiveOutfitID()));
+		end
+	end);
+end
+
 function MogMountPrepareHearthstone()
 	local itemID = GetHearthstoneItemIDForOutfit(GetActiveOutfitID());
 
@@ -511,6 +533,7 @@ local function InitializeHearthstones()
 	CreateHearthstoneSlot();
 	MogMount:CreateHearthstonesFrame(TransmogFrame.WardrobeCollection, nil);
 	EnsureHearthstoneSecureButton();
+	EnsureHearthstonePostClick();
 	RefreshHearthstoneSecureButton();
 	UpdateHearthstoneSlot();
 	RefreshHearthstoneList();
@@ -529,6 +552,8 @@ HearthstoneEventFrame:RegisterEvent("TOYS_UPDATED");
 HearthstoneEventFrame:RegisterEvent("TRANSMOG_COLLECTION_UPDATED");
 HearthstoneEventFrame:RegisterEvent("PLAYER_REGEN_ENABLED");
 HearthstoneEventFrame:RegisterEvent("GET_ITEM_INFO_RECEIVED");
+HearthstoneEventFrame:RegisterEvent("VIEWED_TRANSMOG_OUTFIT_CHANGED");
+HearthstoneEventFrame:RegisterEvent("TRANSMOG_DISPLAYED_OUTFIT_CHANGED");
 HearthstoneEventFrame:SetScript("OnEvent", function(self, event, ...)
 	if event == "PLAYER_REGEN_ENABLED" and HearthstonePendingItemID ~= nil then
 		SetHearthstoneSecureButtonItem(HearthstonePendingItemID);
@@ -544,6 +569,8 @@ HearthstoneEventFrame:SetScript("OnEvent", function(self, event, ...)
 	EnsureOutfitHearthstoneSaved();
 	ScheduleInitializeHearthstones();
 	UpdateHearthstoneSlot();
+	EnsureHearthstoneSecureButton();
+	EnsureHearthstonePostClick();
 	RefreshHearthstoneSecureButton();
 	RefreshHearthstoneList();
 end)
