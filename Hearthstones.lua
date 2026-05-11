@@ -155,6 +155,8 @@ local function RefreshHearthstoneSecureButton()
 end
 
 local hearthstonePostClickRegistered = false;
+local hearthstonePreClickRegistered = false;
+local hearthstoneBinding1, hearthstoneBinding2;
 
 -- Registers a PostClick handler on the secure button that re-randomizes the toy
 -- after each press (only when no specific toy is pinned to the current outfit).
@@ -176,6 +178,54 @@ local function EnsureHearthstonePostClick()
 			SetHearthstoneSecureButtonItem(GetHearthstoneItemIDForOutfit(GetActiveOutfitID()));
 		end
 	end);
+end
+
+-- Registers a PreClick handler that arms the secure button before it fires.
+-- Only arms outside combat; in combat the button retains the last armed toy.
+local function EnsureHearthstonePreClick()
+	if hearthstonePreClickRegistered then
+		return;
+	end
+	if HearthstoneSecureButton == nil then
+		return;
+	end
+	hearthstonePreClickRegistered = true;
+	HearthstoneSecureButton:SetScript("PreClick", function()
+		if not (InCombatLockdown and InCombatLockdown()) then
+			MogCompanionsPrepareHearthstone();
+		end
+	end);
+end
+
+-- Binds the "Use Hearthstone" key directly to MCHearthButton via SetBindingClick.
+-- Called on initialization and whenever UPDATE_BINDINGS fires.
+-- This is required because Click() on a SecureActionButtonTemplate cannot be called
+-- from tainted addon Lua; SetBindingClick bypasses that restriction.
+local function SyncHearthstoneKeybind()
+	if MCHearthButton == nil then
+		return;
+	end
+
+	-- Clear any previously registered click bindings
+	if hearthstoneBinding1 then
+		SetBinding(hearthstoneBinding1);
+		hearthstoneBinding1 = nil;
+	end
+	if hearthstoneBinding2 then
+		SetBinding(hearthstoneBinding2);
+		hearthstoneBinding2 = nil;
+	end
+
+	local key1, key2 = GetBindingKey("Use Hearthstone");
+
+	if key1 and key1 ~= "" then
+		SetBindingClick(key1, "MCHearthButton", "LeftButton");
+		hearthstoneBinding1 = key1;
+	end
+	if key2 and key2 ~= "" then
+		SetBindingClick(key2, "MCHearthButton", "LeftButton");
+		hearthstoneBinding2 = key2;
+	end
 end
 
 -- Public entry point called from macros / external code.
@@ -666,7 +716,9 @@ local function InitializeHearthstones()
 	CreateHearthstoneSlot();
 	MogCompanions:CreateHearthstonesFrame(TransmogFrame.WardrobeCollection, nil);
 	EnsureHearthstoneSecureButton();
+	EnsureHearthstonePreClick();
 	EnsureHearthstonePostClick();
+	SyncHearthstoneKeybind();
 	RefreshHearthstoneSecureButton();
 	UpdateHearthstoneSlot();
 	RefreshHearthstoneList();
@@ -689,7 +741,13 @@ HearthstoneEventFrame:RegisterEvent("PLAYER_REGEN_ENABLED");
 HearthstoneEventFrame:RegisterEvent("GET_ITEM_INFO_RECEIVED");
 HearthstoneEventFrame:RegisterEvent("VIEWED_TRANSMOG_OUTFIT_CHANGED");
 HearthstoneEventFrame:RegisterEvent("TRANSMOG_DISPLAYED_OUTFIT_CHANGED");
+HearthstoneEventFrame:RegisterEvent("UPDATE_BINDINGS");
 HearthstoneEventFrame:SetScript("OnEvent", function(self, event, ...)
+	if event == "UPDATE_BINDINGS" then
+		SyncHearthstoneKeybind();
+		return;
+	end
+
 	if event == "PLAYER_REGEN_ENABLED" and HearthstonePendingItemID ~= nil then
 		SetHearthstoneSecureButtonItem(HearthstonePendingItemID);
 	end

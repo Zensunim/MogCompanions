@@ -40,11 +40,10 @@ function MogCompanionsBindingClicked()
 end
 
 -- Called by Bindings.xml when the MogCompanions Hearthstone keybinding is pressed.
+-- Note: the key is re-routed via SetBindingClick to MCHearthButton directly;
+-- this function fires only if SyncHearthstoneKeybind has not yet run (e.g., very early load).
 function MogCompanionsHearthstoneBindingClicked()
 	MogCompanionsPrepareHearthstone();
-	if MCHearthButton then
-		MCHearthButton:Click();
-	end
 end
 
 -- ── Slash Commands ────────────────────────────────────────────────────────────
