@@ -31,7 +31,6 @@ local SetSelectedFlyingMount, SetSelectedGroundMount;
 
 local SetupReminderFrame;
 local MountListSearchBox, FilterDropdown;
-local FlyingMountPreview, FlyingMountList, GroundMountPreview, GroundMountList;
 
 MogMount.MountSearchString = "";
 
@@ -1379,33 +1378,21 @@ local function InitMountTab()
 		end)
 
 		--		
-	
+
+		local HearthstonesFrame = nil;
+
+		if MogMount.CreateHearthstonesFrame ~= nil then
+			HearthstonesFrame = MogMount:CreateHearthstonesFrame(TransmogFrame.WardrobeCollection, MountsFrame);
+		end
+
 		TransmogFrame.WardrobeCollection.mountsTabID = TransmogFrame.WardrobeCollection:AddNamedTab(L["Mount Tab Title"], MountsFrame);
-		TransmogFrame.WardrobeCollection.hearthstonesTabID = TransmogFrame.WardrobeCollection:AddNamedTab(L["Hearthstone Tab Title"], MountsFrame);
+
+		if HearthstonesFrame ~= nil then
+			TransmogFrame.WardrobeCollection.hearthstonesTabID = TransmogFrame.WardrobeCollection:AddNamedTab(L["Hearthstone Tab Title"], HearthstonesFrame);
+		end
+
 		TransmogFrame.WardrobeCollection:UpdateTabs();
 
-		hooksecurefunc(TransmogFrame.WardrobeCollection, "SetTab", function(self, tabID)
-			if tabID == self.mountsTabID then
-				if FlyingMountPreview ~= nil then FlyingMountPreview:Show(); end
-				if FlyingMountList ~= nil then FlyingMountList:Show(); end
-				if GroundMountPreview ~= nil then GroundMountPreview:Show(); end
-				if GroundMountList ~= nil then GroundMountList:Show(); end
-				if MountListSearchBox ~= nil then MountListSearchBox:Show(); end
-				if FilterDropdown ~= nil then FilterDropdown:Show(); end
-				MogMount:HideHearthstonesPage();
-			elseif tabID == self.hearthstonesTabID then
-				if FlyingMountPreview ~= nil then FlyingMountPreview:Hide(); end
-				if FlyingMountList ~= nil then FlyingMountList:Hide(); end
-				if GroundMountPreview ~= nil then GroundMountPreview:Hide(); end
-				if GroundMountList ~= nil then GroundMountList:Hide(); end
-				if MountListSearchBox ~= nil then MountListSearchBox:Hide(); end
-				if FilterDropdown ~= nil then FilterDropdown:Hide(); end
-				MogMount:ShowHearthstonesPage();
-			else
-				MogMount:HideHearthstonesPage();
-			end
-		end);
-	
 	end
 
 	ToggleReminder();

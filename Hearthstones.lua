@@ -282,13 +282,21 @@ local function RefreshHearthstoneList()
 	end
 end
 
-local function CreateHearthstonesPage(collection)
+function MogMount:CreateHearthstonesFrame(collection, referenceFrame)
 	if HearthstonesPage ~= nil then
-		return;
+		return HearthstonesPage;
 	end
 
-	HearthstonesPage = CreateFrame("Frame", "MogMountHearthstonesPage", collection.TabContent);
-	HearthstonesPage:SetAllPoints(true);
+	local parent = collection.TabContent;
+
+	HearthstonesPage = CreateFrame("Frame", "MogMountHearthstonesPage", parent);
+
+	if referenceFrame ~= nil then
+		HearthstonesPage:SetAllPoints(referenceFrame);
+	else
+		HearthstonesPage:SetAllPoints(parent);
+	end
+
 	HearthstonesPage:Hide();
 
 	local title = HearthstonesPage:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge");
@@ -368,6 +376,8 @@ local function CreateHearthstonesPage(collection)
 	end
 
 	RefreshHearthstoneList();
+
+	return HearthstonesPage;
 end
 
 local function CreateHearthstoneSlot()
@@ -499,7 +509,7 @@ local function InitializeHearthstones()
 
 	EnsureOutfitHearthstoneSaved();
 	CreateHearthstoneSlot();
-	CreateHearthstonesPage(TransmogFrame.WardrobeCollection);
+	MogMount:CreateHearthstonesFrame(TransmogFrame.WardrobeCollection, nil);
 	EnsureHearthstoneSecureButton();
 	RefreshHearthstoneSecureButton();
 	UpdateHearthstoneSlot();
@@ -555,7 +565,9 @@ HookTransmogFrame();
 
 function MogMount:ShowHearthstonesPage()
 	if HearthstonesPage == nil then
-		InitializeHearthstones();
+		if TransmogFrame ~= nil and TransmogFrame.WardrobeCollection ~= nil then
+			MogMount:CreateHearthstonesFrame(TransmogFrame.WardrobeCollection, nil);
+		end
 	end
 
 	if HearthstonesPage ~= nil then
