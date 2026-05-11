@@ -66,9 +66,14 @@ local function EnsureHearthstoneSecureButton()
 	end
 
 	HearthstoneSecureButton = CreateFrame("Button", "MogMountHearthstoneSecureButton", UIParent, "SecureActionButtonTemplate");
-	HearthstoneSecureButton:SetAttribute("type", "item");
-	HearthstoneSecureButton:SetAttribute("item", nil);
-	HearthstoneSecureButton:Hide();
+	HearthstoneSecureButton:SetParent(UIParent);
+	HearthstoneSecureButton:SetSize(1, 1);
+	HearthstoneSecureButton:SetPoint("CENTER", UIParent, "CENTER", 0, 0);
+	HearthstoneSecureButton:SetAlpha(0);
+	HearthstoneSecureButton:EnableMouse(false);
+	HearthstoneSecureButton:SetAttribute("type", "macro");
+	HearthstoneSecureButton:SetAttribute("macrotext", nil);
+	HearthstoneSecureButton:Show();
 end
 
 local function GetHearthstoneItemIDForOutfit(outfitID)
@@ -95,11 +100,12 @@ local function SetHearthstoneSecureButtonItem(itemID)
 		return false;
 	end
 
+	HearthstoneSecureButton:SetAttribute("type", "macro");
+
 	if itemID ~= nil then
-		HearthstoneSecureButton:SetAttribute("type", "item");
-		HearthstoneSecureButton:SetAttribute("item", "item:"..itemID);
+		HearthstoneSecureButton:SetAttribute("macrotext", "/use item:"..itemID);
 	else
-		HearthstoneSecureButton:SetAttribute("item", nil);
+		HearthstoneSecureButton:SetAttribute("macrotext", nil);
 	end
 
 	HearthstonePendingItemID = nil;
@@ -400,10 +406,25 @@ local function CreateHearthstonesTab(collection)
 	HearthstonesTab = CreateFrame("Button", "MogMountHearthstonesTab", collection, "PanelTopTabButtonTemplate");
 	HearthstonesTab:SetText(L["Hearthstone Tab Title"]);
 	PanelTemplates_TabResize(HearthstonesTab, 0);
-	HearthstonesTab:SetPoint("TOPLEFT", collection, "TOPLEFT", 470, 28);
+
+	local anchorTab = nil;
+	for i = 1, 8 do
+		local tab = _G["WardrobeCollectionFrameTab"..i] or _G["TransmogFrameTab"..i] or _G["WardrobeFrameTab"..i];
+		if tab ~= nil and tab:IsShown() then
+			anchorTab = tab;
+		end
+	end
+
+	if anchorTab ~= nil then
+		HearthstonesTab:SetPoint("LEFT", anchorTab, "RIGHT", -15, 0);
+	else
+		HearthstonesTab:SetPoint("TOPLEFT", collection, "TOPLEFT", 470, 28);
+	end
+
 	HearthstonesTab:SetScript("OnClick", function()
 		SelectHearthstoneTab();
 	end)
+	HearthstonesTab:Show();
 end
 
 local function CreateHearthstoneSlot()
@@ -508,6 +529,10 @@ local function EnsureOutfitHearthstoneSaved()
 
 	local outfits = C_TransmogOutfitInfo.GetOutfitsInfo();
 
+	if outfits == nil then
+		return;
+	end
+
 	for i = 1, #outfits do
 		MogMount:CreateEmptyOutfit(outfits[i].outfitID);
 	end
@@ -557,9 +582,17 @@ HearthstoneEventFrame:RegisterEvent("PLAYER_ENTERING_WORLD");
 HearthstoneEventFrame:RegisterEvent("TOYS_UPDATED");
 HearthstoneEventFrame:RegisterEvent("TRANSMOG_COLLECTION_UPDATED");
 HearthstoneEventFrame:RegisterEvent("PLAYER_REGEN_ENABLED");
-HearthstoneEventFrame:SetScript("OnEvent", function(self, event)
+HearthstoneEventFrame:RegisterEvent("GET_ITEM_INFO_RECEIVED");
+HearthstoneEventFrame:SetScript("OnEvent", function(self, event, ...)
 	if event == "PLAYER_REGEN_ENABLED" and HearthstonePendingItemID ~= nil then
 		SetHearthstoneSecureButtonItem(HearthstonePendingItemID);
+	end
+
+	if event == "GET_ITEM_INFO_RECEIVED" then
+		local itemID = ...;
+		if itemID == nil or not MogMount:hasValue(MogMount.HearthstoneToyItemIDs, itemID) then
+			return;
+		end
 	end
 
 	EnsureOutfitHearthstoneSaved();

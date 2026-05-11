@@ -199,6 +199,10 @@ function MogMount:getRandomMount(type)
 		mounts = MogMount:getSortedFlyingMounts();
 	end
 	
+	if #mounts == 0 then
+		return nil;
+	end
+
 	local rand = math.random(1, #mounts);
 
 	return mounts[rand];
@@ -233,7 +237,10 @@ MogMount.HearthstoneToyItemIDs = {
 	200630, -- Ohn'ir Windsage's Hearthstone
 	206195, -- Path of the Naaru
 	209035, -- Hearthstone of the Flame
-	212337 -- Stone of the Hearth
+	212337, -- Stone of the Hearth
+	228940, -- Notorious Thread's Hearthstone
+	235016, -- Redeployment Module
+	236687 -- Explosive Hearthstone
 };
 
 
@@ -296,6 +303,9 @@ function MogMount:GetHearthstoneToyInfo(itemID)
 	end
 
 	if toyName == nil then
+		if C_Item and C_Item.RequestLoadItemDataByID then
+			C_Item.RequestLoadItemDataByID(itemID);
+		end
 		return nil;
 	end
 
