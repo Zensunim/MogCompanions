@@ -39,6 +39,7 @@ jobs:
           rsync -a ./ "$addon_dir"/ \
             --exclude='.git/' \
             --exclude='.github/' \
+            --exclude='docs/' \
             --exclude='AGENTS.md'
 
           cd "$staging_dir"
