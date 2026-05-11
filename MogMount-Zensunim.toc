@@ -1,8 +1,10 @@
 ## Interface: 120005
 ## Title: MogMount /w Zensunim's Enhancements
+## Author: Zensunim of Dragonblight (forked from perrinthesmith's MogMount addon)
 ## IconTexture: 1769015
 ## Version: 1.0
-
+## DefaultState: Enabled
+## Category: Transmogrification
 ## SavedVariables: MogMountSaved
 ## SavedVariablesPerCharacter: MogMountCharacterSaved
 ## LoadSavedVariablesFirst: 1
