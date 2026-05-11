@@ -12,9 +12,9 @@ local HearthstoneBorderHighlightTexture;
 local HearthstoneClear;
 local HearthstonesPage;
 local HearthstonesSearchBox;
-local HearthstonesButtons = {};
-local HearthstonesScrollFrame;
-local HearthstonesOffset = 0;
+local HearthstoneListScrollView;
+local HearthstoneDataProvider;
+local HearthstoneSelectionBehavior;
 local HearthstonesInitialized = false;
 local HearthstoneSecureButton;
 local HearthstonePendingItemID;
@@ -240,45 +240,16 @@ local function CreateHearthstoneMacro(parent)
 end
 
 local function RefreshHearthstoneList()
-	if HearthstonesPage == nil then
+	if HearthstoneDataProvider == nil then
 		return;
 	end
 
 	local toys = MogMount:getSortedHearthstoneToys(false);
-	local buttonHeight = 24;
-	local visibleButtons = #HearthstonesButtons;
-	local maxOffset = math.max(#toys - visibleButtons, 0);
 
-	if HearthstonesOffset > maxOffset then
-		HearthstonesOffset = maxOffset;
-	end
+	HearthstoneDataProvider:Flush();
 
-	for i = 1, visibleButtons do
-		local toy = toys[HearthstonesOffset + i];
-		local button = HearthstonesButtons[i];
-
-		if toy ~= nil then
-			button.toy = toy;
-			button.Icon:SetTexture(toy.icon);
-			button.Text:SetText(toy.name);
-			button:Show();
-
-			local outfit = GetOutfitTable(GetViewedOutfitID());
-
-			if outfit ~= nil and outfit.Hearthstone == toy.id then
-				button:LockHighlight();
-			else
-				button:UnlockHighlight();
-			end
-		else
-			button.toy = nil;
-			button:Hide();
-			button:UnlockHighlight();
-		end
-	end
-
-	if HearthstonesScrollFrame ~= nil then
-		FauxScrollFrame_Update(HearthstonesScrollFrame, #toys, visibleButtons, buttonHeight);
+	for i = 1, #toys do
+		HearthstoneDataProvider:Insert(toys[i]);
 	end
 end
 
@@ -299,83 +270,104 @@ function MogMount:CreateHearthstonesFrame(collection, referenceFrame)
 
 	HearthstonesPage:Hide();
 
-	local title = HearthstonesPage:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge");
-	title:SetPoint("TOPLEFT", HearthstonesPage, "TOPLEFT", 18, -18);
-	title:SetText(L["Hearthstone Tab Title"]);
-
-	HearthstonesSearchBox = CreateFrame("EditBox", "MogMountHearthstoneSearchBox", HearthstonesPage, "SearchBoxTemplate");
-	HearthstonesSearchBox:SetSize(180, 22);
-	HearthstonesSearchBox:SetPoint("TOPRIGHT", HearthstonesPage, "TOPRIGHT", -18, -16);
-	HearthstonesSearchBox:SetScript("OnTextChanged", function(self, userInput)
+	-- Search box (matching Mounts tab position)
+	HearthstonesSearchBox = CreateFrame("EditBox", "MogMountHearthstoneSearchBox", HearthstonesPage, "TransmogSearchBoxTemplate");
+	HearthstonesSearchBox:SetPoint("TOPRIGHT", HearthstonesPage, "TOPRIGHT", -174, -23);
+	local iconPos, iconParent, iconParentPos, iconX, iconY = HearthstonesSearchBox.searchIcon:GetPoint();
+	HearthstonesSearchBox.searchIcon:SetPoint(iconPos, iconParent, iconParentPos, iconX, iconY + 1);
+	HearthstonesSearchBox:SetScript("OnTextChanged", function(self)
 		if SearchBoxTemplate_OnTextChanged ~= nil then
 			SearchBoxTemplate_OnTextChanged(self);
-		elseif self.Instructions ~= nil then
-			self.Instructions:SetShown((self:GetText() or "") == "");
 		end
-
 		MogMount.HearthstoneSearchString = self:GetText() or "";
-		HearthstonesOffset = 0;
 		RefreshHearthstoneList();
 	end)
 
-	local macroButton = CreateFrame("Button", "MogMountHearthstoneMacroButton", HearthstonesPage, "UIPanelButtonTemplate");
-	macroButton:SetSize(120, 24);
-	macroButton:SetPoint("TOPRIGHT", HearthstonesSearchBox, "BOTTOMRIGHT", 0, -8);
-	macroButton:SetText(L["Create Macro"]);
-	macroButton:SetScript("OnClick", function(self)
-		CreateHearthstoneMacro(self);
+	-- Gear dropdown (matching Mounts tab ShortcutSettings)
+	local HearthstoneShortcuts = CreateFrame("DropdownButton", "MogMountHearthstoneShortcuts", HearthstonesPage, "DamageMeterSettingsDropdownButtonTemplate");
+	HearthstoneShortcuts:SetPoint("TOPRIGHT", HearthstonesPage, "TOPRIGHT", -26, -22);
+	HearthstoneShortcuts:SetupMenu(function(dropdown, rootDescription)
+		rootDescription:CreateTitle("MogMount");
+		rootDescription:CreateButton(L["Open Settings"], function() MogMount:OpenSettings() end);
+		rootDescription:CreateButton(L["Open Keybinds"], function() MogMount:OpenKeybinds() end);
+		rootDescription:CreateButton(L["Create Macro"], function() CreateHearthstoneMacro(HearthstoneShortcuts) end);
 	end)
 
-	HearthstonesScrollFrame = CreateFrame("ScrollFrame", "MogMountHearthstoneScrollFrame", HearthstonesPage, "FauxScrollFrameTemplate");
-	HearthstonesScrollFrame:SetPoint("TOPLEFT", HearthstonesPage, "TOPLEFT", 18, -55);
-	HearthstonesScrollFrame:SetPoint("BOTTOMRIGHT", HearthstonesPage, "BOTTOMRIGHT", -32, 18);
-	HearthstonesScrollFrame:SetScript("OnVerticalScroll", function(self, offset)
-		FauxScrollFrame_OnVerticalScroll(self, offset, 24, function()
-			HearthstonesOffset = FauxScrollFrame_GetOffset(HearthstonesScrollFrame);
-			RefreshHearthstoneList();
-		end)
-	end)
+	-- Section title (matching Mounts FlyingSlotTitle style)
+	local HearthstoneSlotTitle = HearthstonesPage:CreateFontString(nil, "OVERLAY", "GameFontHighlightHuge");
+	HearthstoneSlotTitle:SetJustifyH("LEFT");
+	HearthstoneSlotTitle:SetPoint("TOPLEFT", HearthstonesPage, "TOPLEFT", 24, -58);
+	HearthstoneSlotTitle:SetText(L["Hearthstone Tab Title"]);
 
-	for i = 1, 14 do
-		local button = CreateFrame("Button", "MogMountHearthstoneListButton"..i, HearthstonesPage, "MogMountListButtonTemplate");
-		button:SetSize(330, 24);
+	local HearthstoneSlotTitleDivider = HearthstonesPage:CreateTexture();
+	HearthstoneSlotTitleDivider:SetAtlas("transmog-tabs-header-line", true);
+	HearthstoneSlotTitleDivider:SetAlpha(0.1);
+	HearthstoneSlotTitleDivider:SetPoint("TOPLEFT", HearthstoneSlotTitle, "BOTTOMLEFT", 0, -2);
 
-		if i == 1 then
-			button:SetPoint("TOPLEFT", HearthstonesPage, "TOPLEFT", 20, -58);
+	-- List container (full-width, no preview panel)
+	local HearthstoneList = CreateFrame("Frame", "MogMountHearthstoneListFrame", HearthstonesPage);
+	HearthstoneList:SetPoint("TOPLEFT", HearthstonesPage, "TOPLEFT", 24, -95);
+	HearthstoneList:SetPoint("BOTTOMRIGHT", HearthstonesPage, "BOTTOMRIGHT", -8, 18);
+	HearthstoneList:SetFrameStrata("HIGH");
+
+	local HearthstoneListBackground = HearthstoneList:CreateTexture(nil, "OVERLAY");
+	HearthstoneListBackground:SetAtlas("transmog-situations-containerbg", true);
+	HearthstoneListBackground:SetAllPoints(true);
+
+	-- ScrollBox
+	local HearthstoneScrollBox = CreateFrame("Frame", "MogMountHearthstoneScrollBox", HearthstoneList, "WowScrollBoxList");
+	HearthstoneScrollBox:SetPoint("TOPLEFT", HearthstoneList, "TOPLEFT", 12, -2);
+	HearthstoneScrollBox:SetPoint("BOTTOMRIGHT", HearthstoneList, "BOTTOMRIGHT", -40, 4);
+
+	-- ScrollBar
+	local HearthstoneScrollBar = CreateFrame("EventFrame", nil, HearthstoneList, "MinimalScrollBar");
+	HearthstoneScrollBar:SetPoint("TOPLEFT", HearthstoneScrollBox, "TOPRIGHT", 10, -6);
+	HearthstoneScrollBar:SetPoint("BOTTOMLEFT", HearthstoneScrollBox, "BOTTOMRIGHT", 10, 6);
+	HearthstoneScrollBar:SetHideIfUnscrollable(true);
+
+	-- Data provider and scroll view
+	HearthstoneDataProvider = CreateDataProvider();
+	local scrollView = CreateScrollBoxListLinearView();
+	HearthstoneSelectionBehavior = ScrollUtil.AddSelectionBehavior(HearthstoneScrollBox, SelectionBehaviorFlags.Intrusive);
+
+	local function HearthstoneListInitializer(button, data)
+		local outfit = GetOutfitTable(GetViewedOutfitID());
+		local isSelected = outfit ~= nil and outfit.Hearthstone == data.id;
+
+		button.Name:SetText("|T"..data.icon..":18|t "..data.name);
+		button:SetHighlightTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight");
+
+		if isSelected then
+			button:LockHighlight();
 		else
-			button:SetPoint("TOPLEFT", HearthstonesButtons[i - 1], "BOTTOMLEFT", 0, 0);
+			button:UnlockHighlight();
 		end
 
-		button.Icon = button:CreateTexture(nil, "ARTWORK");
-		button.Icon:SetSize(18, 18);
-		button.Icon:SetPoint("LEFT", button, "LEFT", 0, 0);
-
-		button.Text = button.Name;
-		button.Text:ClearAllPoints();
-		button.Text:SetPoint("LEFT", button.Icon, "RIGHT", 6, -1);
-		button.Text:SetPoint("RIGHT", button, "RIGHT", -4, -1);
-
 		button:SetScript("OnClick", function(self)
-			if self.toy ~= nil then
-				SetSelectedHearthstone(self.toy.id);
-				RefreshHearthstoneList();
-			end
+			SetSelectedHearthstone(data.id);
+			RefreshHearthstoneList();
 		end)
 		button:SetScript("OnEnter", function(self)
-			if self.toy ~= nil then
-				GameTooltip:SetOwner(self, "ANCHOR_RIGHT");
-				GameTooltip:SetToyByItemID(self.toy.id);
-				GameTooltip:Show();
-			end
+			GameTooltip:SetOwner(self, "ANCHOR_RIGHT");
+			GameTooltip:SetToyByItemID(data.id);
+			GameTooltip:Show();
 		end)
 		button:SetScript("OnLeave", function()
 			GameTooltip:Hide();
 		end)
-
-		HearthstonesButtons[i] = button;
 	end
 
-	RefreshHearthstoneList();
+	scrollView:SetElementInitializer("MogMountListButtonTemplate", HearthstoneListInitializer);
+	scrollView:SetElementExtent(22);
+	ScrollUtil.InitScrollBoxListWithScrollBar(HearthstoneScrollBox, HearthstoneScrollBar, scrollView);
+	scrollView:SetDataProvider(HearthstoneDataProvider);
+
+	HearthstoneListScrollView = scrollView;
+
+	local toys = MogMount:getSortedHearthstoneToys(false);
+	for i = 1, #toys do
+		HearthstoneDataProvider:Insert(toys[i]);
+	end
 
 	return HearthstonesPage;
 end

@@ -273,6 +273,14 @@ local function OpenSettingsToMogMount()
 	end
 end
 
+function MogMount:OpenSettings()
+	OpenSettingsToMogMount();
+end
+
+function MogMount:OpenKeybinds()
+	OpenKeybindingsToMogMount();
+end
+
 SLASH_MOGMOUNTZENSUNIM1 = "/mmz";
 SlashCmdList["MOGMOUNTZENSUNIM"] = function(msg)
 	local command = string.lower(string.match(msg or "", "^%s*(.-)%s*$"));
@@ -1319,15 +1327,13 @@ local function InitMountTab()
 
 		---
 
-		MountListSearchBox:SetScript("OnTextChanged", function()
+MountListSearchBox:SetScript("OnTextChanged", function(self)
+
+			if SearchBoxTemplate_OnTextChanged ~= nil then
+				SearchBoxTemplate_OnTextChanged(self);
+			end
 
 			MogMount.MountSearchString = MountListSearchBox:GetText();
-
-			if string.len(MogMount.MountSearchString) > 0 then
-				MountListSearchBox.Instructions:Hide();
-			else
-				MountListSearchBox.Instructions:Show();
-			end
 
 			local mounts = MogMount:getSortedFlyingMounts();
 

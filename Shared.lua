@@ -79,9 +79,9 @@ end
 
 function MogMount:listSearchString(name)
 
-	if MogMount.MountSearchString == "" or MogMount.MountSearchString == nil or string.len(MogMount.MountSearchString) < 2 then
+	if MogMount.MountSearchString == "" or MogMount.MountSearchString == nil or string.len(MogMount.MountSearchString) < 1 then
 		return true;
-	elseif string.len(MogMount.MountSearchString) >= 2 and string.find(name:lower(), MogMount.MountSearchString:lower()) then
+	elseif string.len(MogMount.MountSearchString) >= 1 and string.find(name:lower(), MogMount.MountSearchString:lower()) then
 		return true;
 	else
 		return false;
@@ -254,9 +254,9 @@ MogMount.HearthstoneToyItemIDs = {
 
 function MogMount:listHearthstoneSearchString(name)
 
-	if MogMount.HearthstoneSearchString == "" or MogMount.HearthstoneSearchString == nil or string.len(MogMount.HearthstoneSearchString) < 2 then
+	if MogMount.HearthstoneSearchString == "" or MogMount.HearthstoneSearchString == nil or string.len(MogMount.HearthstoneSearchString) < 1 then
 		return true;
-	elseif string.len(MogMount.HearthstoneSearchString) >= 2 and string.find(name:lower(), MogMount.HearthstoneSearchString:lower()) then
+	elseif string.len(MogMount.HearthstoneSearchString) >= 1 and string.find(name:lower(), MogMount.HearthstoneSearchString:lower()) then
 		return true;
 	else
 		return false;
