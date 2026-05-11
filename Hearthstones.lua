@@ -327,42 +327,6 @@ function ClearSelectedHearthstone()
 	SetSelectedHearthstone(1);
 end
 
--- Creates a "MogComp Hearth" macro (or edits the existing one) and puts it on the cursor
--- so the player can drag it to an action bar. The macro calls the secure button.
--- Cannot be created during combat (combat lockdown).
-local function CreateHearthstoneMacro(parent)
-	if InCombatLockdown and InCombatLockdown() then
-		print(L["Macro Combat Error"]);
-		return;
-	end
-
-	local macroId = false;
-
-	for i = 1, 120 do
-		if C_Macro.GetMacroName(i) == "MogComp Hearth" then
-			macroId = i;
-		end
-	end
-
-	EnsureHearthstoneSecureButton();
-	MogCompanionsPrepareHearthstone();
-
-	local macroBody = "#showtooltip Hearthstone\n/click MCHearthButton";
-
-	if not macroId then
-		macroId = CreateMacro("MogComp Hearth", MogCompanions.EmptyHearthstoneIcon, macroBody, nil);
-	else
-		EditMacro(macroId, "MogComp Hearth", MogCompanions.EmptyHearthstoneIcon, macroBody, nil);
-	end
-
-	PickupMacro(macroId);
-	ToggleHearthstoneReminder();
-
-	GameTooltip:SetOwner(parent, "ANCHOR_CURSOR_RIGHT");
-	GameTooltip:AddLine(L["Drop Hearthstone Macro Tooltip"], 1, 1, 1);
-	GameTooltip:Show();
-end
-
 -- Flushes and repopulates the HearthstoneDataProvider with the current toy list.
 -- Called after search text changes, outfit changes, or toy collection changes.
 local function RefreshHearthstoneList()
@@ -446,6 +410,42 @@ local function ToggleHearthstoneReminder()
 	end
 	HearthstoneShortcuts:Show();
 	HearthstonesSearchBox:Show();
+end
+
+-- Creates a "MogComp Hearth" macro (or edits the existing one) and puts it on the cursor
+-- so the player can drag it to an action bar. The macro calls the secure button.
+-- Cannot be created during combat (combat lockdown).
+local function CreateHearthstoneMacro(parent)
+	if InCombatLockdown and InCombatLockdown() then
+		print(L["Macro Combat Error"]);
+		return;
+	end
+
+	local macroId = false;
+
+	for i = 1, 120 do
+		if C_Macro.GetMacroName(i) == "MogComp Hearth" then
+			macroId = i;
+		end
+	end
+
+	EnsureHearthstoneSecureButton();
+	MogCompanionsPrepareHearthstone();
+
+	local macroBody = "#showtooltip Hearthstone\n/click MCHearthButton";
+
+	if not macroId then
+		macroId = CreateMacro("MogComp Hearth", MogCompanions.EmptyHearthstoneIcon, macroBody, nil);
+	else
+		EditMacro(macroId, "MogComp Hearth", MogCompanions.EmptyHearthstoneIcon, macroBody, nil);
+	end
+
+	PickupMacro(macroId);
+	ToggleHearthstoneReminder();
+
+	GameTooltip:SetOwner(parent, "ANCHOR_CURSOR_RIGHT");
+	GameTooltip:AddLine(L["Drop Hearthstone Macro Tooltip"], 1, 1, 1);
+	GameTooltip:Show();
 end
 
 -- ── Hearthstones Tab UI ─────────────────────────────────────────────────────────
