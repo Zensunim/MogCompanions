@@ -1,3 +1,22 @@
+-- Mounts.lua
+-- Contains all mount summon logic and the full mount UI inside the Transmog wardrobe.
+--
+-- Summon priority (MogMountSummon):
+--   1. Exit vehicle (CanExitVehicle)
+--   2. Dismount if already mounted
+--   3. Control + swimming → aquatic mount
+--   4. Shift → special/repair mount
+--   5. Alt → alternative mount
+--   6. Flyable area, no Control → flying mount
+--   7. Fallback → ground mount
+--
+-- UI sections:
+--   • Flying/ground mount slot icons in CharacterPreview.RightSlots (InitMountSlots)
+--   • Mounts tab in WardrobeCollection with model previews + scrollable lists (InitMountTab)
+--   • Setup reminder banner shown when no keybind or macro exists
+--
+-- SetSelectedFlyingMount / SetSelectedGroundMount are defined inside InitMountTab
+-- (they close over local scroll-box references) and are forward-declared at file scope.
 local _, addon = ...;
 local ns = select(2, ...);
 local MogMount = ns.MogMount;
@@ -28,6 +47,8 @@ MogMountSelectedMount = {}
 MogMountSelectedMount.Flying = {}
 MogMountSelectedMount.Ground = {}
 
+-- Returns race-appropriate placeholder icons for the flying and ground mount slots.
+-- Used when no mount has been selected (slot shows a desaturated icon).
 local function getEmptyMountIcon()
 	local factionName = UnitFactionGroup("Player");
 	local _, raceName, raceID = UnitRace("Player");
@@ -115,6 +136,9 @@ local function getEmptyMountIcon()
 	return emptyFlyingMountIcon, emptyGroundMountIcon;
 end
 
+-- ── Mount Summon Functions ──────────────────────────────────────────────────────
+-- Priority: per-outfit mount → default specific mount → random from category.
+-- All four helpers are called from MogMountSummon based on conditions.
 function MogMountSummonFlying()
 	if MogMountCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetActiveOutfitID()].Flying > 1 then
 		C_MountJournal.SummonByID(MogMountCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetActiveOutfitID()].Flying);
@@ -159,6 +183,9 @@ function MogMountSummonAlternative()
 	C_MountJournal.SummonByID(MogMountCharacterSaved.Default.Alternative);
 end
 
+-- Main mount/dismount entry point. Evaluates current state and modifier keys
+-- to determine which category to summon, then calls the appropriate helper.
+-- Also applies the per-outfit title after summoning via MogMount:UpdateTitle().
 function MogMountSummon()
 	if CanExitVehicle() then
 
@@ -199,6 +226,11 @@ function MogMountSummon()
 	MogMount:UpdateTitle();
 end
 
+-- ── Mount Slot UI (CharacterPreview) ─────────────────────────────────────────
+-- Creates the flying and ground mount slot icons beside the outfit preview.
+-- reset=true builds the frames (first call only); subsequent calls just refresh icons.
+-- Hooks OnEnter/OnLeave/OnMouseDown on the slot borders each time (reset=true only).
+-- Do NOT call during combat — creates and reparents frames.
 function MogMount:InitMountSlots(reset)
 	if reset then
 
@@ -453,6 +485,8 @@ function MogMount:InitMountSlots(reset)
 	end
 end
 
+-- Selection-changed callback for the flying mount ScrollBox.
+-- Toggles highlight lock on list rows to show/hide the selection state.
 local function OnFlyingMountSelectionChanged(self, data, selected)
 	local button = FlyingMountListScrollBox:FindFrame(data);
 	local children = {FlyingMountListScrollBox.ScrollTarget:GetChildren()};
@@ -472,6 +506,7 @@ local function OnFlyingMountSelectionChanged(self, data, selected)
 	end
 end
 
+-- Selection-changed callback for the ground mount ScrollBox.
 local function OnGroundMountSelectionChanged(self, data, selected)
 	local button = GroundMountListScrollBox:FindFrame(data);
 	local children = {GroundMountListScrollBox.ScrollTarget:GetChildren()};
@@ -492,6 +527,8 @@ local function OnGroundMountSelectionChanged(self, data, selected)
 	end
 end
 
+-- Returns true if the player has neither a MogMount keybind nor a MogMount macro
+-- on any action bar slot. Used to decide whether to show the setup reminder banner.
 function MissingKeybindOrMacro()
 	local key1, key2 = '', '';
 	key1, key2 = GetBindingKey("Mount/Dismount");
@@ -518,6 +555,7 @@ function MissingKeybindOrMacro()
 	return missingMacro and missingKeys;
 end
 
+-- ── Mount Tab UI Helpers ────────────────────────────────────────────────────────
 local function ToggleGroundMountIncludeFlying()
 	-- CheckboxShowFlyingInGroundList:IsSelected()
 end
@@ -552,6 +590,8 @@ local function FilterSetChecked(filter)
 	GroundMountListScrollBox:ScrollToElementDataIndex(scrollToIndex);
 end
 
+-- Shows/hides the setup reminder banner vs. the search/filter controls.
+-- Called on load and after the player drops the macro onto an action bar.
 local function ToggleReminder()
 	if MissingKeybindOrMacro() then
 		SetupReminderFrame:Show();
@@ -566,6 +606,8 @@ local function ToggleReminder()
 	end
 end
 
+-- Creates the "MogMount" macro (or edits the existing one) and puts it on the cursor
+-- for the player to drag to an action bar. Registers a one-shot event to detect the drop.
 local function CreateMacroButton(Parent)
 	macroId = false;
 
@@ -601,6 +643,7 @@ local function CreateMacroButton(Parent)
 	end)
 end
 
+-- Creates the gear dropdown (ShortcutSettings) with Settings / Keybinds / Macro buttons.
 local function CreateShortcuts(f)
 	local ShortcutSettings = CreateFrame("DropdownButton", "ShortcutSettings", f, "DamageMeterSettingsDropdownButtonTemplate");
 	ShortcutSettings:SetPoint("TOPRIGHT", f, "TOPRIGHT", -26, -22);
@@ -614,6 +657,9 @@ local function CreateShortcuts(f)
 	ShortcutSettings:Hide()
 end
 
+-- Builds the setup-reminder banner with a warning icon, explanatory text,
+-- and buttons to create the macro or open keybindings.
+-- SetupReminderFrame is a global (used by ToggleReminder) and stored at file scope.
 function CreateSetupReminder(f)
 	SetupReminderFrame = CreateFrame("Frame", SetupReminderFrame, f);
 	SetupReminderFrame:SetAllPoints(f);
@@ -653,6 +699,12 @@ function CreateSetupReminder(f)
 	end)
 end
 
+-- ── Mounts Tab UI (WardrobeCollection) ────────────────────────────────────────
+-- Creates the full Mounts tab inside WardrobeCollection on first call (idempotent).
+-- Contains: flying/ground model preview frames, scrollable mount lists, search box,
+-- filter dropdown (show flying in ground list), setup reminder, gear menu.
+-- SetSelectedFlyingMount and SetSelectedGroundMount are defined here as closures
+-- over the local scroll-box and data-provider references.
 function MogMount:InitMountTab()
 	if not TransmogFrame.WardrobeCollection.mountsTabID then
 
@@ -1147,6 +1199,8 @@ MountListSearchBox:SetScript("OnTextChanged", function(self)
 	ToggleReminder();
 end
 
+-- Resets the flying mount list selection and scrolls back to the top.
+-- Called after the player clears the flying mount slot.
 function ClearSelectedFlyingMount()
 	FlyingMountModel:SetAlpha(0);
 
@@ -1160,6 +1214,8 @@ function ClearSelectedFlyingMount()
 	FlyingMountListScrollBox:ScrollToElementDataIndex(1);
 end
 
+-- Resets the ground mount list selection and scrolls back to the top.
+-- Called after the player clears the ground mount slot.
 function ClearSelectedGroundMount()
 	GroundMountModel:SetAlpha(0);
 
@@ -1173,6 +1229,9 @@ function ClearSelectedGroundMount()
 	GroundMountListScrollBox:ScrollToElementDataIndex(1);
 end
 
+-- Re-selects and scrolls to the currently saved flying and ground mounts in both lists.
+-- Called from Core.lua after VIEWED_TRANSMOG_OUTFIT_CHANGED to sync the UI
+-- with the newly viewed outfit's saved mount selections.
 function UpdateSelectedMountRow()
 	if FlyingMountListScrollBox then
 

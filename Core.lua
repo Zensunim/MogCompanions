@@ -1,3 +1,9 @@
+-- Core.lua
+-- Main addon frame, event handling, and transmog-panel title UI.
+-- Owns: UpdateTitle, slash commands, the per-outfit title dropdown, keybind
+-- reminder helpers, and the PLAYER_ENTERING_WORLD / TRANSMOGRIFY_OPEN event loop.
+-- Summon logic lives in Mounts.lua. Mount slot + tab UI lives in Mounts.lua.
+-- Hearthstone UI lives in Hearthstones.lua. Settings live in Settings.lua.
 local addonName, addon = ...
 local ns = select(2,...)
 local MogMount = CreateFrame('Frame', 'MogMountAddonFrame', UIParent)
@@ -13,6 +19,9 @@ local titleLoaded = false;
 
 local TitleDropdown;
 
+-- Applies the saved per-outfit title for the currently active outfit.
+-- Called after mounting and after the player changes the title dropdown selection.
+-- A saved value of -1 clears the title; 0 is treated as "no change" by comparison.
 function MogMount:UpdateTitle()
 	local SavedCurrentTitle = -1;
 
@@ -25,10 +34,12 @@ function MogMount:UpdateTitle()
 	end
 end
 
+-- Called by Bindings.xml when the MogMount keybinding is pressed.
 function MogMountBindingClicked()
 	MogMountSummon();
 end
 
+-- ── Slash Commands ────────────────────────────────────────────────────────────
 local function PrintSlashHelp()
 	print("|cFF00CCFFMogMount-Zensunim commands:|r");
 	print("|cFFFFFFFF/mmz mount|r - "..L["Slash Help Mount"]);
@@ -65,10 +76,13 @@ SlashCmdList["MOGMOUNTZENSUNIM_MOUNT"] = function()
 	MogMountSummon();
 end
 
+-- ── Transmog Title Dropdown UI ──────────────────────────────────────────────
 local function OnSettingChanged(setting, value)
 	MogMountCharacterSaved[setting:GetVariable()] = value;
 end
 
+-- Formats a title ID into a displayable string for the dropdown button label.
+-- Mirrors the helper of the same name in Shared.lua but is local to Core.lua.
 local function CreateDisplayTitle(titleID)
 	local title, _ = GetTitleName(titleID);
 	local displayTitle = "";
@@ -86,6 +100,8 @@ local function CreateDisplayTitle(titleID)
 	return displayTitle;
 end
 
+-- Saves the chosen title for the currently viewed outfit and immediately applies it.
+-- value: title ID (0 = no title / bare player name).
 local function SetSelectedTitle(value)
 	titleLoaded = false;
 	TitleDropdown:SetDefaultText(CreateDisplayTitle(value));
@@ -94,6 +110,9 @@ local function SetSelectedTitle(value)
 	MogMount:UpdateTitle();
 end
 
+-- Creates the title DropdownButton inside TransmogFrame.CharacterPreview and
+-- populates it with all known titles. Also repositions the model scene control frame
+-- to make room for the dropdown. Only called once (on first outfit view, reset=true).
 local function GetTitles()
 	TitleDropdown = CreateFrame("DropdownButton", nil, TransmogFrame.CharacterPreview, "WowStyle1DropdownTemplate");
 
@@ -152,6 +171,9 @@ local function GetTitles()
 	end)
 end
 
+-- Opens the game's Keybindings panel and expands the MogMount section.
+-- Walks the Settings panel child frames to find and toggle the MogMount row.
+-- May break if Blizzard changes the Settings panel's internal frame hierarchy.
 local function OpenKeybindingsToMogMount()
 	Settings.OpenToCategory(Settings.KEYBINDINGS_CATEGORY_ID, "MogMount");
 	children = {SettingsPanel.Container.SettingsList.ScrollBox.ScrollTarget:GetChildren()}
@@ -176,6 +198,9 @@ function MogMount:OpenKeybinds()
 	OpenKeybindingsToMogMount();
 end
 
+-- Called on VIEWED_TRANSMOG_OUTFIT_CHANGED to refresh the title dropdown.
+-- reset=true on the very first outfit view; rebuilds the dropdown from scratch (GetTitles).
+-- reset=false on subsequent outfit changes; updates the label and regenerates the menu.
 local function InitTitles(reset)
 	if not reset then
 
@@ -194,6 +219,12 @@ local function InitTitles(reset)
 	end
 end
 
+-- ── Addon Event Handler ──────────────────────────────────────────────────────
+-- PLAYER_ENTERING_WORLD (once): initializes MogMountCharacterSaved and MogMountSaved
+--   with defaults if they don't exist, and migrates any missing fields.
+-- VIEWED_TRANSMOG_OUTFIT_CHANGED: refreshes mount slots and title dropdown for the
+--   newly viewed outfit. firstLoad=true triggers full UI construction.
+-- TRANSMOGRIFY_OPEN: defers mount tab creation by 0.1 s to allow Blizzard UI to settle.
 function MogMount:OnEvent(event, addOnName)
 	if event == "PLAYER_ENTERING_WORLD" and not loaded then
 

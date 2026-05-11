@@ -1,3 +1,10 @@
+-- Settings.lua
+-- Registers all MogMount user options with the Retail Settings API.
+-- Adds a "MogMount" category to the game's Settings panel with:
+--   • Default mounts (flying, ground, aquatic, special/repair, alternative)
+--   • Per-outfit overrides: character title, flying mount, ground mount
+-- All user-facing strings come from Locales/enUS.lua via MogMountLocales.
+-- MogMountSettingsCategoryID is a global used by Core.lua to open the panel.
 local _, addon = ...;
 local ns = select(2,...);
 local MogMount = ns.MogMount;
@@ -10,6 +17,10 @@ local transmogs = {};
 
 MogMountSettingsCategoryID = 0;
 
+-- ── Default Mount Dropdown Data Providers ───────────────────────────────────
+-- Each GetOptionsXxx function returns a Settings control data container used by
+-- Settings.CreateDropdown. Entry 0 = "Random" for default mounts;
+-- entry 1 = "Default" for per-outfit overrides.
 local function GetOptionsFlyingMount()
 	local container = Settings.CreateControlTextContainer();
 
@@ -121,10 +132,15 @@ local function GetOptionsAlternativeMount()
 	return container:GetData();
 end
 
+-- Stub; actual persistence is handled by the Settings API variable binding.
+-- Extend this function if side-effects are needed when any setting changes.
 local function OnSettingChanged()
 	--
 end
 
+-- Registers all MogMount settings and creates the Settings panel layout.
+-- Called once from PLAYER_ENTERING_WORLD. Reads all current outfit info at that point
+-- to build per-outfit title and mount dropdowns for each transmog outfit.
 local function InitSettings()
 	local outfits = C_TransmogOutfitInfo.GetOutfitsInfo();
 
@@ -328,6 +344,9 @@ local function InitSettings()
 	Settings.RegisterAddOnCategory(category);
 end
 
+-- ── Settings Frame Event Handler ──────────────────────────────────────────
+-- Waits for PLAYER_ENTERING_WORLD so that saved variables are loaded
+-- before InitSettings tries to read MogMountCharacterSaved.
 function MogMountSettings:OnEvent(event, addOnName)
 	if event == "PLAYER_ENTERING_WORLD" and not settingsLoaded then
 

@@ -1,3 +1,7 @@
+-- Locales/enUS.lua
+-- Default English localization strings for MogMount-Zensunim.
+-- All user-facing strings are stored here and referenced as L["key"].
+-- To add another locale, create a new file in Locales/ and load it from Localization.xml.
 local L = MogMountLocales;
 
 -- Core

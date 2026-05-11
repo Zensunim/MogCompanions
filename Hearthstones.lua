@@ -1,3 +1,15 @@
+-- Hearthstones.lua
+-- Manages the Hearthstone toy slot and the Hearthstones tab inside the Transmog wardrobe.
+--
+-- Key responsibilities:
+--   • HearthstoneSecureButton — a hidden SecureActionButtonTemplate that fires the toy;
+--     must be configured outside combat because of protected frame rules.
+--   • Hearthstone slot icon (alongside the mount slots in CharacterPreview.RightSlots).
+--   • Hearthstones tab in WardrobeCollection (scrollable toy list, search box, gear menu).
+--
+-- Events handled: PLAYER_ENTERING_WORLD, TOYS_UPDATED, TRANSMOG_COLLECTION_UPDATED,
+-- PLAYER_REGEN_ENABLED (retries pending item set after combat), GET_ITEM_INFO_RECEIVED,
+-- VIEWED_TRANSMOG_OUTFIT_CHANGED, TRANSMOG_DISPLAYED_OUTFIT_CHANGED.
 local _, addon = ...;
 local ns = select(2,...);
 local MogMount = ns.MogMount;
@@ -22,6 +34,8 @@ local HearthstonePendingItemID;
 MogMount.HearthstoneSearchString = "";
 MogMountSelectedHearthstone = {};
 
+-- ── Outfit Accessors ────────────────────────────────────────────────────────────
+-- Nil-safe wrappers around C_TransmogOutfitInfo. Returns nil if the API is unavailable.
 local function GetViewedOutfitID()
 	if C_TransmogOutfitInfo and C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID then
 		return C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID();
@@ -38,6 +52,8 @@ local function GetActiveOutfitID()
 	return nil;
 end
 
+-- Returns the saved-variable table for the given outfitID,
+-- creating an empty entry via CreateEmptyOutfit if it doesn't exist yet.
 local function GetOutfitTable(outfitID)
 	if outfitID == nil or MogMountCharacterSaved == nil then
 		return nil;
@@ -48,6 +64,8 @@ local function GetOutfitTable(outfitID)
 	return MogMountCharacterSaved["Outfit"..outfitID];
 end
 
+-- Returns a toy info table for the hearthstone pinned to the given outfit,
+-- or nil if none is pinned or the toy is no longer collected.
 local function GetSelectedHearthstoneToy(outfitID)
 	local outfit = GetOutfitTable(outfitID);
 
@@ -58,6 +76,9 @@ local function GetSelectedHearthstoneToy(outfitID)
 	return nil;
 end
 
+-- ── Secure Button Management ────────────────────────────────────────────────
+-- Creates the invisible SecureActionButtonTemplate button used to fire hearthstone toys.
+-- Must be created once and reused; do NOT recreate in combat (combat lockdown).
 local function EnsureHearthstoneSecureButton()
 	if HearthstoneSecureButton ~= nil then
 		return;
@@ -77,6 +98,9 @@ local function EnsureHearthstoneSecureButton()
 	HearthstoneSecureButton:Show();
 end
 
+-- Returns the item ID to use for the secure button for the given outfit.
+-- Prefers a pinned toy (outfit.Hearthstone > 1). Falls back to a random collected toy.
+-- Returns nil if no hearthstone toys are collected at all.
 local function GetHearthstoneItemIDForOutfit(outfitID)
 	local outfit = GetOutfitTable(outfitID);
 
@@ -93,6 +117,9 @@ local function GetHearthstoneItemIDForOutfit(outfitID)
 	return nil;
 end
 
+-- Sets the secure button's toy attribute to the toy matching itemID.
+-- If in combat, stores itemID in HearthstonePendingItemID and retries on PLAYER_REGEN_ENABLED.
+-- Returns false if deferred due to combat, true on success.
 local function SetHearthstoneSecureButtonItem(itemID)
 	EnsureHearthstoneSecureButton();
 
@@ -119,6 +146,7 @@ local function SetHearthstoneSecureButtonItem(itemID)
 	return true;
 end
 
+-- Refreshes the secure button with the correct toy for the currently active outfit.
 local function RefreshHearthstoneSecureButton()
 	local itemID = GetHearthstoneItemIDForOutfit(GetActiveOutfitID());
 	SetHearthstoneSecureButtonItem(itemID);
@@ -126,6 +154,8 @@ end
 
 local hearthstonePostClickRegistered = false;
 
+-- Registers a PostClick handler on the secure button that re-randomizes the toy
+-- after each press (only when no specific toy is pinned to the current outfit).
 local function EnsureHearthstonePostClick()
 	if hearthstonePostClickRegistered then
 		return;
@@ -146,6 +176,9 @@ local function EnsureHearthstonePostClick()
 	end);
 end
 
+-- Public entry point called from macros / external code.
+-- Resolves the correct toy for the active outfit and arms the secure button.
+-- Prints a localized error if no toys are collected.
 function MogMountPrepareHearthstone()
 	local itemID = GetHearthstoneItemIDForOutfit(GetActiveOutfitID());
 
@@ -158,6 +191,8 @@ function MogMountPrepareHearthstone()
 	SetHearthstoneSecureButtonItem(itemID);
 end
 
+-- Updates MogMountSelectedHearthstone with the name/icon/id of the given toy.
+-- Set to nil fields when itemID is invalid or the toy info is unavailable.
 local function UpdateSelectedHearthstoneDetails(itemID)
 	if itemID == nil or itemID <= 1 then
 		MogMountSelectedHearthstone.name = nil;
@@ -180,6 +215,8 @@ local function UpdateSelectedHearthstoneDetails(itemID)
 	MogMountSelectedHearthstone.id = toy.id;
 end
 
+-- Refreshes the hearthstone slot icon in the transmog panel based on the viewed outfit.
+-- Shows the pinned toy icon (blue border) or the desaturated fallback icon.
 local function UpdateHearthstoneSlot()
 	if HearthstoneFrame == nil or HearthstoneTexture == nil then
 		return;
@@ -219,6 +256,8 @@ local function UpdateHearthstoneSlot()
 	HearthstoneFrame.texture = HearthstoneTexture;
 end
 
+-- Saves the chosen hearthstone toy for the currently viewed outfit and refreshes the UI.
+-- itemID = 1 means "clear" (fall back to random).
 local function SetSelectedHearthstone(itemID)
 	local outfitID = GetViewedOutfitID();
 	local outfit = GetOutfitTable(outfitID);
@@ -236,6 +275,9 @@ function ClearSelectedHearthstone()
 	SetSelectedHearthstone(1);
 end
 
+-- Creates a "MogMount HS" macro (or edits the existing one) and puts it on the cursor
+-- so the player can drag it to an action bar. The macro calls the secure button.
+-- Cannot be created during combat (combat lockdown).
 local function CreateHearthstoneMacro(parent)
 	if InCombatLockdown and InCombatLockdown() then
 		print(L["Macro Combat Error"]);
@@ -268,6 +310,8 @@ local function CreateHearthstoneMacro(parent)
 	GameTooltip:Show();
 end
 
+-- Flushes and repopulates the HearthstoneDataProvider with the current toy list.
+-- Called after search text changes, outfit changes, or toy collection changes.
 local function RefreshHearthstoneList()
 	if HearthstoneDataProvider == nil then
 		return;
@@ -282,6 +326,10 @@ local function RefreshHearthstoneList()
 	end
 end
 
+-- ── Hearthstones Tab UI ─────────────────────────────────────────────────────────
+-- Creates the full Hearthstones tab frame inside WardrobeCollection.TabContent.
+-- Idempotent: returns early if HearthstonesPage already exists.
+-- Contains: search box, gear dropdown, section title, scrollable toy list + scrollbar.
 function MogMount:CreateHearthstonesFrame(collection, referenceFrame)
 	if HearthstonesPage ~= nil then
 		return HearthstonesPage;
@@ -401,6 +449,9 @@ function MogMount:CreateHearthstonesFrame(collection, referenceFrame)
 	return HearthstonesPage;
 end
 
+-- ── Hearthstone Slot Icon (Outfit Panel) ──────────────────────────────────────
+-- Creates the clickable hearthstone slot icon that sits beside the mount slots
+-- in the transmog CharacterPreview panel. Only created once (guarded by HearthstoneFrame nil check).
 local function CreateHearthstoneSlot()
 	if HearthstoneFrame ~= nil or _G.MogMountFrame == nil then
 		return;
@@ -496,6 +547,9 @@ local function CreateHearthstoneSlot()
 	UpdateHearthstoneSlot();
 end
 
+-- ── Initialization ────────────────────────────────────────────────────────────
+-- Ensures saved-variable entries exist for all known outfits.
+-- Defensive guard run before UI creation to avoid nil-access on outfit tables.
 local function EnsureOutfitHearthstoneSaved()
 	if MogMountCharacterSaved == nil or C_TransmogOutfitInfo == nil or C_TransmogOutfitInfo.GetOutfitsInfo == nil then
 		return;
@@ -523,6 +577,9 @@ local function EnsureOutfitHearthstoneSaved()
 	end
 end
 
+-- Runs the full hearthstone initialization sequence:
+-- slot icon, tab frame, secure button, post-click handler, data refresh.
+-- Called with C_Timer delays to let Blizzard's WardrobeCollection load first.
 local function InitializeHearthstones()
 	if TransmogFrame == nil or TransmogFrame.WardrobeCollection == nil then
 		return;
@@ -540,6 +597,8 @@ local function InitializeHearthstones()
 	HearthstonesInitialized = true;
 end
 
+-- Schedules two initialization attempts (0.25 s and 0.75 s) to handle the race
+-- between addon load and Blizzard's deferred UI construction.
 local function ScheduleInitializeHearthstones()
 	C_Timer.After(0.25, InitializeHearthstones);
 	C_Timer.After(0.75, InitializeHearthstones);
@@ -587,6 +646,7 @@ end
 
 HookTransmogFrame();
 
+-- Shows the Hearthstones tab page and refreshes the list.
 function MogMount:ShowHearthstonesPage()
 	if HearthstonesPage == nil then
 		if TransmogFrame ~= nil and TransmogFrame.WardrobeCollection ~= nil then

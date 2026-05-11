@@ -1,13 +1,21 @@
+-- Shared.lua
+-- Shared helpers consumed by Core.lua, Mounts.lua, Hearthstones.lua, and Settings.lua.
+-- Contains: mount collection queries, sorting/filtering, random selection,
+-- hearthstone toy helpers, title helpers, and saved-variable outfit initialization.
+-- Mount category logic (flying/ground/aquatic/special/alternative) is centralized here.
 local _, addon = ...;
 local ns = select(2,...);
 local MogMount = ns.MogMount;
 
 local playerName = UnitName("player");
 
+-- Sorts a table of objects with a .name field alphabetically (case-insensitive).
+-- Used as the comparator for table.sort throughout the addon.
 function MogMountSortAlphabetical(a, b)
 	return a.name:lower() < b.name:lower();
 end
 
+-- Returns true if 'value' exists anywhere in the given array table.
 function MogMount:hasValue(table, value)
 	for i, v in ipairs(table) do
 		if v == value then
@@ -18,6 +26,8 @@ function MogMount:hasValue(table, value)
 	return false;
 end
 
+-- Returns an array of all collected, visible mount IDs for this character.
+-- Excludes mounts hidden on this character (shouldHideOnChar).
 function MogMount:GetCollectedMounts()
 	local collectedMounts = {};
 	local mountIDs = C_MountJournal.GetMountIDs();
@@ -32,6 +42,9 @@ function MogMount:GetCollectedMounts()
 	return collectedMounts;
 end
 
+-- Converts a raw array of mount IDs into a sorted array of mount info tables.
+-- Each entry: { name, icon, nameAndIcon, id, model (creatureDisplayInfoID), mountTypeID }.
+-- Filters to only collected + usable mounts, then sorts alphabetically.
 function MogMount:sortMounts(mountsRaw)
 	local mounts = {};
 
@@ -59,6 +72,8 @@ function MogMount:sortMounts(mountsRaw)
 	return mounts;
 end
 
+-- Returns true if the mount name contains MogMount.MountSearchString (case-insensitive),
+-- or if the search filter is empty or nil. Used to filter the visible mount list rows.
 function MogMount:listSearchString(name)
 	if MogMount.MountSearchString == "" or MogMount.MountSearchString == nil or string.len(MogMount.MountSearchString) < 1 then
 		return true;
@@ -69,6 +84,8 @@ function MogMount:listSearchString(name)
 	end
 end
 
+-- Returns a filtered, alphabetically sorted list of collected Dragonriding/flying mounts
+-- that match the current MountSearchString filter.
 function MogMount:getSortedFlyingMounts()
 	local mountsRaw = MogMount:sortMounts(C_MountJournal.GetCollectedDragonridingMounts());
 	local mounts = {};
@@ -83,6 +100,8 @@ function MogMount:getSortedFlyingMounts()
 	return mounts;
 end
 
+-- Returns a filtered, alphabetically sorted list of collected ground mounts (mountTypeID 230).
+-- If MogMountSaved.ShowFlyingInGround is true, flying mounts are also included.
 function MogMount:getSortedGroundMounts()
 	local mountsRaw = MogMount:sortMounts(MogMount:GetCollectedMounts());
 	local mounts = {};
@@ -97,6 +116,8 @@ function MogMount:getSortedGroundMounts()
 	return mounts;
 end
 
+-- Returns collected aquatic mounts matched by mountTypeID.
+-- Aquatic type IDs: 231, 232, 254, 407, 436. No search filter applied.
 function MogMount:getSortedAquaticMounts()
 	local mountsRaw = MogMount:sortMounts(MogMount:GetCollectedMounts());
 	local mounts = {};
@@ -112,6 +133,9 @@ function MogMount:getSortedAquaticMounts()
 	return mounts;
 end
 
+-- Returns collected repair/vendor/utility mounts matched by hardcoded mount ID.
+-- IDs: 460 (Grand Expedition Yak), 280 (Traveler's Tundra Mammoth), 284, 273, 274, 1039, 2237.
+-- Update this list when Blizzard adds new vendor mounts.
 function MogMount:getSortedSpecialMounts()
 	local mountsRaw = MogMount:sortMounts(MogMount:GetCollectedMounts());
 	local mounts = {};
@@ -127,6 +151,8 @@ function MogMount:getSortedSpecialMounts()
 	return mounts;
 end
 
+-- Returns all collected mounts (no category filter, no search filter).
+-- Used for the Alt-key alternative mount slot — the player can assign anything here.
 function MogMount:getSortedAlternativeMounts()
 	local mountsRaw = MogMount:sortMounts(MogMount:GetCollectedMounts());
 	local mounts = {};
@@ -139,6 +165,9 @@ function MogMount:getSortedAlternativeMounts()
 	return mounts;
 end
 
+-- Returns a random mount table from the specified category string.
+-- type: "flying" | "ground" | "aquatic" | "special" | "alternative"
+-- Returns nil if the category list is empty (safe to call with no mounts collected).
 function MogMount:getRandomMount(type)
 	local mounts = {}
 
@@ -165,6 +194,8 @@ function MogMount:getRandomMount(type)
 	return mounts[rand];
 end
 
+-- ── Hearthstone Toy Helpers ──────────────────────────────────────────────────
+-- Fallback icon (plain Hearthstone) shown when no toy info is available yet.
 MogMount.EmptyHearthstoneIcon = 134414;
 MogMount.HearthstoneToyItemIDs = {
     64488,  -- The Innkeeper's Daughter
@@ -204,6 +235,8 @@ MogMount.HearthstoneToyItemIDs = {
     265100, -- Corewarden's Hearthstone
 };
 
+-- Returns true if the toy name contains HearthstoneSearchString (case-insensitive),
+-- or if the filter is empty. Used to filter the Hearthstones tab list.
 function MogMount:listHearthstoneSearchString(name)
 	if MogMount.HearthstoneSearchString == "" or MogMount.HearthstoneSearchString == nil or string.len(MogMount.HearthstoneSearchString) < 1 then
 		return true;
@@ -214,6 +247,7 @@ function MogMount:listHearthstoneSearchString(name)
 	end
 end
 
+-- Returns true if the player owns the given hearthstone toy itemID.
 function MogMount:IsHearthstoneToyCollected(itemID)
 	if itemID == nil or itemID <= 1 then
 		return false;
@@ -226,6 +260,9 @@ function MogMount:IsHearthstoneToyCollected(itemID)
 	return false;
 end
 
+-- Returns a toy info table { name, icon, nameAndIcon, id } for a hearthstone toy itemID.
+-- Falls back from C_ToyBox to C_Item/GetItemInfo for compatibility.
+-- Returns nil if item data is not yet loaded; async load is requested automatically.
 function MogMount:GetHearthstoneToyInfo(itemID)
 	if itemID == nil or itemID <= 1 then
 		return nil;
@@ -269,6 +306,9 @@ function MogMount:GetHearthstoneToyInfo(itemID)
 	return toy;
 end
  
+-- Returns collected hearthstone toys, sorted alphabetically.
+-- If ignoreSearch is true, the HearthstoneSearchString filter is bypassed
+-- (used when picking a random toy so all collected toys are eligible).
 function MogMount:getSortedHearthstoneToys(ignoreSearch)
 	local toys = {};
 
@@ -289,6 +329,8 @@ function MogMount:getSortedHearthstoneToys(ignoreSearch)
 	return toys;
 end
 
+-- Returns a random collected hearthstone toy, ignoring the search filter.
+-- Returns nil if no hearthstone toys are collected.
 function MogMount:getRandomHearthstoneToy()
 	local toys = MogMount:getSortedHearthstoneToys(true);
 
@@ -301,6 +343,9 @@ function MogMount:getRandomHearthstoneToy()
 	return toys[rand];
 end
 
+-- ── Title Helpers ────────────────────────────────────────────────────────────
+-- Formats a title ID into a displayable string: "Title PlayerName" or "PlayerName Title".
+-- titleID 0 returns the bare player name (represents the "no title" selection).
 local function CreateDisplayTitle(titleID)
 	local title, _ = GetTitleName(titleID);
 	local displayTitle = "";
@@ -318,6 +363,8 @@ local function CreateDisplayTitle(titleID)
 	return displayTitle;
 end
 
+-- Returns all known player titles as an alphabetically sorted array of { id, name } tables.
+-- Used to populate title dropdowns in the transmog UI and Settings panel.
 function MogMount:getSortedTitles()
 	local titlesRaw = {}
 	local count = 1;
@@ -336,6 +383,8 @@ function MogMount:getSortedTitles()
 	return titlesRaw;
 end
 
+-- Populates MogMountSelectedMount[type] with full info for the given mount ID.
+-- type: "Flying" | "Ground". Called when the player picks a mount in the list UI.
 function MogMount:UpdateSelectMountDetails(type, id)
 	name, spellID, icon, isActive, isUsable, sourceType, isFavorite, isFactionSpecific, faction, shouldHideOnChar, isCollected, mountID, isSteadyFlight = C_MountJournal.GetMountInfoByID(id);
 	creatureDisplayInfoID, description, source, isSelfMount, mountTypeID, uiModelSceneID, animID, spellVisualKitID, disablePlayerMountPreview = C_MountJournal.GetMountInfoExtraByID(id);
@@ -348,6 +397,10 @@ function MogMount:UpdateSelectMountDetails(type, id)
 	MogMountSelectedMount[type].type = mountTypeID;
 end
 
+-- Ensures a saved-variable entry exists for outfit 'id' in MogMountCharacterSaved.
+-- Called defensively any time an outfit ID is encountered that may be new.
+-- Sentinel values: Flying/Ground/Hearthstone = 1 means "use default"; Title = 0 means "no title".
+-- Safe to call multiple times; only writes when the entry is missing or incomplete.
 function MogMount:CreateEmptyOutfit(id)
 	if MogMountCharacterSaved ~= nil and MogMountCharacterSaved["Outfit"..id] == nil then
 		MogMountCharacterSaved["Outfit"..id] = {};
