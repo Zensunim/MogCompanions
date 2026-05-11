@@ -70,8 +70,11 @@ local function EnsureHearthstoneSecureButton()
 	HearthstoneSecureButton:SetPoint("CENTER", UIParent, "CENTER", 0, 0);
 	HearthstoneSecureButton:SetAlpha(0);
 	HearthstoneSecureButton:EnableMouse(false);
-	HearthstoneSecureButton:SetAttribute("type", "macro");
-	HearthstoneSecureButton:SetAttribute("macrotext", nil);
+	HearthstoneSecureButton:RegisterForClicks("AnyDown");
+	HearthstoneSecureButton:SetAttribute("pressAndHoldAction", true);
+	HearthstoneSecureButton:SetAttribute("type", "toy");
+	HearthstoneSecureButton:SetAttribute("typerelease", "toy");
+	HearthstoneSecureButton:SetAttribute("toy", nil);
 	HearthstoneSecureButton:Show();
 end
 
@@ -99,12 +102,17 @@ local function SetHearthstoneSecureButtonItem(itemID)
 		return false;
 	end
 
-	HearthstoneSecureButton:SetAttribute("type", "macro");
-
 	if itemID ~= nil then
-		HearthstoneSecureButton:SetAttribute("macrotext", "/use item:"..itemID);
+		local toy = MogMount:GetHearthstoneToyInfo(itemID);
+		if toy ~= nil and toy.name ~= nil then
+			HearthstoneSecureButton:SetAttribute("type", "toy");
+			HearthstoneSecureButton:SetAttribute("toy", toy.name);
+		else
+			-- Item data not yet loaded; will retry via GET_ITEM_INFO_RECEIVED
+			HearthstoneSecureButton:SetAttribute("toy", nil);
+		end
 	else
-		HearthstoneSecureButton:SetAttribute("macrotext", nil);
+		HearthstoneSecureButton:SetAttribute("toy", nil);
 	end
 
 	HearthstonePendingItemID = nil;
@@ -224,7 +232,7 @@ local function CreateHearthstoneMacro(parent)
 	EnsureHearthstoneSecureButton();
 	MogMountPrepareHearthstone();
 
-	local macroBody = "#showtooltip Hearthstone\n/run MogMountPrepareHearthstone()\n/click MogMountHearthstoneSecureButton";
+	local macroBody = "#showtooltip Hearthstone\n/click MogMountHearthstoneSecureButton";
 
 	if not macroId then
 		macroId = CreateMacro("MogMount HS", MogMount.EmptyHearthstoneIcon, macroBody, nil);
