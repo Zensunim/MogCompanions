@@ -1249,7 +1249,9 @@ function UpdateSelectedMountRow()
 				children = {FlyingMountListScrollBox.ScrollTarget:GetChildren()};
 				for j, child in ipairs(children) do
 					if child.MountID == mount.id then
-						FlyingMountSelectionBehavior:Select(child);
+						if child:GetElementData() ~= nil then
+							FlyingMountSelectionBehavior:Select(child);
+						end
 						if mount.model ~= nil then
 							FlyingMountModel:SetDisplayInfo(mount.model);
 							FlyingMountModel:SetAlpha(1);
@@ -1275,7 +1277,9 @@ function UpdateSelectedMountRow()
 				children = {GroundMountListScrollBox.ScrollTarget:GetChildren()};
 				for j, child in ipairs(children) do
 					if child.MountID == mount.id then
-						GroundMountSelectionBehavior:Select(child);
+						if child:GetElementData() ~= nil then
+							GroundMountSelectionBehavior:Select(child);
+						end
 						GroundMountModel:SetDisplayInfo(mount.model);
 						GroundMountModel:SetAlpha(1);
 					else
