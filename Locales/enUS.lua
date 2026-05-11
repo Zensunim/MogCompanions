@@ -28,6 +28,7 @@ L["Open Settings"] = "Open Options";
 L["Open Keybinds"] = "Open Keybinds";
 L["Create Macro"] = "Create Macro";
 L["Setup Reminder"] = "Set up a MogCompanions keybind and/or macro";
+L["Hearthstone Setup Reminder"] = "Set up a MogCompanions Hearthstone macro";
 L["Drop Macro Tooltip"] = "Drop this macro in |nyour action bar";
 L["Drop Hearthstone Macro Tooltip"] = "Drop this Hearthstone macro in |nyour action bar";
 L["Show Flying In Ground Toggle"] = "Show flying mounts in ground mount list";

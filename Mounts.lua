@@ -590,20 +590,17 @@ local function FilterSetChecked(filter)
 	GroundMountListScrollBox:ScrollToElementDataIndex(scrollToIndex);
 end
 
--- Shows/hides the setup reminder banner vs. the search/filter controls.
+-- Shows/hides the setup reminder banner based on whether the player has a MogCompanions keybind or macro set up.
 -- Called on load and after the player drops the macro onto an action bar.
 local function ToggleReminder()
 	if MissingKeybindOrMacro() then
 		SetupReminderFrame:Show();
-		ShortcutSettings:Hide();
-		MountListSearchBox:Hide();
-		FilterDropdown:Hide();
 	else
 		SetupReminderFrame:Hide();
-		ShortcutSettings:Show();
-		MountListSearchBox:Show();
-		FilterDropdown:Show();			
 	end
+	ShortcutSettings:Show();
+	MountListSearchBox:Show();
+	FilterDropdown:Show();
 end
 
 -- Creates the "MogComp Mount" macro (or edits the existing one) and puts it on the cursor
@@ -646,7 +643,7 @@ end
 -- Creates the gear dropdown (ShortcutSettings) with Settings / Keybinds / Macro buttons.
 local function CreateShortcuts(f)
 	local ShortcutSettings = CreateFrame("DropdownButton", "ShortcutSettings", f, "DamageMeterSettingsDropdownButtonTemplate");
-	ShortcutSettings:SetPoint("TOPRIGHT", f, "TOPRIGHT", -26, -22);
+	ShortcutSettings:SetPoint("TOPRIGHT", f, "TOPRIGHT", -26, -50);
 	ShortcutSettings:SetPoint("CENTER");
 	ShortcutSettings:SetupMenu(function(dropdown, rootDescription)
 		rootDescription:CreateTitle("MogCompanions");
@@ -747,7 +744,7 @@ function MogCompanions:InitMountTab()
 		-- Mount tab controls: filter dropdown, search box, setup reminder, and gear menu
 
 		FilterDropdown = CreateFrame("DropdownButton", nil, f, "WowStyle1FilterDropdownTemplate");
-		FilterDropdown:SetPoint("TOPRIGHT", f, "TOPRIGHT", -60, -24);
+		FilterDropdown:SetPoint("TOPRIGHT", f, "TOPRIGHT", -60, -50);
 		FilterDropdown:SetWidth(104);		
 		FilterDropdown.resizeToText = false;
 		FilterDropdown:SetupMenu(function(dropdown, rootDescription)
@@ -757,7 +754,7 @@ function MogCompanions:InitMountTab()
 		---		
 
 		MountListSearchBox = CreateFrame("EditBox", "MountListSearchBox", f, "TransmogSearchBoxTemplate");
-		MountListSearchBox:SetPoint("TOPRIGHT", -174, -23); --- -32, -444
+		MountListSearchBox:SetPoint("TOPRIGHT", -174, -50); --- -32, -444
 
 		local iconPostion, iconParent, iconParentPostion, iconX, iconY = MountListSearchBox.searchIcon:GetPoint();
 		MountListSearchBox.searchIcon:SetPoint(iconPostion, iconParent, iconParentPostion, iconX, iconY + 1);
@@ -773,7 +770,7 @@ function MogCompanions:InitMountTab()
 
 		local FlyingSlotTitle = f:CreateFontString(nil, "OVERLAY", "GameFontHighlightHuge");
 		FlyingSlotTitle:SetJustifyH("LEFT");
-		FlyingSlotTitle:SetPoint("TOPLEFT", 24, -58);
+		FlyingSlotTitle:SetPoint("TOPLEFT", 24, -76);
 		FlyingSlotTitle:SetText(L["Mount Tab Flying Section Title"]);
 
 		local FlyingSlotTitleDivider = f:CreateTexture();

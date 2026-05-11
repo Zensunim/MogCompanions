@@ -39,6 +39,14 @@ function MogCompanionsBindingClicked()
 	MogCompanionsSummon();
 end
 
+-- Called by Bindings.xml when the MogCompanions Hearthstone keybinding is pressed.
+function MogCompanionsHearthstoneBindingClicked()
+	MogCompanionsPrepareHearthstone();
+	if MCHearthButton then
+		MCHearthButton:Click();
+	end
+end
+
 -- ── Slash Commands ────────────────────────────────────────────────────────────
 local function PrintSlashHelp()
 	print("|cFF00CCFFMogCompanions commands:|r");
@@ -71,7 +79,7 @@ SlashCmdList["MOGCOMPANIONS"] = function(msg)
 	end
 end
 
-SLASH_MOGCOMPANIONS_MOUNT1 = "/mcompm";
+SLASH_MOGCOMPANIONS_MOUNT1 = "/mcmt";
 SlashCmdList["MOGCOMPANIONS_MOUNT"] = function()
 	MogCompanionsSummon();
 end
