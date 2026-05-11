@@ -545,7 +545,7 @@ function MissingKeybindOrMacro()
 			local actionType, actionId, macroIndex = GetActionInfo(i);
 			if actionType == 'macro' then
 				local currentMacroName, _, _ = GetMacroInfo(actionId);
-				if currentMacroName == "MogCompanions" then
+				if currentMacroName == "MogComp Mount" then
 					missingMacro = false;
 				end
 			end
@@ -606,19 +606,19 @@ local function ToggleReminder()
 	end
 end
 
--- Creates the "MogCompanions" macro (or edits the existing one) and puts it on the cursor
+-- Creates the "MogComp Mount" macro (or edits the existing one) and puts it on the cursor
 -- for the player to drag to an action bar. Registers a one-shot event to detect the drop.
 local function CreateMacroButton(Parent)
 	macroId = false;
 
 	for i = 1, 120 do
-		if C_Macro.GetMacroName(i) == "MogCompanions" then
+		if C_Macro.GetMacroName(i) == "MogComp Mount" then
 			macroId = i;
 		end
 	end
 
 	if not macroId then
-		macroId = CreateMacro("MogCompanions", 1769015, "/mmz mount", nil);
+		macroId = CreateMacro("MogComp Mount", 1769015, "/mcomp mount", nil);
 	end
 
 	MogCompanionsSaved["MacroID"] = macroId;

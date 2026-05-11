@@ -84,7 +84,7 @@ local function EnsureHearthstoneSecureButton()
 		return;
 	end
 
-	HearthstoneSecureButton = CreateFrame("Button", "MogCompanionsHearthstoneSecureButton", UIParent, "SecureActionButtonTemplate");
+	HearthstoneSecureButton = CreateFrame("Button", "MCHearthButton", UIParent, "SecureActionButtonTemplate");
 	HearthstoneSecureButton:SetParent(UIParent);
 	HearthstoneSecureButton:SetSize(1, 1);
 	HearthstoneSecureButton:SetPoint("CENTER", UIParent, "CENTER", 0, 0);
@@ -295,7 +295,7 @@ local function CreateHearthstoneMacro(parent)
 	EnsureHearthstoneSecureButton();
 	MogCompanionsPrepareHearthstone();
 
-	local macroBody = "#showtooltip Hearthstone\n/click MogCompanionsHearthstoneSecureButton";
+	local macroBody = "#showtooltip Hearthstone\n/click MCHearthButton";
 
 	if not macroId then
 		macroId = CreateMacro("MogCompanions HS", MogCompanions.EmptyHearthstoneIcon, macroBody, nil);
