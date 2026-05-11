@@ -4,9 +4,6 @@
             MogCompanionsBindingClicked();
         end
     </Binding>
-    <Binding name="Use Hearthstone" runOnUp="true" default="" category="MogCompanions">
-        if keystate == "down" then
-            MogCompanionsHearthstoneBindingClicked();
-        end
+    <Binding name="CLICK MCHearthButton:LeftButton" default="" category="MogCompanions">
     </Binding>
 </Bindings>

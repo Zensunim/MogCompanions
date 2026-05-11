@@ -11,6 +11,8 @@ local MogCompanions = CreateFrame('Frame', 'MogCompanionsAddonFrame', UIParent)
 ns.MogCompanions = MogCompanions;
 local L = MogCompanionsLocales;
 
+_G["BINDING_NAME_CLICK MCHearthButton:LeftButton"] = L["Use Hearthstone"] or "Use Hearthstone";
+
 local playerName = UnitName("player");
 local transmogs = {};
 local loaded = false;
@@ -50,9 +52,8 @@ function MogCompanionsBindingClicked()
 	MogCompanionsSummon();
 end
 
--- Called by Bindings.xml when the MogCompanions Hearthstone keybinding is pressed.
--- Note: the key is re-routed via SetBindingClick to MCHearthButton directly;
--- this function fires only if SyncHearthstoneKeybind has not yet run (e.g., very early load).
+-- Legacy entry point; no longer called by Bindings.xml (the binding is now a direct
+-- CLICK MCHearthButton:LeftButton secure binding). Kept as a callable global for macros.
 function MogCompanionsHearthstoneBindingClicked()
 	MogCompanionsPrepareHearthstone();
 end

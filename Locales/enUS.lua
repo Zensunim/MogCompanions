@@ -38,6 +38,7 @@ L["Show Flying In Ground Toggle"] = "Show flying mounts in ground mount list";
 L["Slash Help Mount"] = "Summon or dismount using MogCompanions";
 L["Slash Help Options"] = "Open the MogCompanions options panel";
 L["No Hearthstone Toys"] = "No Hearthstone toys are available.";
+L["Use Hearthstone"] = "Use Hearthstone";
 L["Macro Combat Error"] = "MogCompanions cannot create macros while you are in combat.";
 
 -- Settings

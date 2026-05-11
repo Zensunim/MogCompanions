@@ -156,7 +156,6 @@ end
 
 local hearthstonePostClickRegistered = false;
 local hearthstonePreClickRegistered = false;
-local hearthstoneBinding1, hearthstoneBinding2;
 
 -- Registers a PostClick handler on the secure button that re-randomizes the toy
 -- after each press (only when no specific toy is pinned to the current outfit).
@@ -195,37 +194,6 @@ local function EnsureHearthstonePreClick()
 			MogCompanionsPrepareHearthstone();
 		end
 	end);
-end
-
--- Binds the "Use Hearthstone" key directly to MCHearthButton via SetBindingClick.
--- Called on initialization and whenever UPDATE_BINDINGS fires.
--- This is required because Click() on a SecureActionButtonTemplate cannot be called
--- from tainted addon Lua; SetBindingClick bypasses that restriction.
-local function SyncHearthstoneKeybind()
-	if MCHearthButton == nil then
-		return;
-	end
-
-	-- Clear any previously registered click bindings
-	if hearthstoneBinding1 then
-		SetBinding(hearthstoneBinding1);
-		hearthstoneBinding1 = nil;
-	end
-	if hearthstoneBinding2 then
-		SetBinding(hearthstoneBinding2);
-		hearthstoneBinding2 = nil;
-	end
-
-	local key1, key2 = GetBindingKey("Use Hearthstone");
-
-	if key1 and key1 ~= "" then
-		SetBindingClick(key1, "MCHearthButton", "LeftButton");
-		hearthstoneBinding1 = key1;
-	end
-	if key2 and key2 ~= "" then
-		SetBindingClick(key2, "MCHearthButton", "LeftButton");
-		hearthstoneBinding2 = key2;
-	end
 end
 
 -- Public entry point called from macros / external code.
@@ -344,9 +312,9 @@ local function RefreshHearthstoneList()
 end
 
 -- Returns true if the "MogComp Hearth" macro does not exist and no keybind is set.
--- Keybind binding name matches the Bindings.xml entry "BINDING_NAME_USE HEARTHSTONE".
+-- Checks the direct CLICK binding registered in Bindings.xml.
 local function MissingHearthstoneKeybindOrMacro()
-	local key1, key2 = GetBindingKey("Use Hearthstone");
+	local key1, key2 = GetBindingKey("CLICK MCHearthButton:LeftButton");
 	if key1 and key1 ~= "" then
 		return false;
 	end
@@ -718,7 +686,6 @@ local function InitializeHearthstones()
 	EnsureHearthstoneSecureButton();
 	EnsureHearthstonePreClick();
 	EnsureHearthstonePostClick();
-	SyncHearthstoneKeybind();
 	RefreshHearthstoneSecureButton();
 	UpdateHearthstoneSlot();
 	RefreshHearthstoneList();
@@ -741,13 +708,7 @@ HearthstoneEventFrame:RegisterEvent("PLAYER_REGEN_ENABLED");
 HearthstoneEventFrame:RegisterEvent("GET_ITEM_INFO_RECEIVED");
 HearthstoneEventFrame:RegisterEvent("VIEWED_TRANSMOG_OUTFIT_CHANGED");
 HearthstoneEventFrame:RegisterEvent("TRANSMOG_DISPLAYED_OUTFIT_CHANGED");
-HearthstoneEventFrame:RegisterEvent("UPDATE_BINDINGS");
 HearthstoneEventFrame:SetScript("OnEvent", function(self, event, ...)
-	if event == "UPDATE_BINDINGS" then
-		SyncHearthstoneKeybind();
-		return;
-	end
-
 	if event == "PLAYER_REGEN_ENABLED" and HearthstonePendingItemID ~= nil then
 		SetHearthstoneSecureButtonItem(HearthstonePendingItemID);
 	end
@@ -763,6 +724,7 @@ HearthstoneEventFrame:SetScript("OnEvent", function(self, event, ...)
 	ScheduleInitializeHearthstones();
 	UpdateHearthstoneSlot();
 	EnsureHearthstoneSecureButton();
+	EnsureHearthstonePreClick();
 	EnsureHearthstonePostClick();
 	RefreshHearthstoneSecureButton();
 	RefreshHearthstoneList();
