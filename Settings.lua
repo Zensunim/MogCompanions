@@ -28,9 +28,6 @@ local function GetOptionsFlyingMount()
 	for i = 1, #mounts do
 		local mount = mounts[i];
 		container:Add(mount.id, mount.nameAndIcon);
-		if mount.id == MogCompanionsCharacterSaved.Default.Flying then
-			-- defaultValue tracking removed (dead code)
-		end
 	end
 
 	return container:GetData();
@@ -46,9 +43,6 @@ local function GetOptionsGroundMount()
 	for i = 1, #mounts do
 		local mount = mounts[i];
 		container:Add(mount.id, mount.nameAndIcon);
-		if mount.id == MogCompanionsCharacterSaved.Default.Ground then
-			-- defaultValue tracking removed (dead code)
-		end
 	end
 
 	return container:GetData();
@@ -65,9 +59,6 @@ local function GetOptionsAquaticMount()
 		for i = 1, #mounts do
 			local mount = mounts[i];
 			container:Add(mount.id, mount.nameAndIcon);
-			if mount.id == MogCompanionsCharacterSaved.Default.Aquatic then
-				-- defaultValue tracking removed (dead code)
-			end
 		end
 
 	else 
@@ -90,9 +81,6 @@ local function GetOptionsSpecialMount()
 		for i = 1, #mounts do
 			local mount = mounts[i];
 			container:Add(mount.id, mount.nameAndIcon);
-			if mount.id == MogCompanionsCharacterSaved.Default.Special then
-				-- defaultValue tracking removed (dead code)
-			end
 		end
 
 	else 
@@ -115,9 +103,6 @@ local function GetOptionsAlternativeMount()
 		for i = 1, #mounts do
 			local mount = mounts[i];
 			container:Add(mount.id, mount.nameAndIcon);
-			if mount.id == MogCompanionsCharacterSaved.Default.Alternative then
-				-- defaultValue tracking removed (dead code)
-			end
 		end
 
 	else 

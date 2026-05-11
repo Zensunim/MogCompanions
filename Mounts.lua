@@ -392,7 +392,7 @@ function MogCompanions:InitMountSlots(reset)
 	MogCompanions:UpdateSelectMountDetails("Flying", MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Flying);
 
 	if MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Flying == 1 then
-		flyingIcon, _ = getEmptyMountIcon();
+		local flyingIcon, _ = getEmptyMountIcon();
 		flyingMountTexture:SetTexture(flyingIcon);
 		flyingMountTexture:SetDesaturated(true);
 		flyingMountTexture:SetVertexColor(0.63,0.63,0.63);
@@ -417,7 +417,7 @@ function MogCompanions:InitMountSlots(reset)
 	MogCompanions:UpdateSelectMountDetails("Ground", MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Ground);
 
 	if MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Ground == 1 then
-		_, groundIcon = getEmptyMountIcon();
+		local _, groundIcon = getEmptyMountIcon();
 		groundMountTexture:SetTexture(groundIcon);
 		groundMountTexture:SetDesaturated(true);
 		groundMountTexture:SetVertexColor(0.63,0.63,0.63);
@@ -577,7 +577,7 @@ local function FilterSetChecked(filter)
 	local scrollToCount = 0;
 	local scrollToIndex = 0;
 
-	GroundMountDataProvider = CreateDataProvider();
+	local GroundMountDataProvider = CreateDataProvider();
 
 	for i = 1, #mounts do
 		local mount = mounts[i];
@@ -608,7 +608,7 @@ end
 -- Creates the "MogComp Mount" macro (or edits the existing one) and puts it on the cursor
 -- for the player to drag to an action bar. Registers a one-shot event to detect the drop.
 local function CreateMacroButton(Parent)
-	macroId = false;
+	local macroId = false;
 
 	for i = 1, 120 do
 		if C_Macro.GetMacroName(i) == "MogComp Mount" then
@@ -859,7 +859,7 @@ function MogCompanions:InitMountTab()
 			MogCompanions:UpdateSelectMountDetails("Flying", value);
 
 			if value == 1 then
-				flyingIcon, _ = getEmptyMountIcon();
+				local flyingIcon, _ = getEmptyMountIcon();
 				flyingMountTexture:SetTexture(flyingIcon);
 				flyingMountTexture:SetDesaturated(true);
 				flyingMountTexture:SetVertexColor(0.63,0.63,0.63);
@@ -1017,7 +1017,7 @@ function MogCompanions:InitMountTab()
 			MogCompanions:UpdateSelectMountDetails("Ground", value);
 
 			if value == 1 then
-				_, groundIcon = getEmptyMountIcon();
+				local _, groundIcon = getEmptyMountIcon();
 				groundMountTexture:SetTexture(groundIcon);
 				groundMountTexture:SetDesaturated(true);
 				groundMountTexture:SetVertexColor(0.63,0.63,0.63);
