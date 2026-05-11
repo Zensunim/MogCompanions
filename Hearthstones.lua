@@ -10,8 +10,7 @@ local HearthstoneBorderTexture;
 local HearthstoneBorderHighlight;
 local HearthstoneBorderHighlightTexture;
 local HearthstoneClear;
-local HearthstonesPanel;
-local HearthstonesTab;
+local HearthstonesPage;
 local HearthstonesSearchBox;
 local HearthstonesButtons = {};
 local HearthstonesScrollFrame;
@@ -225,7 +224,7 @@ local function CreateHearthstoneMacro(parent)
 	EnsureHearthstoneSecureButton();
 	MogMountPrepareHearthstone();
 
-	local macroBody = "/run MogMountPrepareHearthstone()\n/click MogMountHearthstoneSecureButton";
+	local macroBody = "#showtooltip Hearthstone\n/run MogMountPrepareHearthstone()\n/click MogMountHearthstoneSecureButton";
 
 	if not macroId then
 		macroId = CreateMacro("MogMount HS", MogMount.EmptyHearthstoneIcon, macroBody, nil);
@@ -240,30 +239,8 @@ local function CreateHearthstoneMacro(parent)
 	GameTooltip:Show();
 end
 
-local function SelectHearthstoneTab()
-	if HearthstonesPanel == nil then
-		return;
-	end
-
-	HearthstonesPanel:Show();
-
-	if HearthstonesTab ~= nil then
-		HearthstonesTab:LockHighlight();
-	end
-end
-
-local function HideHearthstoneTab()
-	if HearthstonesPanel ~= nil then
-		HearthstonesPanel:Hide();
-	end
-
-	if HearthstonesTab ~= nil then
-		HearthstonesTab:UnlockHighlight();
-	end
-end
-
 local function RefreshHearthstoneList()
-	if HearthstonesPanel == nil then
+	if HearthstonesPage == nil then
 		return;
 	end
 
@@ -305,40 +282,35 @@ local function RefreshHearthstoneList()
 	end
 end
 
-local function CreateHearthstonesPanel(collection)
-	if HearthstonesPanel ~= nil then
+local function CreateHearthstonesPage(collection)
+	if HearthstonesPage ~= nil then
 		return;
 	end
 
-	HearthstonesPanel = CreateFrame("Frame", "MogMountHearthstonesPanel", collection, "BackdropTemplate");
-	HearthstonesPanel:SetPoint("TOPLEFT", collection, "TOPLEFT", 25, -80);
-	HearthstonesPanel:SetPoint("BOTTOMRIGHT", collection, "BOTTOMRIGHT", -25, 25);
-	HearthstonesPanel:SetFrameStrata("HIGH");
-	HearthstonesPanel:SetFrameLevel(collection:GetFrameLevel() + 20);
-	HearthstonesPanel:SetBackdrop({
-		bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background-Dark",
-		edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-		tile = true,
-		tileSize = 16,
-		edgeSize = 16,
-		insets = { left = 4, right = 4, top = 4, bottom = 4 }
-	});
-	HearthstonesPanel:Hide();
+	HearthstonesPage = CreateFrame("Frame", "MogMountHearthstonesPage", collection.TabContent);
+	HearthstonesPage:SetAllPoints(true);
+	HearthstonesPage:Hide();
 
-	local title = HearthstonesPanel:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge");
-	title:SetPoint("TOPLEFT", HearthstonesPanel, "TOPLEFT", 18, -18);
+	local title = HearthstonesPage:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge");
+	title:SetPoint("TOPLEFT", HearthstonesPage, "TOPLEFT", 18, -18);
 	title:SetText(L["Hearthstone Tab Title"]);
 
-	HearthstonesSearchBox = CreateFrame("EditBox", "MogMountHearthstoneSearchBox", HearthstonesPanel, "SearchBoxTemplate");
+	HearthstonesSearchBox = CreateFrame("EditBox", "MogMountHearthstoneSearchBox", HearthstonesPage, "SearchBoxTemplate");
 	HearthstonesSearchBox:SetSize(180, 22);
-	HearthstonesSearchBox:SetPoint("TOPRIGHT", HearthstonesPanel, "TOPRIGHT", -18, -16);
-	HearthstonesSearchBox:SetScript("OnTextChanged", function(self)
+	HearthstonesSearchBox:SetPoint("TOPRIGHT", HearthstonesPage, "TOPRIGHT", -18, -16);
+	HearthstonesSearchBox:SetScript("OnTextChanged", function(self, userInput)
+		if SearchBoxTemplate_OnTextChanged ~= nil then
+			SearchBoxTemplate_OnTextChanged(self);
+		elseif self.Instructions ~= nil then
+			self.Instructions:SetShown((self:GetText() or "") == "");
+		end
+
 		MogMount.HearthstoneSearchString = self:GetText() or "";
 		HearthstonesOffset = 0;
 		RefreshHearthstoneList();
 	end)
 
-	local macroButton = CreateFrame("Button", "MogMountHearthstoneMacroButton", HearthstonesPanel, "UIPanelButtonTemplate");
+	local macroButton = CreateFrame("Button", "MogMountHearthstoneMacroButton", HearthstonesPage, "UIPanelButtonTemplate");
 	macroButton:SetSize(120, 24);
 	macroButton:SetPoint("TOPRIGHT", HearthstonesSearchBox, "BOTTOMRIGHT", 0, -8);
 	macroButton:SetText(L["Create Macro"]);
@@ -346,9 +318,9 @@ local function CreateHearthstonesPanel(collection)
 		CreateHearthstoneMacro(self);
 	end)
 
-	HearthstonesScrollFrame = CreateFrame("ScrollFrame", "MogMountHearthstoneScrollFrame", HearthstonesPanel, "FauxScrollFrameTemplate");
-	HearthstonesScrollFrame:SetPoint("TOPLEFT", HearthstonesPanel, "TOPLEFT", 18, -55);
-	HearthstonesScrollFrame:SetPoint("BOTTOMRIGHT", HearthstonesPanel, "BOTTOMRIGHT", -32, 18);
+	HearthstonesScrollFrame = CreateFrame("ScrollFrame", "MogMountHearthstoneScrollFrame", HearthstonesPage, "FauxScrollFrameTemplate");
+	HearthstonesScrollFrame:SetPoint("TOPLEFT", HearthstonesPage, "TOPLEFT", 18, -55);
+	HearthstonesScrollFrame:SetPoint("BOTTOMRIGHT", HearthstonesPage, "BOTTOMRIGHT", -32, 18);
 	HearthstonesScrollFrame:SetScript("OnVerticalScroll", function(self, offset)
 		FauxScrollFrame_OnVerticalScroll(self, offset, 24, function()
 			HearthstonesOffset = FauxScrollFrame_GetOffset(HearthstonesScrollFrame);
@@ -357,11 +329,11 @@ local function CreateHearthstonesPanel(collection)
 	end)
 
 	for i = 1, 14 do
-		local button = CreateFrame("Button", "MogMountHearthstoneListButton"..i, HearthstonesPanel, "MogMountListButtonTemplate");
+		local button = CreateFrame("Button", "MogMountHearthstoneListButton"..i, HearthstonesPage, "MogMountListButtonTemplate");
 		button:SetSize(330, 24);
 
 		if i == 1 then
-			button:SetPoint("TOPLEFT", HearthstonesPanel, "TOPLEFT", 20, -58);
+			button:SetPoint("TOPLEFT", HearthstonesPage, "TOPLEFT", 20, -58);
 		else
 			button:SetPoint("TOPLEFT", HearthstonesButtons[i - 1], "BOTTOMLEFT", 0, 0);
 		end
@@ -396,35 +368,6 @@ local function CreateHearthstonesPanel(collection)
 	end
 
 	RefreshHearthstoneList();
-end
-
-local function CreateHearthstonesTab(collection)
-	if HearthstonesTab ~= nil then
-		return;
-	end
-
-	HearthstonesTab = CreateFrame("Button", "MogMountHearthstonesTab", collection, "PanelTopTabButtonTemplate");
-	HearthstonesTab:SetText(L["Hearthstone Tab Title"]);
-	PanelTemplates_TabResize(HearthstonesTab, 0);
-
-	local anchorTab = nil;
-	for i = 1, 8 do
-		local tab = _G["WardrobeCollectionFrameTab"..i] or _G["TransmogFrameTab"..i] or _G["WardrobeFrameTab"..i];
-		if tab ~= nil and tab:IsShown() then
-			anchorTab = tab;
-		end
-	end
-
-	if anchorTab ~= nil then
-		HearthstonesTab:SetPoint("LEFT", anchorTab, "RIGHT", -15, 0);
-	else
-		HearthstonesTab:SetPoint("TOPLEFT", collection, "TOPLEFT", 470, 28);
-	end
-
-	HearthstonesTab:SetScript("OnClick", function()
-		SelectHearthstoneTab();
-	end)
-	HearthstonesTab:Show();
 end
 
 local function CreateHearthstoneSlot()
@@ -515,7 +458,7 @@ local function CreateHearthstoneSlot()
 	end)
 
 	HearthstoneBorder:SetScript("OnMouseDown", function()
-		SelectHearthstoneTab();
+		MogMount:OpenHearthstonesTab();
 		PlaySound(SOUNDKIT.UI_TRANSMOG_GEAR_SLOT_CLICK);
 	end)
 
@@ -556,20 +499,13 @@ local function InitializeHearthstones()
 
 	EnsureOutfitHearthstoneSaved();
 	CreateHearthstoneSlot();
-	CreateHearthstonesTab(TransmogFrame.WardrobeCollection);
-	CreateHearthstonesPanel(TransmogFrame.WardrobeCollection);
+	CreateHearthstonesPage(TransmogFrame.WardrobeCollection);
 	EnsureHearthstoneSecureButton();
 	RefreshHearthstoneSecureButton();
 	UpdateHearthstoneSlot();
 	RefreshHearthstoneList();
 
-	if not HearthstonesInitialized then
-		HearthstonesInitialized = true;
-
-		hooksecurefunc(TransmogFrame.WardrobeCollection, "SetTab", function()
-			HideHearthstoneTab();
-		end)
-	end
+	HearthstonesInitialized = true;
 end
 
 local function ScheduleInitializeHearthstones()
@@ -615,3 +551,30 @@ end
 
 HookTransmogFrame();
 
+
+
+function MogMount:ShowHearthstonesPage()
+	if HearthstonesPage == nil then
+		InitializeHearthstones();
+	end
+
+	if HearthstonesPage ~= nil then
+		HearthstonesPage:Show();
+	end
+
+	RefreshHearthstoneList();
+end
+
+function MogMount:HideHearthstonesPage()
+	if HearthstonesPage ~= nil then
+		HearthstonesPage:Hide();
+	end
+end
+
+function MogMount:OpenHearthstonesTab()
+	if TransmogFrame ~= nil and TransmogFrame.WardrobeCollection ~= nil and TransmogFrame.WardrobeCollection.hearthstonesTabID ~= nil then
+		TransmogFrame.WardrobeCollection:SetTab(TransmogFrame.WardrobeCollection.hearthstonesTabID);
+	else
+		MogMount:ShowHearthstonesPage();
+	end
+end
