@@ -29,9 +29,9 @@ jobs:
         run: |
           set -euo pipefail
 
-          artifact_name="MogMount-Zensunim-${{ steps.tag.outputs.tag }}.zip"
+          artifact_name="MogCompanions-${{ steps.tag.outputs.tag }}.zip"
           staging_dir="$RUNNER_TEMP/package"
-          addon_dir="$staging_dir/MogMount-Zensunim"
+          addon_dir="$staging_dir/MogCompanions"
 
           rm -rf "$staging_dir"
           mkdir -p "$addon_dir"
@@ -42,12 +42,12 @@ jobs:
             --exclude='AGENTS.md'
 
           cd "$staging_dir"
-          zip -r "$GITHUB_WORKSPACE/$artifact_name" MogMount-Zensunim
+          zip -r "$GITHUB_WORKSPACE/$artifact_name" MogCompanions
 
       - name: Create or update release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.tag.outputs.tag }}
-          files: MogMount-Zensunim-${{ steps.tag.outputs.tag }}.zip
+          files: MogCompanions-${{ steps.tag.outputs.tag }}.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
