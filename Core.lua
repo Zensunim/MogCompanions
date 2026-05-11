@@ -252,7 +252,7 @@ function MogCompanions:OnEvent(event, addOnName)
 		if MogCompanionsSaved == nil then
 			MogCompanionsSaved = {};
 			MogCompanionsSaved['MacroID'] = 0;
-			MogCompanionsSaved.ShowFlyingInGround = false;
+			MogCompanionsSaved.ShowFlyingInGround = true;
 		end
 
 		if MogCompanionsCharacterSaved.Default.Alternative == nil then
@@ -260,7 +260,7 @@ function MogCompanions:OnEvent(event, addOnName)
 		end
 
 		if MogCompanionsSaved.ShowFlyingInGround == nil then
-			MogCompanionsSaved.ShowFlyingInGround = false;
+			MogCompanionsSaved.ShowFlyingInGround = true;
 		end
 
 		loaded = true;
