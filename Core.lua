@@ -115,6 +115,9 @@ local function CreateDisplayTitle(titleID)
 	end
 
 	local title, _ = GetTitleName(titleID);
+	if title == nil then
+		return playerName;
+	end
 	local displayTitle = "";
 
 	if title:sub(-1) == " " then
@@ -207,10 +210,10 @@ end
 -- May break if Blizzard changes the Settings panel's internal frame hierarchy.
 local function OpenKeybindingsToMogCompanions()
 	Settings.OpenToCategory(Settings.KEYBINDINGS_CATEGORY_ID, "MogCompanions");
-	children = {SettingsPanel.Container.SettingsList.ScrollBox.ScrollTarget:GetChildren()}
+	local children = {SettingsPanel.Container.SettingsList.ScrollBox.ScrollTarget:GetChildren()}
 	
 	for i, child in ipairs(children) do
-		children2 = {child:GetChildren()};
+		local children2 = {child:GetChildren()};
 		for j, child2 in ipairs(children2) do
 			if (child2.Text ~= nil) then
 				if child2.Text:GetText() == "MogCompanions" then
