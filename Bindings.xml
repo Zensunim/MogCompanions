@@ -1,7 +1,7 @@
 <Bindings>
-    <Binding name="Mount/Dismount" runOnUp="true" default="" category="MogMount">
+    <Binding name="Mount/Dismount" runOnUp="true" default="" category="MogCompanions">
         if keystate == "down" then
-            MogMountBindingClicked();
+            MogCompanionsBindingClicked();
         end
     </Binding>
 </Bindings>

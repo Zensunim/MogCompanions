@@ -6,10 +6,10 @@
 -- Hearthstone UI lives in Hearthstones.lua. Settings live in Settings.lua.
 local addonName, addon = ...
 local ns = select(2,...)
-local MogMount = CreateFrame('Frame', 'MogMountAddonFrame', UIParent)
+local MogCompanions = CreateFrame('Frame', 'MogCompanionsAddonFrame', UIParent)
 
-ns.MogMount = MogMount;
-local L = MogMountLocales;
+ns.MogCompanions = MogCompanions;
+local L = MogCompanionsLocales;
 
 local playerName = UnitName("player");
 local transmogs = {};
@@ -22,11 +22,11 @@ local TitleDropdown;
 -- Applies the saved per-outfit title for the currently active outfit.
 -- Called after mounting and after the player changes the title dropdown selection.
 -- A saved value of -1 clears the title; 0 is treated as "no change" by comparison.
-function MogMount:UpdateTitle()
+function MogCompanions:UpdateTitle()
 	local SavedCurrentTitle = -1;
 
-	if MogMountCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetActiveOutfitID()].Title > 0 then
-		SavedCurrentTitle = MogMountCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetActiveOutfitID()].Title
+	if MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetActiveOutfitID()].Title > 0 then
+		SavedCurrentTitle = MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetActiveOutfitID()].Title
 	end
 
 	if SavedCurrentTitle ~= nil and GetCurrentTitle() ~= SavedCurrentTitle and (SavedCurrentTitle == -1 or IsTitleKnown(SavedCurrentTitle)) then
@@ -34,51 +34,51 @@ function MogMount:UpdateTitle()
 	end
 end
 
--- Called by Bindings.xml when the MogMount keybinding is pressed.
-function MogMountBindingClicked()
-	MogMountSummon();
+-- Called by Bindings.xml when the MogCompanions keybinding is pressed.
+function MogCompanionsBindingClicked()
+	MogCompanionsSummon();
 end
 
 -- ── Slash Commands ────────────────────────────────────────────────────────────
 local function PrintSlashHelp()
-	print("|cFF00CCFFMogMount-Zensunim commands:|r");
-	print("|cFFFFFFFF/mmz mount|r - "..L["Slash Help Mount"]);
-	print("|cFFFFFFFF/mmz options|r - "..L["Slash Help Options"]);
+	print("|cFF00CCFFMogCompanions commands:|r");
+	print("|cFFFFFFFF/mcomp mount|r - "..L["Slash Help Mount"]);
+	print("|cFFFFFFFF/mcomp options|r - "..L["Slash Help Options"]);
 end
 
-local function OpenSettingsToMogMount()
-	if MogMountSettingsCategoryID > 0 then
-		Settings.OpenToCategory(MogMountSettingsCategoryID);
+local function OpenSettingsToMogCompanions()
+	if MogCompanionsSettingsCategoryID > 0 then
+		Settings.OpenToCategory(MogCompanionsSettingsCategoryID);
 	end
 end
 
-function MogMount:OpenSettings()
-	OpenSettingsToMogMount();
+function MogCompanions:OpenSettings()
+	OpenSettingsToMogCompanions();
 end
 
-SLASH_MOGMOUNTZENSUNIM1 = "/mmz";
-SlashCmdList["MOGMOUNTZENSUNIM"] = function(msg)
+SLASH_MOGCOMPANIONS1 = "/mcomp";
+SlashCmdList["MOGCOMPANIONS"] = function(msg)
 	local command = string.lower(string.match(msg or "", "^%s*(.-)%s*$"));
 
 	if command == "" or command == "help" then
 		PrintSlashHelp();
 	elseif command == "mount" then
-		MogMountSummon();
+		MogCompanionsSummon();
 	elseif command == "options" then
-		OpenSettingsToMogMount();
+		OpenSettingsToMogCompanions();
 	else
 		PrintSlashHelp();
 	end
 end
 
-SLASH_MOGMOUNTZENSUNIM_MOUNT1 = "/mmzm";
-SlashCmdList["MOGMOUNTZENSUNIM_MOUNT"] = function()
-	MogMountSummon();
+SLASH_MOGCOMPANIONS_MOUNT1 = "/mcompm";
+SlashCmdList["MOGCOMPANIONS_MOUNT"] = function()
+	MogCompanionsSummon();
 end
 
 -- ── Transmog Title Dropdown UI ──────────────────────────────────────────────
 local function OnSettingChanged(setting, value)
-	MogMountCharacterSaved[setting:GetVariable()] = value;
+	MogCompanionsCharacterSaved[setting:GetVariable()] = value;
 end
 
 -- Formats a title ID into a displayable string for the dropdown button label.
@@ -105,9 +105,9 @@ end
 local function SetSelectedTitle(value)
 	titleLoaded = false;
 	TitleDropdown:SetDefaultText(CreateDisplayTitle(value));
-	MogMountCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Title = value;
+	MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Title = value;
 	
-	MogMount:UpdateTitle();
+	MogCompanions:UpdateTitle();
 end
 
 -- Creates the title DropdownButton inside TransmogFrame.CharacterPreview and
@@ -131,7 +131,7 @@ local function GetTitles()
 			end
 		end
 
-		table.sort(titlesRaw, MogMountSortAlphabetical);
+		table.sort(titlesRaw, MogCompanionsSortAlphabetical);
 
 		for i = 1, #titlesRaw do
 			rootDescription:CreateButton(titlesRaw[i].name, SetSelectedTitle, titlesRaw[i].id);
@@ -146,10 +146,10 @@ local function GetTitles()
 
 	TransmogFrame.CharacterPreview.ModelScene.ControlFrame:SetPoint("TOP", 0, -64);
 
-	if MogMountCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Title == 0 then
+	if MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Title == 0 then
 		TitleDropdown:SetDefaultText(playerName);
 	else
-		TitleDropdown:SetDefaultText(CreateDisplayTitle(MogMountCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Title));
+		TitleDropdown:SetDefaultText(CreateDisplayTitle(MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Title));
 	end
 
 	TitleDropdown:SetWidth(240);
@@ -171,18 +171,18 @@ local function GetTitles()
 	end)
 end
 
--- Opens the game's Keybindings panel and expands the MogMount section.
--- Walks the Settings panel child frames to find and toggle the MogMount row.
+-- Opens the game's Keybindings panel and expands the MogCompanions section.
+-- Walks the Settings panel child frames to find and toggle the MogCompanions row.
 -- May break if Blizzard changes the Settings panel's internal frame hierarchy.
-local function OpenKeybindingsToMogMount()
-	Settings.OpenToCategory(Settings.KEYBINDINGS_CATEGORY_ID, "MogMount");
+local function OpenKeybindingsToMogCompanions()
+	Settings.OpenToCategory(Settings.KEYBINDINGS_CATEGORY_ID, "MogCompanions");
 	children = {SettingsPanel.Container.SettingsList.ScrollBox.ScrollTarget:GetChildren()}
 	
 	for i, child in ipairs(children) do
 		children2 = {child:GetChildren()};
 		for j, child2 in ipairs(children2) do
 			if (child2.Text ~= nil) then
-				if child2.Text:GetText() == "MogMount" then
+				if child2.Text:GetText() == "MogCompanions" then
 					local initializer = child:GetElementData();
 					local data = initializer.data;
 					data.expanded = not data.expanded;
@@ -194,8 +194,8 @@ local function OpenKeybindingsToMogMount()
 	end
 end
 
-function MogMount:OpenKeybinds()
-	OpenKeybindingsToMogMount();
+function MogCompanions:OpenKeybinds()
+	OpenKeybindingsToMogCompanions();
 end
 
 -- Called on VIEWED_TRANSMOG_OUTFIT_CHANGED to refresh the title dropdown.
@@ -204,10 +204,10 @@ end
 local function InitTitles(reset)
 	if not reset then
 
-		if MogMountCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Title == 0 then
+		if MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Title == 0 then
 			TitleDropdown:SetDefaultText(playerName);
 		else
-			TitleDropdown:SetDefaultText(CreateDisplayTitle(MogMountCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Title));
+			TitleDropdown:SetDefaultText(CreateDisplayTitle(MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Title));
 		end
 
 		TitleDropdown:GenerateMenu();
@@ -220,43 +220,40 @@ local function InitTitles(reset)
 end
 
 -- ── Addon Event Handler ──────────────────────────────────────────────────────
--- PLAYER_ENTERING_WORLD (once): initializes MogMountCharacterSaved and MogMountSaved
+-- PLAYER_ENTERING_WORLD (once): initializes MogCompanionsCharacterSaved and MogCompanionsSaved
 --   with defaults if they don't exist, and migrates any missing fields.
 -- VIEWED_TRANSMOG_OUTFIT_CHANGED: refreshes mount slots and title dropdown for the
 --   newly viewed outfit. firstLoad=true triggers full UI construction.
 -- TRANSMOGRIFY_OPEN: defers mount tab creation by 0.1 s to allow Blizzard UI to settle.
-function MogMount:OnEvent(event, addOnName)
+function MogCompanions:OnEvent(event, addOnName)
 	if event == "PLAYER_ENTERING_WORLD" and not loaded then
-
-		if MogMountCharacterSaved == nil then
-			MogMountCharacterSaved = {};
-			MogMountCharacterSaved.Default = {};
-			MogMountCharacterSaved.Default.Flying = 0;
-			MogMountCharacterSaved.Default.Ground = 0;
-			MogMountCharacterSaved.Default.Aquatic = 0;
-			MogMountCharacterSaved.Default.Special = 0;
-			MogMountCharacterSaved.Default.Alternative = 0;		
+		if MogCompanionsCharacterSaved == nil then
+			MogCompanionsCharacterSaved = {};
+			MogCompanionsCharacterSaved.Default = {};
+			MogCompanionsCharacterSaved.Default.Flying = 0;
+			MogCompanionsCharacterSaved.Default.Ground = 0;
+			MogCompanionsCharacterSaved.Default.Aquatic = 0;
+			MogCompanionsCharacterSaved.Default.Special = 0;
+			MogCompanionsCharacterSaved.Default.Alternative = 0;		
 		end
 
 		for t = 1, #C_TransmogOutfitInfo.GetOutfitsInfo() do
-
 			local outfitInfo = C_TransmogOutfitInfo.GetOutfitsInfo()[t];	
-			MogMount:CreateEmptyOutfit(outfitInfo.outfitID);
-
+			MogCompanions:CreateEmptyOutfit(outfitInfo.outfitID);
 		end		
 
-		if MogMountSaved == nil then
-			MogMountSaved = {};
-			MogMountSaved['MacroID'] = 0;
-			MogMountSaved.ShowFlyingInGround = false;
+		if MogCompanionsSaved == nil then
+			MogCompanionsSaved = {};
+			MogCompanionsSaved['MacroID'] = 0;
+			MogCompanionsSaved.ShowFlyingInGround = false;
 		end
 
-		if MogMountCharacterSaved.Default.Alternative == nil then
-			MogMountCharacterSaved.Default.Alternative = 0;
+		if MogCompanionsCharacterSaved.Default.Alternative == nil then
+			MogCompanionsCharacterSaved.Default.Alternative = 0;
 		end
 
-		if MogMountSaved.ShowFlyingInGround == nil then
-			MogMountSaved.ShowFlyingInGround = false;
+		if MogCompanionsSaved.ShowFlyingInGround == nil then
+			MogCompanionsSaved.ShowFlyingInGround = false;
 		end
 
 		loaded = true;
@@ -264,11 +261,8 @@ function MogMount:OnEvent(event, addOnName)
 	end
 
 	if event == "VIEWED_TRANSMOG_OUTFIT_CHANGED" then
-
-		MogMount:CreateEmptyOutfit(C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID());
-
-		MogMount:InitMountSlots(firstLoad);
-
+		MogCompanions:CreateEmptyOutfit(C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID());
+		MogCompanions:InitMountSlots(firstLoad);
 		InitTitles(firstLoad);
 
 		C_Timer.After(0.1, function()
@@ -276,27 +270,18 @@ function MogMount:OnEvent(event, addOnName)
 		end)
 
 		firstLoad = false;
-
 	end		
 
 	if event == "TRANSMOGRIFY_OPEN" then
-
 		C_Timer.After(0.1, function()
-			MogMount:InitMountTab();
+			MogCompanions:InitMountTab();
 		end)
-
 	end
 end
 
-MogMount:RegisterEvent("ADDON_LOADED")
-MogMount:RegisterEvent("PLAYER_ENTERING_WORLD")
+MogCompanions:RegisterEvent("ADDON_LOADED")
+MogCompanions:RegisterEvent("PLAYER_ENTERING_WORLD")
+MogCompanions:RegisterEvent("TRANSMOGRIFY_OPEN")
+MogCompanions:RegisterEvent("VIEWED_TRANSMOG_OUTFIT_CHANGED")
 
-MogMount:RegisterEvent("TRANSMOGRIFY_OPEN")
-MogMount:RegisterEvent("VIEWED_TRANSMOG_OUTFIT_CHANGED")
-
--- MogMount:RegisterEvent("TRANSMOGRIFY_CLOSE")
--- MogMount:RegisterEvent("TRANSMOG_SEARCH_UPDATED")
--- MogMount:RegisterEvent("TRANSMOGRIFY_SUCCESS")
--- MogMount:RegisterEvent("TRANSMOG_DISPLAYED_OUTFIT_CHANGED")
-
-MogMount:SetScript("OnEvent", MogMount.OnEvent)
+MogCompanions:SetScript("OnEvent", MogCompanions.OnEvent)

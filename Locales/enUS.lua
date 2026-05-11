@@ -1,8 +1,8 @@
 -- Locales/enUS.lua
--- Default English localization strings for MogMount-Zensunim.
+-- Default English localization strings for MogCompanions.
 -- All user-facing strings are stored here and referenced as L["key"].
 -- To add another locale, create a new file in Locales/ and load it from Localization.xml.
-local L = MogMountLocales;
+local L = MogCompanionsLocales;
 
 -- Core
 
@@ -27,14 +27,14 @@ L["Hearthstone Tab Title"] = "Hearthstones";
 L["Open Settings"] = "Open Options";
 L["Open Keybinds"] = "Open Keybinds";
 L["Create Macro"] = "Create Macro";
-L["Setup Reminder"] = "Set up a MogMount keybind and/or macro";
+L["Setup Reminder"] = "Set up a MogCompanions keybind and/or macro";
 L["Drop Macro Tooltip"] = "Drop this macro in |nyour action bar";
 L["Drop Hearthstone Macro Tooltip"] = "Drop this Hearthstone macro in |nyour action bar";
 L["Show Flying In Ground Toggle"] = "Show flying mounts in ground mount list";
-L["Slash Help Mount"] = "Summon or dismount using MogMount";
-L["Slash Help Options"] = "Open the MogMount options panel";
+L["Slash Help Mount"] = "Summon or dismount using MogCompanions";
+L["Slash Help Options"] = "Open the MogCompanions options panel";
 L["No Hearthstone Toys"] = "No Hearthstone toys are available.";
-L["Macro Combat Error"] = "MogMount cannot create macros while you are in combat.";
+L["Macro Combat Error"] = "MogCompanions cannot create macros while you are in combat.";
 
 -- Settings
 

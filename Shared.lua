@@ -5,18 +5,18 @@
 -- Mount category logic (flying/ground/aquatic/special/alternative) is centralized here.
 local _, addon = ...;
 local ns = select(2,...);
-local MogMount = ns.MogMount;
+local MogCompanions = ns.MogCompanions;
 
 local playerName = UnitName("player");
 
 -- Sorts a table of objects with a .name field alphabetically (case-insensitive).
 -- Used as the comparator for table.sort throughout the addon.
-function MogMountSortAlphabetical(a, b)
+function MogCompanionsSortAlphabetical(a, b)
 	return a.name:lower() < b.name:lower();
 end
 
 -- Returns true if 'value' exists anywhere in the given array table.
-function MogMount:hasValue(table, value)
+function MogCompanions:hasValue(table, value)
 	for i, v in ipairs(table) do
 		if v == value then
 			return true;
@@ -28,7 +28,7 @@ end
 
 -- Returns an array of all collected, visible mount IDs for this character.
 -- Excludes mounts hidden on this character (shouldHideOnChar).
-function MogMount:GetCollectedMounts()
+function MogCompanions:GetCollectedMounts()
 	local collectedMounts = {};
 	local mountIDs = C_MountJournal.GetMountIDs();
 
@@ -45,7 +45,7 @@ end
 -- Converts a raw array of mount IDs into a sorted array of mount info tables.
 -- Each entry: { name, icon, nameAndIcon, id, model (creatureDisplayInfoID), mountTypeID }.
 -- Filters to only collected + usable mounts, then sorts alphabetically.
-function MogMount:sortMounts(mountsRaw)
+function MogCompanions:sortMounts(mountsRaw)
 	local mounts = {};
 
 	for i = 1, #mountsRaw do
@@ -67,17 +67,17 @@ function MogMount:sortMounts(mountsRaw)
 
 	end
 
-	table.sort(mounts, MogMountSortAlphabetical);
+	table.sort(mounts, MogCompanionsSortAlphabetical);
 
 	return mounts;
 end
 
--- Returns true if the mount name contains MogMount.MountSearchString (case-insensitive),
+-- Returns true if the mount name contains MogCompanions.MountSearchString (case-insensitive),
 -- or if the search filter is empty or nil. Used to filter the visible mount list rows.
-function MogMount:listSearchString(name)
-	if MogMount.MountSearchString == "" or MogMount.MountSearchString == nil or string.len(MogMount.MountSearchString) < 1 then
+function MogCompanions:listSearchString(name)
+	if MogCompanions.MountSearchString == "" or MogCompanions.MountSearchString == nil or string.len(MogCompanions.MountSearchString) < 1 then
 		return true;
-	elseif string.len(MogMount.MountSearchString) >= 1 and string.find(name:lower(), MogMount.MountSearchString:lower()) then
+	elseif string.len(MogCompanions.MountSearchString) >= 1 and string.find(name:lower(), MogCompanions.MountSearchString:lower()) then
 		return true;
 	else
 		return false;
@@ -86,13 +86,13 @@ end
 
 -- Returns a filtered, alphabetically sorted list of collected Dragonriding/flying mounts
 -- that match the current MountSearchString filter.
-function MogMount:getSortedFlyingMounts()
-	local mountsRaw = MogMount:sortMounts(C_MountJournal.GetCollectedDragonridingMounts());
+function MogCompanions:getSortedFlyingMounts()
+	local mountsRaw = MogCompanions:sortMounts(C_MountJournal.GetCollectedDragonridingMounts());
 	local mounts = {};
 
 	for i = 1, #mountsRaw do
 		local mount = mountsRaw[i];
-		if MogMount:listSearchString(mount.name) then
+		if MogCompanions:listSearchString(mount.name) then
 			table.insert(mounts, mount);
 		end
 	end 
@@ -101,14 +101,14 @@ function MogMount:getSortedFlyingMounts()
 end
 
 -- Returns a filtered, alphabetically sorted list of collected ground mounts (mountTypeID 230).
--- If MogMountSaved.ShowFlyingInGround is true, flying mounts are also included.
-function MogMount:getSortedGroundMounts()
-	local mountsRaw = MogMount:sortMounts(MogMount:GetCollectedMounts());
+-- If MogCompanionsSaved.ShowFlyingInGround is true, flying mounts are also included.
+function MogCompanions:getSortedGroundMounts()
+	local mountsRaw = MogCompanions:sortMounts(MogCompanions:GetCollectedMounts());
 	local mounts = {};
 
 	for i = 1, #mountsRaw do
 		local mount = mountsRaw[i];
-		if (mount.mountTypeID == 230 or MogMountSaved.ShowFlyingInGround) and MogMount:listSearchString(mount.name) then
+		if (mount.mountTypeID == 230 or MogCompanionsSaved.ShowFlyingInGround) and MogCompanions:listSearchString(mount.name) then
 			table.insert(mounts, mount);
 		end
 	end
@@ -118,14 +118,14 @@ end
 
 -- Returns collected aquatic mounts matched by mountTypeID.
 -- Aquatic type IDs: 231, 232, 254, 407, 436. No search filter applied.
-function MogMount:getSortedAquaticMounts()
-	local mountsRaw = MogMount:sortMounts(MogMount:GetCollectedMounts());
+function MogCompanions:getSortedAquaticMounts()
+	local mountsRaw = MogCompanions:sortMounts(MogCompanions:GetCollectedMounts());
 	local mounts = {};
 	local aquaticTypeIDs = {231, 232, 254, 407, 436};
 
 	for i = 1, #mountsRaw do
 		local mount = mountsRaw[i];
-		if MogMount:hasValue(aquaticTypeIDs, mount.mountTypeID) then
+		if MogCompanions:hasValue(aquaticTypeIDs, mount.mountTypeID) then
 			table.insert(mounts, mount);
 		end
 	end
@@ -136,14 +136,14 @@ end
 -- Returns collected repair/vendor/utility mounts matched by hardcoded mount ID.
 -- IDs: 460 (Grand Expedition Yak), 280 (Traveler's Tundra Mammoth), 284, 273, 274, 1039, 2237.
 -- Update this list when Blizzard adds new vendor mounts.
-function MogMount:getSortedSpecialMounts()
-	local mountsRaw = MogMount:sortMounts(MogMount:GetCollectedMounts());
+function MogCompanions:getSortedSpecialMounts()
+	local mountsRaw = MogCompanions:sortMounts(MogCompanions:GetCollectedMounts());
 	local mounts = {};
 	local specialMountIDs = {460, 280, 284, 273, 274, 1039, 2237};
 
 	for i = 1, #mountsRaw do
 		local mount = mountsRaw[i];
-		if MogMount:hasValue(specialMountIDs, mount.id) then
+		if MogCompanions:hasValue(specialMountIDs, mount.id) then
 			table.insert(mounts, mount);
 		end
 	end
@@ -153,8 +153,8 @@ end
 
 -- Returns all collected mounts (no category filter, no search filter).
 -- Used for the Alt-key alternative mount slot — the player can assign anything here.
-function MogMount:getSortedAlternativeMounts()
-	local mountsRaw = MogMount:sortMounts(MogMount:GetCollectedMounts());
+function MogCompanions:getSortedAlternativeMounts()
+	local mountsRaw = MogCompanions:sortMounts(MogCompanions:GetCollectedMounts());
 	local mounts = {};
 
 	for i = 1, #mountsRaw do
@@ -168,21 +168,21 @@ end
 -- Returns a random mount table from the specified category string.
 -- type: "flying" | "ground" | "aquatic" | "special" | "alternative"
 -- Returns nil if the category list is empty (safe to call with no mounts collected).
-function MogMount:getRandomMount(type)
+function MogCompanions:getRandomMount(type)
 	local mounts = {}
 
 	if type == "flying" then
-		mounts = MogMount:getSortedFlyingMounts();
+		mounts = MogCompanions:getSortedFlyingMounts();
 	elseif type == "ground" then
-		mounts = MogMount:getSortedGroundMounts();
+		mounts = MogCompanions:getSortedGroundMounts();
 	elseif type == "aquatic" then
-		mounts = MogMount:getSortedAquaticMounts();
+		mounts = MogCompanions:getSortedAquaticMounts();
 	elseif type == "special" then
-		mounts = MogMount:getSortedSpecialMounts();
+		mounts = MogCompanions:getSortedSpecialMounts();
 	elseif type == "alternative" then
-		mounts = MogMount:getSortedAlternativeMounts();		
+		mounts = MogCompanions:getSortedAlternativeMounts();		
 	else
-		mounts = MogMount:getSortedFlyingMounts();
+		mounts = MogCompanions:getSortedFlyingMounts();
 	end
 	
 	if #mounts == 0 then
@@ -196,8 +196,8 @@ end
 
 -- ── Hearthstone Toy Helpers ──────────────────────────────────────────────────
 -- Fallback icon (plain Hearthstone) shown when no toy info is available yet.
-MogMount.EmptyHearthstoneIcon = 134414;
-MogMount.HearthstoneToyItemIDs = {
+MogCompanions.EmptyHearthstoneIcon = 134414;
+MogCompanions.HearthstoneToyItemIDs = {
     64488,  -- The Innkeeper's Daughter
     93672,  -- Dark Portal
     142542, -- Tome of Town Portal
@@ -237,10 +237,10 @@ MogMount.HearthstoneToyItemIDs = {
 
 -- Returns true if the toy name contains HearthstoneSearchString (case-insensitive),
 -- or if the filter is empty. Used to filter the Hearthstones tab list.
-function MogMount:listHearthstoneSearchString(name)
-	if MogMount.HearthstoneSearchString == "" or MogMount.HearthstoneSearchString == nil or string.len(MogMount.HearthstoneSearchString) < 1 then
+function MogCompanions:listHearthstoneSearchString(name)
+	if MogCompanions.HearthstoneSearchString == "" or MogCompanions.HearthstoneSearchString == nil or string.len(MogCompanions.HearthstoneSearchString) < 1 then
 		return true;
-	elseif string.len(MogMount.HearthstoneSearchString) >= 1 and string.find(name:lower(), MogMount.HearthstoneSearchString:lower()) then
+	elseif string.len(MogCompanions.HearthstoneSearchString) >= 1 and string.find(name:lower(), MogCompanions.HearthstoneSearchString:lower()) then
 		return true;
 	else
 		return false;
@@ -248,7 +248,7 @@ function MogMount:listHearthstoneSearchString(name)
 end
 
 -- Returns true if the player owns the given hearthstone toy itemID.
-function MogMount:IsHearthstoneToyCollected(itemID)
+function MogCompanions:IsHearthstoneToyCollected(itemID)
 	if itemID == nil or itemID <= 1 then
 		return false;
 	end
@@ -263,7 +263,7 @@ end
 -- Returns a toy info table { name, icon, nameAndIcon, id } for a hearthstone toy itemID.
 -- Falls back from C_ToyBox to C_Item/GetItemInfo for compatibility.
 -- Returns nil if item data is not yet loaded; async load is requested automatically.
-function MogMount:GetHearthstoneToyInfo(itemID)
+function MogCompanions:GetHearthstoneToyInfo(itemID)
 	if itemID == nil or itemID <= 1 then
 		return nil;
 	end
@@ -299,7 +299,7 @@ function MogMount:GetHearthstoneToyInfo(itemID)
 
 	local toy = {};
 	toy.name = toyName;
-	toy.icon = icon or MogMount.EmptyHearthstoneIcon;
+	toy.icon = icon or MogCompanions.EmptyHearthstoneIcon;
 	toy.nameAndIcon = "|T"..toy.icon..":18|t "..toyName;
 	toy.id = itemID;
 
@@ -309,30 +309,30 @@ end
 -- Returns collected hearthstone toys, sorted alphabetically.
 -- If ignoreSearch is true, the HearthstoneSearchString filter is bypassed
 -- (used when picking a random toy so all collected toys are eligible).
-function MogMount:getSortedHearthstoneToys(ignoreSearch)
+function MogCompanions:getSortedHearthstoneToys(ignoreSearch)
 	local toys = {};
 
-	for i = 1, #MogMount.HearthstoneToyItemIDs do
-		local itemID = MogMount.HearthstoneToyItemIDs[i];
+	for i = 1, #MogCompanions.HearthstoneToyItemIDs do
+		local itemID = MogCompanions.HearthstoneToyItemIDs[i];
 
-		if MogMount:IsHearthstoneToyCollected(itemID) then
-			local toy = MogMount:GetHearthstoneToyInfo(itemID);
+		if MogCompanions:IsHearthstoneToyCollected(itemID) then
+			local toy = MogCompanions:GetHearthstoneToyInfo(itemID);
 
-			if toy ~= nil and (ignoreSearch or MogMount:listHearthstoneSearchString(toy.name)) then
+			if toy ~= nil and (ignoreSearch or MogCompanions:listHearthstoneSearchString(toy.name)) then
 				table.insert(toys, toy);
 			end
 		end
 	end
 
-	table.sort(toys, MogMountSortAlphabetical);
+	table.sort(toys, MogCompanionsSortAlphabetical);
 
 	return toys;
 end
 
 -- Returns a random collected hearthstone toy, ignoring the search filter.
 -- Returns nil if no hearthstone toys are collected.
-function MogMount:getRandomHearthstoneToy()
-	local toys = MogMount:getSortedHearthstoneToys(true);
+function MogCompanions:getRandomHearthstoneToy()
+	local toys = MogCompanions:getSortedHearthstoneToys(true);
 
 	if #toys == 0 then
 		return nil;
@@ -365,7 +365,7 @@ end
 
 -- Returns all known player titles as an alphabetically sorted array of { id, name } tables.
 -- Used to populate title dropdowns in the transmog UI and Settings panel.
-function MogMount:getSortedTitles()
+function MogCompanions:getSortedTitles()
 	local titlesRaw = {}
 	local count = 1;
 
@@ -378,37 +378,37 @@ function MogMount:getSortedTitles()
 		end
 	end
 
-	table.sort(titlesRaw, MogMountSortAlphabetical)
+	table.sort(titlesRaw, MogCompanionsSortAlphabetical)
 
 	return titlesRaw;
 end
 
--- Populates MogMountSelectedMount[type] with full info for the given mount ID.
+-- Populates MogCompanionsSelectedMount[type] with full info for the given mount ID.
 -- type: "Flying" | "Ground". Called when the player picks a mount in the list UI.
-function MogMount:UpdateSelectMountDetails(type, id)
+function MogCompanions:UpdateSelectMountDetails(type, id)
 	name, spellID, icon, isActive, isUsable, sourceType, isFavorite, isFactionSpecific, faction, shouldHideOnChar, isCollected, mountID, isSteadyFlight = C_MountJournal.GetMountInfoByID(id);
 	creatureDisplayInfoID, description, source, isSelfMount, mountTypeID, uiModelSceneID, animID, spellVisualKitID, disablePlayerMountPreview = C_MountJournal.GetMountInfoExtraByID(id);
 			
-	MogMountSelectedMount[type].name = name;
-	MogMountSelectedMount[type].spellID = name;
-	MogMountSelectedMount[type].icon = icon;
-	MogMountSelectedMount[type].id = mountID;
-	MogMountSelectedMount[type].display = creatureDisplayInfoID;
-	MogMountSelectedMount[type].type = mountTypeID;
+	MogCompanionsSelectedMount[type].name = name;
+	MogCompanionsSelectedMount[type].spellID = name;
+	MogCompanionsSelectedMount[type].icon = icon;
+	MogCompanionsSelectedMount[type].id = mountID;
+	MogCompanionsSelectedMount[type].display = creatureDisplayInfoID;
+	MogCompanionsSelectedMount[type].type = mountTypeID;
 end
 
--- Ensures a saved-variable entry exists for outfit 'id' in MogMountCharacterSaved.
+-- Ensures a saved-variable entry exists for outfit 'id' in MogCompanionsCharacterSaved.
 -- Called defensively any time an outfit ID is encountered that may be new.
 -- Sentinel values: Flying/Ground/Hearthstone = 1 means "use default"; Title = 0 means "no title".
 -- Safe to call multiple times; only writes when the entry is missing or incomplete.
-function MogMount:CreateEmptyOutfit(id)
-	if MogMountCharacterSaved ~= nil and MogMountCharacterSaved["Outfit"..id] == nil then
-		MogMountCharacterSaved["Outfit"..id] = {};
-		MogMountCharacterSaved["Outfit"..id].Flying = 1;
-		MogMountCharacterSaved["Outfit"..id].Ground = 1;
-		MogMountCharacterSaved["Outfit"..id].Hearthstone = 1;
-		MogMountCharacterSaved["Outfit"..id].Title = 0;
-	elseif MogMountCharacterSaved ~= nil and MogMountCharacterSaved["Outfit"..id].Hearthstone == nil then
-		MogMountCharacterSaved["Outfit"..id].Hearthstone = 1;
+function MogCompanions:CreateEmptyOutfit(id)
+	if MogCompanionsCharacterSaved ~= nil and MogCompanionsCharacterSaved["Outfit"..id] == nil then
+		MogCompanionsCharacterSaved["Outfit"..id] = {};
+		MogCompanionsCharacterSaved["Outfit"..id].Flying = 1;
+		MogCompanionsCharacterSaved["Outfit"..id].Ground = 1;
+		MogCompanionsCharacterSaved["Outfit"..id].Hearthstone = 1;
+		MogCompanionsCharacterSaved["Outfit"..id].Title = 0;
+	elseif MogCompanionsCharacterSaved ~= nil and MogCompanionsCharacterSaved["Outfit"..id].Hearthstone == nil then
+		MogCompanionsCharacterSaved["Outfit"..id].Hearthstone = 1;
 	end
 end

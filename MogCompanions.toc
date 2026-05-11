@@ -1,13 +1,13 @@
 ## Interface: 120005
 ## Title: Mog Companions
 ## Notes: Companions for your transmogs
-## Author: Zensunim of Dragonblight (forked from perrinthesmith's MogMount addon)
+## Author: Zensunim of Dragonblight (forked from perrinthesmith's MogCompanions addon)
 ## IconTexture: 1769015
 ## Version: 1.0
 ## DefaultState: Enabled
 ## Category: Transmogrification
-## SavedVariables: MogMountSaved
-## SavedVariablesPerCharacter: MogMountCharacterSaved
+## SavedVariables: MogCompanionsSaved
+## SavedVariablesPerCharacter: MogCompanionsCharacterSaved
 ## LoadSavedVariablesFirst: 1
 
 Initialization.lua

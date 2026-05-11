@@ -1,21 +1,21 @@
 -- Settings.lua
--- Registers all MogMount user options with the Retail Settings API.
--- Adds a "MogMount" category to the game's Settings panel with:
+-- Registers all MogCompanions user options with the Retail Settings API.
+-- Adds a "MogCompanions" category to the game's Settings panel with:
 --   • Default mounts (flying, ground, aquatic, special/repair, alternative)
 --   • Per-outfit overrides: character title, flying mount, ground mount
--- All user-facing strings come from Locales/enUS.lua via MogMountLocales.
--- MogMountSettingsCategoryID is a global used by Core.lua to open the panel.
+-- All user-facing strings come from Locales/enUS.lua via MogCompanionsLocales.
+-- MogCompanionsSettingsCategoryID is a global used by Core.lua to open the panel.
 local _, addon = ...;
 local ns = select(2,...);
-local MogMount = ns.MogMount;
-local MogMountSettings = CreateFrame('Frame', 'MogMountSettingsFrame', UIParent);
-local L = MogMountLocales;
+local MogCompanions = ns.MogCompanions;
+local MogCompanionsSettings = CreateFrame('Frame', 'MogCompanionsSettingsFrame', UIParent);
+local L = MogCompanionsLocales;
 
 local playerName = UnitName("player");
 local settingsLoaded = false;
 local transmogs = {};
 
-MogMountSettingsCategoryID = 0;
+MogCompanionsSettingsCategoryID = 0;
 
 -- ── Default Mount Dropdown Data Providers ───────────────────────────────────
 -- Each GetOptionsXxx function returns a Settings control data container used by
@@ -26,12 +26,12 @@ local function GetOptionsFlyingMount()
 
 	container:Add(0, "|T134400:18|t "..L["Settings Random Selection Label"]);
 
-	local mounts = MogMount:getSortedFlyingMounts()
+	local mounts = MogCompanions:getSortedFlyingMounts()
 
 	for i = 1, #mounts do
 		local mount = mounts[i];
 		container:Add(mount.id, mount.nameAndIcon);
-		if mount.id == MogMountCharacterSaved.Default.Flying then
+		if mount.id == MogCompanionsCharacterSaved.Default.Flying then
 			defaultValue = i;
 		end
 	end
@@ -44,12 +44,12 @@ local function GetOptionsGroundMount()
 
 	container:Add(0, "|T134400:18|t "..L["Settings Random Selection Label"]);
 
-	local mounts = MogMount:getSortedGroundMounts();
+	local mounts = MogCompanions:getSortedGroundMounts();
 
 	for i = 1, #mounts do
 		local mount = mounts[i];
 		container:Add(mount.id, mount.nameAndIcon);
-		if mount.id == MogMountCharacterSaved.Default.Ground then
+		if mount.id == MogCompanionsCharacterSaved.Default.Ground then
 			defaultValue = i;
 		end
 	end
@@ -59,7 +59,7 @@ end
 
 local function GetOptionsAquaticMount()
 	local container = Settings.CreateControlTextContainer();
-	local mounts = MogMount:getSortedAquaticMounts();
+	local mounts = MogCompanions:getSortedAquaticMounts();
 
 	if #mounts > 0 then
 
@@ -68,7 +68,7 @@ local function GetOptionsAquaticMount()
 		for i = 1, #mounts do
 			local mount = mounts[i];
 			container:Add(mount.id, mount.nameAndIcon);
-			if mount.id == MogMountCharacterSaved.Default.Aquatic then
+			if mount.id == MogCompanionsCharacterSaved.Default.Aquatic then
 				defaultValue = i;
 			end
 		end
@@ -84,7 +84,7 @@ end
 
 local function GetOptionsSpecialMount()
 	local container = Settings.CreateControlTextContainer();
-	local mounts = MogMount:getSortedSpecialMounts();
+	local mounts = MogCompanions:getSortedSpecialMounts();
 
 	if #mounts > 0 then
 
@@ -93,7 +93,7 @@ local function GetOptionsSpecialMount()
 		for i = 1, #mounts do
 			local mount = mounts[i];
 			container:Add(mount.id, mount.nameAndIcon);
-			if mount.id == MogMountCharacterSaved.Default.Special then
+			if mount.id == MogCompanionsCharacterSaved.Default.Special then
 				defaultValue = i;
 			end
 		end
@@ -109,7 +109,7 @@ end
 
 local function GetOptionsAlternativeMount()
 	local container = Settings.CreateControlTextContainer();
-	local mounts = MogMount:getSortedAlternativeMounts();
+	local mounts = MogCompanions:getSortedAlternativeMounts();
 
 	if #mounts > 0 then
 
@@ -118,7 +118,7 @@ local function GetOptionsAlternativeMount()
 		for i = 1, #mounts do
 			local mount = mounts[i];
 			container:Add(mount.id, mount.nameAndIcon);
-			if mount.id == MogMountCharacterSaved.Default.Alternative then
+			if mount.id == MogCompanionsCharacterSaved.Default.Alternative then
 				defaultValue = i;
 			end
 		end
@@ -138,7 +138,7 @@ local function OnSettingChanged()
 	--
 end
 
--- Registers all MogMount settings and creates the Settings panel layout.
+-- Registers all MogCompanions settings and creates the Settings panel layout.
 -- Called once from PLAYER_ENTERING_WORLD. Reads all current outfit info at that point
 -- to build per-outfit title and mount dropdowns for each transmog outfit.
 local function InitSettings()
@@ -149,9 +149,9 @@ local function InitSettings()
 		table.insert(transmogs, outfitsInfo.name);
 	end
 
-	local category, layout = Settings.RegisterVerticalLayoutCategory("MogMount");
+	local category, layout = Settings.RegisterVerticalLayoutCategory("MogCompanions");
 
-	MogMountSettingsCategoryID = category:GetID();
+	MogCompanionsSettingsCategoryID = category:GetID();
 	layout:AddInitializer(CreateSettingsListSectionHeaderInitializer(L["Settings Default Section Title"], ''));
    
 	local key1, key2 = GetBindingKey("Mount/Dismount");
@@ -163,7 +163,7 @@ local function InitSettings()
 	local name = L["Settings Flying Mount"];
 	local tooltip = L["Settings Flying Mount Tooltip"];
 	local variableKey = "Flying";
-	local variableTable = MogMountCharacterSaved.Default;
+	local variableTable = MogCompanionsCharacterSaved.Default;
 
 	local setting = Settings.RegisterAddOnSetting(category, variable, variableKey, variableTable, type(defaultValue), name, defaultValue);
 	Settings.CreateDropdown(category, setting, GetOptionsFlyingMount, tooltip);
@@ -182,7 +182,7 @@ local function InitSettings()
 	end
 
 	local variableKey = "Ground";
-	local variableTable = MogMountCharacterSaved.Default;
+	local variableTable = MogCompanionsCharacterSaved.Default;
 
 	local setting = Settings.RegisterAddOnSetting(category, variable, variableKey, variableTable, type(defaultValue), name, defaultValue);
 	Settings.CreateDropdown(category, setting, GetOptionsGroundMount, tooltip);
@@ -198,7 +198,7 @@ local function InitSettings()
 		tooltip = WrapTextInColorCode(L["Settings Aquatic Mount Keybind Reminder"], "00999999");
 	end
 	local variableKey = "Aquatic";
-	local variableTable = MogMountCharacterSaved.Default;
+	local variableTable = MogCompanionsCharacterSaved.Default;
 
 	local setting = Settings.RegisterAddOnSetting(category, variable, variableKey, variableTable, type(defaultValue), name, defaultValue);
 	Settings.CreateDropdown(category, setting, GetOptionsAquaticMount, tooltip);
@@ -214,7 +214,7 @@ local function InitSettings()
 		tooltip = WrapTextInColorCode(L["Settings Special Mount Keybind Reminder"], "00999999");
 	end
 	local variableKey = "Special";
-	local variableTable = MogMountCharacterSaved.Default;
+	local variableTable = MogCompanionsCharacterSaved.Default;
 
 	local setting = Settings.RegisterAddOnSetting(category, variable, variableKey, variableTable, type(defaultValue), name, defaultValue);
    	Settings.CreateDropdown(category, setting, GetOptionsSpecialMount, tooltip);
@@ -232,7 +232,7 @@ local function InitSettings()
 		tooltip = L["Settings Alternative Mount Tooltip"];
 	end
 	local variableKey = "Alternative";
-	local variableTable = MogMountCharacterSaved.Default;
+	local variableTable = MogCompanionsCharacterSaved.Default;
 
 	local setting = Settings.RegisterAddOnSetting(category, variable, variableKey, variableTable, type(defaultValue), name, defaultValue);
    	Settings.CreateDropdown(category, setting, GetOptionsAlternativeMount, tooltip);
@@ -253,18 +253,18 @@ local function InitSettings()
 		local name = L["Settings Character Title"];
 		local tooltip = L["Settings Character Title Tooltip"];
 		local variableKey = "Title";
-		local variableTable = MogMountCharacterSaved["Outfit"..outfitInfo.outfitID];
+		local variableTable = MogCompanionsCharacterSaved["Outfit"..outfitInfo.outfitID];
 
 		local function GetOptionsTitleSettings()
 			local container = Settings.CreateControlTextContainer();
-			local titles = MogMount:getSortedTitles();
+			local titles = MogCompanions:getSortedTitles();
 
 			container:Add(0, playerName);
 
 			for i = 1, #titles do
 				local title = titles[i];
 				container:Add(title.id, title.name);
-				if title.id == MogMountCharacterSaved["Outfit"..outfitInfo.outfitID].Title then
+				if title.id == MogCompanionsCharacterSaved["Outfit"..outfitInfo.outfitID].Title then
 					defaultValue = i;
 				end
 			end
@@ -284,18 +284,18 @@ local function InitSettings()
 		local name = L["Settings Flying Mount"];
 		local tooltip = false; --"This is a tooltip for the dropdown.";
 		local variableKey = "Flying";
-		local variableTable = MogMountCharacterSaved["Outfit"..outfitInfo.outfitID];
+		local variableTable = MogCompanionsCharacterSaved["Outfit"..outfitInfo.outfitID];
 
 		local function GetOptionsFlyingMountSettings()
 			local container = Settings.CreateControlTextContainer();
-			local mounts = MogMount:getSortedFlyingMounts();
+			local mounts = MogCompanions:getSortedFlyingMounts();
 
 			container:Add(1, "|T136243:18|t "..L["Settings Default Selection Label"]);
 
 			for i = 1, #mounts do
 				local mount = mounts[i];
 				container:Add(mount.id, mount.nameAndIcon);
-				if mount.id == MogMountCharacterSaved["Outfit"..outfitInfo.outfitID].Flying then
+				if mount.id == MogCompanionsCharacterSaved["Outfit"..outfitInfo.outfitID].Flying then
 					defaultValue = i;
 				end
 			end
@@ -315,18 +315,18 @@ local function InitSettings()
 		local name = L["Settings Ground Mount"];
 		local tooltip = false;
 		local variableKey = "Ground";
-		local variableTable = MogMountCharacterSaved["Outfit"..outfitInfo.outfitID];
+		local variableTable = MogCompanionsCharacterSaved["Outfit"..outfitInfo.outfitID];
 
 		local function GetOptionsGroundMountSettings()
 			local container = Settings.CreateControlTextContainer();
-			local mounts = MogMount:getSortedGroundMounts();
+			local mounts = MogCompanions:getSortedGroundMounts();
 
 			container:Add(1, "|T136243:18|t "..L["Settings Default Selection Label"]);
 
 			for i = 1, #mounts do
 				local mount = mounts[i];
 				container:Add(mount.id, mount.nameAndIcon);
-				if mount.id == MogMountCharacterSaved["Outfit"..outfitInfo.outfitID].Ground then
+				if mount.id == MogCompanionsCharacterSaved["Outfit"..outfitInfo.outfitID].Ground then
 					defaultValue = i;
 				end
 			end
@@ -346,8 +346,8 @@ end
 
 -- ── Settings Frame Event Handler ──────────────────────────────────────────
 -- Waits for PLAYER_ENTERING_WORLD so that saved variables are loaded
--- before InitSettings tries to read MogMountCharacterSaved.
-function MogMountSettings:OnEvent(event, addOnName)
+-- before InitSettings tries to read MogCompanionsCharacterSaved.
+function MogCompanionsSettings:OnEvent(event, addOnName)
 	if event == "PLAYER_ENTERING_WORLD" and not settingsLoaded then
 
 		settingsLoaded = true;
@@ -357,7 +357,7 @@ function MogMountSettings:OnEvent(event, addOnName)
 	end
 end
 
-MogMountSettings:RegisterEvent("ADDON_LOADED");
-MogMountSettings:RegisterEvent("PLAYER_ENTERING_WORLD");
+MogCompanionsSettings:RegisterEvent("ADDON_LOADED");
+MogCompanionsSettings:RegisterEvent("PLAYER_ENTERING_WORLD");
 
-MogMountSettings:SetScript("OnEvent", MogMountSettings.OnEvent);
+MogCompanionsSettings:SetScript("OnEvent", MogCompanionsSettings.OnEvent);

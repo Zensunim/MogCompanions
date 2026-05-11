@@ -12,8 +12,8 @@
 -- VIEWED_TRANSMOG_OUTFIT_CHANGED, TRANSMOG_DISPLAYED_OUTFIT_CHANGED.
 local _, addon = ...;
 local ns = select(2,...);
-local MogMount = ns.MogMount;
-local L = MogMountLocales;
+local MogCompanions = ns.MogCompanions;
+local L = MogCompanionsLocales;
 
 local HearthstoneFrame;
 local HearthstoneTexture;
@@ -31,8 +31,8 @@ local HearthstonesInitialized = false;
 local HearthstoneSecureButton;
 local HearthstonePendingItemID;
 
-MogMount.HearthstoneSearchString = "";
-MogMountSelectedHearthstone = {};
+MogCompanions.HearthstoneSearchString = "";
+MogCompanionsSelectedHearthstone = {};
 
 -- ── Outfit Accessors ────────────────────────────────────────────────────────────
 -- Nil-safe wrappers around C_TransmogOutfitInfo. Returns nil if the API is unavailable.
@@ -55,13 +55,13 @@ end
 -- Returns the saved-variable table for the given outfitID,
 -- creating an empty entry via CreateEmptyOutfit if it doesn't exist yet.
 local function GetOutfitTable(outfitID)
-	if outfitID == nil or MogMountCharacterSaved == nil then
+	if outfitID == nil or MogCompanionsCharacterSaved == nil then
 		return nil;
 	end
 
-	MogMount:CreateEmptyOutfit(outfitID);
+	MogCompanions:CreateEmptyOutfit(outfitID);
 
-	return MogMountCharacterSaved["Outfit"..outfitID];
+	return MogCompanionsCharacterSaved["Outfit"..outfitID];
 end
 
 -- Returns a toy info table for the hearthstone pinned to the given outfit,
@@ -69,8 +69,8 @@ end
 local function GetSelectedHearthstoneToy(outfitID)
 	local outfit = GetOutfitTable(outfitID);
 
-	if outfit ~= nil and outfit.Hearthstone ~= nil and outfit.Hearthstone > 1 and MogMount:IsHearthstoneToyCollected(outfit.Hearthstone) then
-		return MogMount:GetHearthstoneToyInfo(outfit.Hearthstone);
+	if outfit ~= nil and outfit.Hearthstone ~= nil and outfit.Hearthstone > 1 and MogCompanions:IsHearthstoneToyCollected(outfit.Hearthstone) then
+		return MogCompanions:GetHearthstoneToyInfo(outfit.Hearthstone);
 	end
 
 	return nil;
@@ -84,7 +84,7 @@ local function EnsureHearthstoneSecureButton()
 		return;
 	end
 
-	HearthstoneSecureButton = CreateFrame("Button", "MogMountHearthstoneSecureButton", UIParent, "SecureActionButtonTemplate");
+	HearthstoneSecureButton = CreateFrame("Button", "MogCompanionsHearthstoneSecureButton", UIParent, "SecureActionButtonTemplate");
 	HearthstoneSecureButton:SetParent(UIParent);
 	HearthstoneSecureButton:SetSize(1, 1);
 	HearthstoneSecureButton:SetPoint("CENTER", UIParent, "CENTER", 0, 0);
@@ -104,11 +104,11 @@ end
 local function GetHearthstoneItemIDForOutfit(outfitID)
 	local outfit = GetOutfitTable(outfitID);
 
-	if outfit ~= nil and outfit.Hearthstone ~= nil and outfit.Hearthstone > 1 and MogMount:IsHearthstoneToyCollected(outfit.Hearthstone) then
+	if outfit ~= nil and outfit.Hearthstone ~= nil and outfit.Hearthstone > 1 and MogCompanions:IsHearthstoneToyCollected(outfit.Hearthstone) then
 		return outfit.Hearthstone;
 	end
 
-	local randomToy = MogMount:getRandomHearthstoneToy();
+	local randomToy = MogCompanions:getRandomHearthstoneToy();
 
 	if randomToy ~= nil then
 		return randomToy.id;
@@ -129,7 +129,7 @@ local function SetHearthstoneSecureButtonItem(itemID)
 	end
 
 	if itemID ~= nil then
-		local toy = MogMount:GetHearthstoneToyInfo(itemID);
+		local toy = MogCompanions:GetHearthstoneToyInfo(itemID);
 		if toy ~= nil and toy.name ~= nil then
 			HearthstoneSecureButton:SetAttribute("type", "toy");
 			HearthstoneSecureButton:SetAttribute("toy", toy.name);
@@ -179,7 +179,7 @@ end
 -- Public entry point called from macros / external code.
 -- Resolves the correct toy for the active outfit and arms the secure button.
 -- Prints a localized error if no toys are collected.
-function MogMountPrepareHearthstone()
+function MogCompanionsPrepareHearthstone()
 	local itemID = GetHearthstoneItemIDForOutfit(GetActiveOutfitID());
 
 	if itemID == nil then
@@ -191,28 +191,28 @@ function MogMountPrepareHearthstone()
 	SetHearthstoneSecureButtonItem(itemID);
 end
 
--- Updates MogMountSelectedHearthstone with the name/icon/id of the given toy.
+-- Updates MogCompanionsSelectedHearthstone with the name/icon/id of the given toy.
 -- Set to nil fields when itemID is invalid or the toy info is unavailable.
 local function UpdateSelectedHearthstoneDetails(itemID)
 	if itemID == nil or itemID <= 1 then
-		MogMountSelectedHearthstone.name = nil;
-		MogMountSelectedHearthstone.icon = nil;
-		MogMountSelectedHearthstone.id = nil;
+		MogCompanionsSelectedHearthstone.name = nil;
+		MogCompanionsSelectedHearthstone.icon = nil;
+		MogCompanionsSelectedHearthstone.id = nil;
 		return;
 	end
 
-	local toy = MogMount:GetHearthstoneToyInfo(itemID);
+	local toy = MogCompanions:GetHearthstoneToyInfo(itemID);
 
 	if toy == nil then
-		MogMountSelectedHearthstone.name = nil;
-		MogMountSelectedHearthstone.icon = nil;
-		MogMountSelectedHearthstone.id = nil;
+		MogCompanionsSelectedHearthstone.name = nil;
+		MogCompanionsSelectedHearthstone.icon = nil;
+		MogCompanionsSelectedHearthstone.id = nil;
 		return;
 	end
 
-	MogMountSelectedHearthstone.name = toy.name;
-	MogMountSelectedHearthstone.icon = toy.icon;
-	MogMountSelectedHearthstone.id = toy.id;
+	MogCompanionsSelectedHearthstone.name = toy.name;
+	MogCompanionsSelectedHearthstone.icon = toy.icon;
+	MogCompanionsSelectedHearthstone.id = toy.id;
 end
 
 -- Refreshes the hearthstone slot icon in the transmog panel based on the viewed outfit.
@@ -245,7 +245,7 @@ local function UpdateHearthstoneSlot()
 		HearthstoneBorderHighlightTexture:SetAtlas("transmog-gearSlot-transmogrified");
 	else
 		UpdateSelectedHearthstoneDetails(nil);
-		HearthstoneTexture:SetTexture(MogMount.EmptyHearthstoneIcon);
+		HearthstoneTexture:SetTexture(MogCompanions.EmptyHearthstoneIcon);
 		HearthstoneTexture:SetDesaturated(true);
 		HearthstoneTexture:SetVertexColor(0.63, 0.63, 0.63);
 		HearthstoneBorderTexture:SetAtlas("transmog-gearSlot-default");
@@ -275,7 +275,7 @@ function ClearSelectedHearthstone()
 	SetSelectedHearthstone(1);
 end
 
--- Creates a "MogMount HS" macro (or edits the existing one) and puts it on the cursor
+-- Creates a "MogCompanions HS" macro (or edits the existing one) and puts it on the cursor
 -- so the player can drag it to an action bar. The macro calls the secure button.
 -- Cannot be created during combat (combat lockdown).
 local function CreateHearthstoneMacro(parent)
@@ -287,20 +287,20 @@ local function CreateHearthstoneMacro(parent)
 	local macroId = false;
 
 	for i = 1, 120 do
-		if C_Macro.GetMacroName(i) == "MogMount HS" then
+		if C_Macro.GetMacroName(i) == "MogCompanions HS" then
 			macroId = i;
 		end
 	end
 
 	EnsureHearthstoneSecureButton();
-	MogMountPrepareHearthstone();
+	MogCompanionsPrepareHearthstone();
 
-	local macroBody = "#showtooltip Hearthstone\n/click MogMountHearthstoneSecureButton";
+	local macroBody = "#showtooltip Hearthstone\n/click MogCompanionsHearthstoneSecureButton";
 
 	if not macroId then
-		macroId = CreateMacro("MogMount HS", MogMount.EmptyHearthstoneIcon, macroBody, nil);
+		macroId = CreateMacro("MogCompanions HS", MogCompanions.EmptyHearthstoneIcon, macroBody, nil);
 	else
-		EditMacro(macroId, "MogMount HS", MogMount.EmptyHearthstoneIcon, macroBody, nil);
+		EditMacro(macroId, "MogCompanions HS", MogCompanions.EmptyHearthstoneIcon, macroBody, nil);
 	end
 
 	PickupMacro(macroId);
@@ -317,7 +317,7 @@ local function RefreshHearthstoneList()
 		return;
 	end
 
-	local toys = MogMount:getSortedHearthstoneToys(false);
+	local toys = MogCompanions:getSortedHearthstoneToys(false);
 
 	HearthstoneDataProvider:Flush();
 
@@ -330,14 +330,14 @@ end
 -- Creates the full Hearthstones tab frame inside WardrobeCollection.TabContent.
 -- Idempotent: returns early if HearthstonesPage already exists.
 -- Contains: search box, gear dropdown, section title, scrollable toy list + scrollbar.
-function MogMount:CreateHearthstonesFrame(collection, referenceFrame)
+function MogCompanions:CreateHearthstonesFrame(collection, referenceFrame)
 	if HearthstonesPage ~= nil then
 		return HearthstonesPage;
 	end
 
 	local parent = collection.TabContent;
 
-	HearthstonesPage = CreateFrame("Frame", "MogMountHearthstonesPage", parent);
+	HearthstonesPage = CreateFrame("Frame", "MogCompanionsHearthstonesPage", parent);
 
 	if referenceFrame ~= nil then
 		HearthstonesPage:SetAllPoints(referenceFrame);
@@ -348,7 +348,7 @@ function MogMount:CreateHearthstonesFrame(collection, referenceFrame)
 	HearthstonesPage:Hide();
 
 	-- Search box (matching Mounts tab position)
-	HearthstonesSearchBox = CreateFrame("EditBox", "MogMountHearthstoneSearchBox", HearthstonesPage, "TransmogSearchBoxTemplate");
+	HearthstonesSearchBox = CreateFrame("EditBox", "MogCompanionsHearthstoneSearchBox", HearthstonesPage, "TransmogSearchBoxTemplate");
 	HearthstonesSearchBox:SetPoint("TOPRIGHT", HearthstonesPage, "TOPRIGHT", -174, -23);
 	local iconPos, iconParent, iconParentPos, iconX, iconY = HearthstonesSearchBox.searchIcon:GetPoint();
 	HearthstonesSearchBox.searchIcon:SetPoint(iconPos, iconParent, iconParentPos, iconX, iconY + 1);
@@ -356,17 +356,17 @@ function MogMount:CreateHearthstonesFrame(collection, referenceFrame)
 		if SearchBoxTemplate_OnTextChanged ~= nil then
 			SearchBoxTemplate_OnTextChanged(self);
 		end
-		MogMount.HearthstoneSearchString = self:GetText() or "";
+		MogCompanions.HearthstoneSearchString = self:GetText() or "";
 		RefreshHearthstoneList();
 	end)
 
 	-- Gear dropdown (matching Mounts tab ShortcutSettings)
-	local HearthstoneShortcuts = CreateFrame("DropdownButton", "MogMountHearthstoneShortcuts", HearthstonesPage, "DamageMeterSettingsDropdownButtonTemplate");
+	local HearthstoneShortcuts = CreateFrame("DropdownButton", "MogCompanionsHearthstoneShortcuts", HearthstonesPage, "DamageMeterSettingsDropdownButtonTemplate");
 	HearthstoneShortcuts:SetPoint("TOPRIGHT", HearthstonesPage, "TOPRIGHT", -26, -22);
 	HearthstoneShortcuts:SetupMenu(function(dropdown, rootDescription)
-		rootDescription:CreateTitle("MogMount");
-		rootDescription:CreateButton(L["Open Settings"], function() MogMount:OpenSettings() end);
-		rootDescription:CreateButton(L["Open Keybinds"], function() MogMount:OpenKeybinds() end);
+		rootDescription:CreateTitle("MogCompanions");
+		rootDescription:CreateButton(L["Open Settings"], function() MogCompanions:OpenSettings() end);
+		rootDescription:CreateButton(L["Open Keybinds"], function() MogCompanions:OpenKeybinds() end);
 		rootDescription:CreateButton(L["Create Macro"], function() CreateHearthstoneMacro(HearthstoneShortcuts) end);
 	end)
 
@@ -382,7 +382,7 @@ function MogMount:CreateHearthstonesFrame(collection, referenceFrame)
 	HearthstoneSlotTitleDivider:SetPoint("TOPLEFT", HearthstoneSlotTitle, "BOTTOMLEFT", 0, -2);
 
 	-- List container (full-width, no preview panel)
-	local HearthstoneList = CreateFrame("Frame", "MogMountHearthstoneListFrame", HearthstonesPage);
+	local HearthstoneList = CreateFrame("Frame", "MogCompanionsHearthstoneListFrame", HearthstonesPage);
 	HearthstoneList:SetPoint("TOPLEFT", HearthstonesPage, "TOPLEFT", 24, -95);
 	HearthstoneList:SetPoint("BOTTOMRIGHT", HearthstonesPage, "BOTTOMRIGHT", -8, 18);
 	HearthstoneList:SetFrameStrata("HIGH");
@@ -392,7 +392,7 @@ function MogMount:CreateHearthstonesFrame(collection, referenceFrame)
 	HearthstoneListBackground:SetAllPoints(true);
 
 	-- ScrollBox
-	local HearthstoneScrollBox = CreateFrame("Frame", "MogMountHearthstoneScrollBox", HearthstoneList, "WowScrollBoxList");
+	local HearthstoneScrollBox = CreateFrame("Frame", "MogCompanionsHearthstoneScrollBox", HearthstoneList, "WowScrollBoxList");
 	HearthstoneScrollBox:SetPoint("TOPLEFT", HearthstoneList, "TOPLEFT", 12, -2);
 	HearthstoneScrollBox:SetPoint("BOTTOMRIGHT", HearthstoneList, "BOTTOMRIGHT", -40, 4);
 
@@ -434,14 +434,14 @@ function MogMount:CreateHearthstonesFrame(collection, referenceFrame)
 		end)
 	end
 
-	scrollView:SetElementInitializer("MogMountListButtonTemplate", HearthstoneListInitializer);
+	scrollView:SetElementInitializer("MogCompanionsListButtonTemplate", HearthstoneListInitializer);
 	scrollView:SetElementExtent(22);
 	ScrollUtil.InitScrollBoxListWithScrollBar(HearthstoneScrollBox, HearthstoneScrollBar, scrollView);
 	scrollView:SetDataProvider(HearthstoneDataProvider);
 
 	HearthstoneListScrollView = scrollView;
 
-	local toys = MogMount:getSortedHearthstoneToys(false);
+	local toys = MogCompanions:getSortedHearthstoneToys(false);
 	for i = 1, #toys do
 		HearthstoneDataProvider:Insert(toys[i]);
 	end
@@ -453,17 +453,17 @@ end
 -- Creates the clickable hearthstone slot icon that sits beside the mount slots
 -- in the transmog CharacterPreview panel. Only created once (guarded by HearthstoneFrame nil check).
 local function CreateHearthstoneSlot()
-	if HearthstoneFrame ~= nil or _G.MogMountFrame == nil then
+	if HearthstoneFrame ~= nil or _G.MogCompanionsFrame == nil then
 		return;
 	end
 
 	local borderSize = 59;
 	local borderOffset = 7;
 
-	HearthstoneFrame = CreateFrame("Frame", "HearthstoneFrame", _G.MogMountFrame);
+	HearthstoneFrame = CreateFrame("Frame", "HearthstoneFrame", _G.MogCompanionsFrame);
 	HearthstoneFrame:SetFrameStrata("MEDIUM");
 	HearthstoneFrame:SetSize(44, 44);
-	HearthstoneFrame:SetPoint("TOPLEFT", _G.MogMountFrame, "TOPLEFT", 0, -128);
+	HearthstoneFrame:SetPoint("TOPLEFT", _G.MogCompanionsFrame, "TOPLEFT", 0, -128);
 	HearthstoneFrame:Show();
 
 	HearthstoneTexture = HearthstoneFrame:CreateTexture(nil, "BACKGROUND");
@@ -540,7 +540,7 @@ local function CreateHearthstoneSlot()
 	end)
 
 	HearthstoneBorder:SetScript("OnMouseDown", function()
-		MogMount:OpenHearthstonesTab();
+		MogCompanions:OpenHearthstonesTab();
 		PlaySound(SOUNDKIT.UI_TRANSMOG_GEAR_SLOT_CLICK);
 	end)
 
@@ -551,7 +551,7 @@ end
 -- Ensures saved-variable entries exist for all known outfits.
 -- Defensive guard run before UI creation to avoid nil-access on outfit tables.
 local function EnsureOutfitHearthstoneSaved()
-	if MogMountCharacterSaved == nil or C_TransmogOutfitInfo == nil or C_TransmogOutfitInfo.GetOutfitsInfo == nil then
+	if MogCompanionsCharacterSaved == nil or C_TransmogOutfitInfo == nil or C_TransmogOutfitInfo.GetOutfitsInfo == nil then
 		return;
 	end
 
@@ -562,18 +562,18 @@ local function EnsureOutfitHearthstoneSaved()
 	end
 
 	for i = 1, #outfits do
-		MogMount:CreateEmptyOutfit(outfits[i].outfitID);
+		MogCompanions:CreateEmptyOutfit(outfits[i].outfitID);
 	end
 
 	local viewedOutfitID = GetViewedOutfitID();
 	local activeOutfitID = GetActiveOutfitID();
 
 	if viewedOutfitID ~= nil then
-		MogMount:CreateEmptyOutfit(viewedOutfitID);
+		MogCompanions:CreateEmptyOutfit(viewedOutfitID);
 	end
 
 	if activeOutfitID ~= nil then
-		MogMount:CreateEmptyOutfit(activeOutfitID);
+		MogCompanions:CreateEmptyOutfit(activeOutfitID);
 	end
 end
 
@@ -587,7 +587,7 @@ local function InitializeHearthstones()
 
 	EnsureOutfitHearthstoneSaved();
 	CreateHearthstoneSlot();
-	MogMount:CreateHearthstonesFrame(TransmogFrame.WardrobeCollection, nil);
+	MogCompanions:CreateHearthstonesFrame(TransmogFrame.WardrobeCollection, nil);
 	EnsureHearthstoneSecureButton();
 	EnsureHearthstonePostClick();
 	RefreshHearthstoneSecureButton();
@@ -619,7 +619,7 @@ HearthstoneEventFrame:SetScript("OnEvent", function(self, event, ...)
 
 	if event == "GET_ITEM_INFO_RECEIVED" then
 		local itemID = ...;
-		if itemID == nil or not MogMount:hasValue(MogMount.HearthstoneToyItemIDs, itemID) then
+		if itemID == nil or not MogCompanions:hasValue(MogCompanions.HearthstoneToyItemIDs, itemID) then
 			return;
 		end
 	end
@@ -647,10 +647,10 @@ end
 HookTransmogFrame();
 
 -- Shows the Hearthstones tab page and refreshes the list.
-function MogMount:ShowHearthstonesPage()
+function MogCompanions:ShowHearthstonesPage()
 	if HearthstonesPage == nil then
 		if TransmogFrame ~= nil and TransmogFrame.WardrobeCollection ~= nil then
-			MogMount:CreateHearthstonesFrame(TransmogFrame.WardrobeCollection, nil);
+			MogCompanions:CreateHearthstonesFrame(TransmogFrame.WardrobeCollection, nil);
 		end
 	end
 
@@ -661,16 +661,16 @@ function MogMount:ShowHearthstonesPage()
 	RefreshHearthstoneList();
 end
 
-function MogMount:HideHearthstonesPage()
+function MogCompanions:HideHearthstonesPage()
 	if HearthstonesPage ~= nil then
 		HearthstonesPage:Hide();
 	end
 end
 
-function MogMount:OpenHearthstonesTab()
+function MogCompanions:OpenHearthstonesTab()
 	if TransmogFrame ~= nil and TransmogFrame.WardrobeCollection ~= nil and TransmogFrame.WardrobeCollection.hearthstonesTabID ~= nil then
 		TransmogFrame.WardrobeCollection:SetTab(TransmogFrame.WardrobeCollection.hearthstonesTabID);
 	else
-		MogMount:ShowHearthstonesPage();
+		MogCompanions:ShowHearthstonesPage();
 	end
 end

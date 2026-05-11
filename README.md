@@ -1,8 +1,8 @@
-# MogMount-Zensunim
-A maintained fork of MogMount for World of Warcraft, with compatibility updates and new functionality.
+# MogCompanions
+Pair your companions (mounts, pets, hearthstones) with your transmog outfit for World of Warcraft
 
 ## Attribution
-This addon is based on MogMount by perrinthesmith.
+This addon is based off of a fork of MogMount by perrinthesmith.
 
 Original project:
 https://www.curseforge.com/wow/addons/mogmount
@@ -16,5 +16,5 @@ This version includes modifications, maintenance updates, and additional functio
 
 ### 1.0
 * Initial release
-* Added `/mmz` slash command
+* Added `/mcomp` slash command
 * Added Hearthstones tab support for selecting an owned Hearthstone toy per outfit.
