@@ -1,6 +1,5 @@
 local L = MogMountLocales;
 
-
 -- Core
 
 -- Character Title
@@ -32,8 +31,6 @@ L["Slash Help Mount"] = "Summon or dismount using MogMount";
 L["Slash Help Options"] = "Open the MogMount options panel";
 L["No Hearthstone Toys"] = "No Hearthstone toys are available.";
 L["Macro Combat Error"] = "MogMount cannot create macros while you are in combat.";
-
-
 
 -- Settings
 

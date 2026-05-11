@@ -1,11 +1,9 @@
-﻿local addonName, addon = ...
+local addonName, addon = ...
 local ns = select(2,...)
 local MogMount = CreateFrame('Frame', 'MogMountAddonFrame', UIParent)
 
 ns.MogMount = MogMount;
 local L = MogMountLocales;
-
-
 
 local playerName = UnitName("player");
 local transmogs = {};
@@ -15,16 +13,7 @@ local titleLoaded = false;
 
 local TitleDropdown;
 
-
-
-
-
-
-
-
-
 function MogMount:UpdateTitle()
-
 	local SavedCurrentTitle = -1;
 
 	if MogMountCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetActiveOutfitID()].Title > 0 then
@@ -34,20 +23,11 @@ function MogMount:UpdateTitle()
 	if SavedCurrentTitle ~= nil and GetCurrentTitle() ~= SavedCurrentTitle and (SavedCurrentTitle == -1 or IsTitleKnown(SavedCurrentTitle)) then
 		SetCurrentTitle(SavedCurrentTitle);
 	end
-
 end
-
-
 
 function MogMountBindingClicked()
-
 	MogMountSummon();
-
 end
-
-
-
-
 
 local function PrintSlashHelp()
 	print("|cFF00CCFFMogMount-Zensunim commands:|r");
@@ -85,18 +65,11 @@ SlashCmdList["MOGMOUNTZENSUNIM_MOUNT"] = function()
 	MogMountSummon();
 end
 
-
-
 local function OnSettingChanged(setting, value)
-
 	MogMountCharacterSaved[setting:GetVariable()] = value;
-
 end
 
-
-
 local function CreateDisplayTitle(titleID)
-
 	local title, _ = GetTitleName(titleID);
 	local displayTitle = "";
 
@@ -111,29 +84,20 @@ local function CreateDisplayTitle(titleID)
 	end
 
 	return displayTitle;
-
 end
 
-
-
 local function SetSelectedTitle(value)
-
 	titleLoaded = false;
 	TitleDropdown:SetDefaultText(CreateDisplayTitle(value));
 	MogMountCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Title = value;
 	
 	MogMount:UpdateTitle();
-
 end
 
-
-
 local function GetTitles()
-
 	TitleDropdown = CreateFrame("DropdownButton", nil, TransmogFrame.CharacterPreview, "WowStyle1DropdownTemplate");
 
 	local function GeneratorFunctionTitles(dropdown, rootDescription)
-
 		rootDescription:CreateButton(playerName, SetSelectedTitle, 0);
 
 		local titlesRaw = {};
@@ -153,7 +117,6 @@ local function GetTitles()
 		for i = 1, #titlesRaw do
 			rootDescription:CreateButton(titlesRaw[i].name, SetSelectedTitle, titlesRaw[i].id);
 		end
-
 
 		local extent = 20;
 		local maxCharacters = 20;
@@ -187,16 +150,9 @@ local function GetTitles()
 	TitleDropdown:SetScript("OnLeave", function()
 		GameTooltip:Hide();
 	end)
-
 end
 
-
-
-
-
-
 local function OpenKeybindingsToMogMount()
-
 	Settings.OpenToCategory(Settings.KEYBINDINGS_CATEGORY_ID, "MogMount");
 	children = {SettingsPanel.Container.SettingsList.ScrollBox.ScrollTarget:GetChildren()}
 	
@@ -214,18 +170,13 @@ local function OpenKeybindingsToMogMount()
 			end
 		end
 	end
-
 end
 
 function MogMount:OpenKeybinds()
 	OpenKeybindingsToMogMount();
 end
 
-
-
-
 local function InitTitles(reset)
-
 	if not reset then
 
 		if MogMountCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Title == 0 then
@@ -241,17 +192,9 @@ local function InitTitles(reset)
 		GetTitles();
 
 	end
-
 end
 
-
-
-
-
-
-
 function MogMount:OnEvent(event, addOnName)
-
 	if event == "PLAYER_ENTERING_WORLD" and not loaded then
 
 		if MogMountCharacterSaved == nil then
@@ -289,8 +232,6 @@ function MogMount:OnEvent(event, addOnName)
 	
 	end
 
-
-
 	if event == "VIEWED_TRANSMOG_OUTFIT_CHANGED" then
 
 		MogMount:CreateEmptyOutfit(C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID());
@@ -307,8 +248,6 @@ function MogMount:OnEvent(event, addOnName)
 
 	end		
 
-
-
 	if event == "TRANSMOGRIFY_OPEN" then
 
 		C_Timer.After(0.1, function()
@@ -316,7 +255,6 @@ function MogMount:OnEvent(event, addOnName)
 		end)
 
 	end
-
 end
 
 MogMount:RegisterEvent("ADDON_LOADED")

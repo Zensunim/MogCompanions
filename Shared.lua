@@ -4,18 +4,11 @@ local MogMount = ns.MogMount;
 
 local playerName = UnitName("player");
 
-
-
 function MogMountSortAlphabetical(a, b)
-
 	return a.name:lower() < b.name:lower();
-
 end
 
-
-
 function MogMount:hasValue(table, value)
-
 	for i, v in ipairs(table) do
 		if v == value then
 			return true;
@@ -23,13 +16,9 @@ function MogMount:hasValue(table, value)
 	end
 
 	return false;
-
 end
 
-
-
 function MogMount:GetCollectedMounts()
-
 	local collectedMounts = {};
 	local mountIDs = C_MountJournal.GetMountIDs();
 
@@ -41,13 +30,9 @@ function MogMount:GetCollectedMounts()
 	end
 
 	return collectedMounts;
-
 end
 
-
-
 function MogMount:sortMounts(mountsRaw)
-
 	local mounts = {};
 
 	for i = 1, #mountsRaw do
@@ -72,13 +57,9 @@ function MogMount:sortMounts(mountsRaw)
 	table.sort(mounts, MogMountSortAlphabetical);
 
 	return mounts;
-
 end
 
-
-
 function MogMount:listSearchString(name)
-
 	if MogMount.MountSearchString == "" or MogMount.MountSearchString == nil or string.len(MogMount.MountSearchString) < 1 then
 		return true;
 	elseif string.len(MogMount.MountSearchString) >= 1 and string.find(name:lower(), MogMount.MountSearchString:lower()) then
@@ -86,13 +67,9 @@ function MogMount:listSearchString(name)
 	else
 		return false;
 	end
-
 end
 
-
-
 function MogMount:getSortedFlyingMounts()
-
 	local mountsRaw = MogMount:sortMounts(C_MountJournal.GetCollectedDragonridingMounts());
 	local mounts = {};
 
@@ -104,13 +81,9 @@ function MogMount:getSortedFlyingMounts()
 	end 
 
 	return mounts;
-
 end
 
-
-
 function MogMount:getSortedGroundMounts()
-
 	local mountsRaw = MogMount:sortMounts(MogMount:GetCollectedMounts());
 	local mounts = {};
 
@@ -122,13 +95,9 @@ function MogMount:getSortedGroundMounts()
 	end
 
 	return mounts;
-
 end
 
-
-
 function MogMount:getSortedAquaticMounts()
-
 	local mountsRaw = MogMount:sortMounts(MogMount:GetCollectedMounts());
 	local mounts = {};
 	local aquaticTypeIDs = {231, 232, 254, 407, 436};
@@ -141,13 +110,9 @@ function MogMount:getSortedAquaticMounts()
 	end
 
 	return mounts;
-
 end
 
-
-
 function MogMount:getSortedSpecialMounts()
-
 	local mountsRaw = MogMount:sortMounts(MogMount:GetCollectedMounts());
 	local mounts = {};
 	local specialMountIDs = {460, 280, 284, 273, 274, 1039, 2237};
@@ -160,13 +125,9 @@ function MogMount:getSortedSpecialMounts()
 	end
 
 	return mounts;
-
 end
 
-
-
 function MogMount:getSortedAlternativeMounts()
-
 	local mountsRaw = MogMount:sortMounts(MogMount:GetCollectedMounts());
 	local mounts = {};
 
@@ -176,13 +137,9 @@ function MogMount:getSortedAlternativeMounts()
 	end
 
 	return mounts;
-
 end
 
-
-
 function MogMount:getRandomMount(type)
-
 	local mounts = {}
 
 	if type == "flying" then
@@ -206,10 +163,7 @@ function MogMount:getRandomMount(type)
 	local rand = math.random(1, #mounts);
 
 	return mounts[rand];
-
 end
-
-
 
 MogMount.EmptyHearthstoneIcon = 134414;
 MogMount.HearthstoneToyItemIDs = {
@@ -250,10 +204,7 @@ MogMount.HearthstoneToyItemIDs = {
     265100, -- Corewarden's Hearthstone
 };
 
-
-
 function MogMount:listHearthstoneSearchString(name)
-
 	if MogMount.HearthstoneSearchString == "" or MogMount.HearthstoneSearchString == nil or string.len(MogMount.HearthstoneSearchString) < 1 then
 		return true;
 	elseif string.len(MogMount.HearthstoneSearchString) >= 1 and string.find(name:lower(), MogMount.HearthstoneSearchString:lower()) then
@@ -261,13 +212,9 @@ function MogMount:listHearthstoneSearchString(name)
 	else
 		return false;
 	end
-
 end
 
-
-
 function MogMount:IsHearthstoneToyCollected(itemID)
-
 	if itemID == nil or itemID <= 1 then
 		return false;
 	end
@@ -277,10 +224,7 @@ function MogMount:IsHearthstoneToyCollected(itemID)
 	end
 
 	return false;
-
 end
-
-
 
 function MogMount:GetHearthstoneToyInfo(itemID)
 	if itemID == nil or itemID <= 1 then
@@ -326,7 +270,6 @@ function MogMount:GetHearthstoneToyInfo(itemID)
 end
  
 function MogMount:getSortedHearthstoneToys(ignoreSearch)
-
 	local toys = {};
 
 	for i = 1, #MogMount.HearthstoneToyItemIDs do
@@ -344,13 +287,9 @@ function MogMount:getSortedHearthstoneToys(ignoreSearch)
 	table.sort(toys, MogMountSortAlphabetical);
 
 	return toys;
-
 end
 
-
-
 function MogMount:getRandomHearthstoneToy()
-
 	local toys = MogMount:getSortedHearthstoneToys(true);
 
 	if #toys == 0 then
@@ -360,13 +299,9 @@ function MogMount:getRandomHearthstoneToy()
 	local rand = math.random(1, #toys);
 
 	return toys[rand];
-
 end
 
-
-
 local function CreateDisplayTitle(titleID)
-
 	local title, _ = GetTitleName(titleID);
 	local displayTitle = "";
 
@@ -381,13 +316,9 @@ local function CreateDisplayTitle(titleID)
 	end
 
 	return displayTitle;
-
 end
 
-
-
 function MogMount:getSortedTitles()
-
 	local titlesRaw = {}
 	local count = 1;
 
@@ -405,10 +336,7 @@ function MogMount:getSortedTitles()
 	return titlesRaw;
 end
 
-
-
 function MogMount:UpdateSelectMountDetails(type, id)
-
 	name, spellID, icon, isActive, isUsable, sourceType, isFavorite, isFactionSpecific, faction, shouldHideOnChar, isCollected, mountID, isSteadyFlight = C_MountJournal.GetMountInfoByID(id);
 	creatureDisplayInfoID, description, source, isSelfMount, mountTypeID, uiModelSceneID, animID, spellVisualKitID, disablePlayerMountPreview = C_MountJournal.GetMountInfoExtraByID(id);
 			
@@ -418,13 +346,9 @@ function MogMount:UpdateSelectMountDetails(type, id)
 	MogMountSelectedMount[type].id = mountID;
 	MogMountSelectedMount[type].display = creatureDisplayInfoID;
 	MogMountSelectedMount[type].type = mountTypeID;
-
 end
 
-
-
 function MogMount:CreateEmptyOutfit(id)
-
 	if MogMountCharacterSaved ~= nil and MogMountCharacterSaved["Outfit"..id] == nil then
 		MogMountCharacterSaved["Outfit"..id] = {};
 		MogMountCharacterSaved["Outfit"..id].Flying = 1;
@@ -434,5 +358,4 @@ function MogMount:CreateEmptyOutfit(id)
 	elseif MogMountCharacterSaved ~= nil and MogMountCharacterSaved["Outfit"..id].Hearthstone == nil then
 		MogMountCharacterSaved["Outfit"..id].Hearthstone = 1;
 	end
-
 end

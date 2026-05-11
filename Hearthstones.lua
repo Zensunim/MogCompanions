@@ -58,7 +58,6 @@ local function GetSelectedHearthstoneToy(outfitID)
 	return nil;
 end
 
-
 local function EnsureHearthstoneSecureButton()
 	if HearthstoneSecureButton ~= nil then
 		return;
@@ -587,8 +586,6 @@ local function HookTransmogFrame()
 end
 
 HookTransmogFrame();
-
-
 
 function MogMount:ShowHearthstonesPage()
 	if HearthstonesPage == nil then

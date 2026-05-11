@@ -4,18 +4,13 @@ local MogMount = ns.MogMount;
 local MogMountSettings = CreateFrame('Frame', 'MogMountSettingsFrame', UIParent);
 local L = MogMountLocales;
 
-
-
 local playerName = UnitName("player");
 local settingsLoaded = false;
 local transmogs = {};
 
 MogMountSettingsCategoryID = 0;
 
-
-
 local function GetOptionsFlyingMount()
-
 	local container = Settings.CreateControlTextContainer();
 
 	container:Add(0, "|T134400:18|t "..L["Settings Random Selection Label"]);
@@ -31,13 +26,9 @@ local function GetOptionsFlyingMount()
 	end
 
 	return container:GetData();
-
 end
 
-
-
 local function GetOptionsGroundMount()
-
 	local container = Settings.CreateControlTextContainer();
 
 	container:Add(0, "|T134400:18|t "..L["Settings Random Selection Label"]);
@@ -53,13 +44,9 @@ local function GetOptionsGroundMount()
 	end
 
 	return container:GetData();
-
 end
 
-
-
 local function GetOptionsAquaticMount()
-
 	local container = Settings.CreateControlTextContainer();
 	local mounts = MogMount:getSortedAquaticMounts();
 
@@ -82,13 +69,9 @@ local function GetOptionsAquaticMount()
 	end
 
 	return container:GetData();
-
 end
 
-
-
 local function GetOptionsSpecialMount()
-
 	local container = Settings.CreateControlTextContainer();
 	local mounts = MogMount:getSortedSpecialMounts();
 
@@ -111,13 +94,9 @@ local function GetOptionsSpecialMount()
 	end
 
 	return container:GetData();
-
 end
 
-
-
 local function GetOptionsAlternativeMount()
-
 	local container = Settings.CreateControlTextContainer();
 	local mounts = MogMount:getSortedAlternativeMounts();
 
@@ -140,21 +119,13 @@ local function GetOptionsAlternativeMount()
 	end
 
 	return container:GetData();
-
 end
-
-
 
 local function OnSettingChanged()
-
 	--
-
 end
 
-
-
 local function InitSettings()
-
 	local outfits = C_TransmogOutfitInfo.GetOutfitsInfo();
 
 	for i = 1, #outfits do
@@ -269,7 +240,6 @@ local function InitSettings()
 		local variableTable = MogMountCharacterSaved["Outfit"..outfitInfo.outfitID];
 
 		local function GetOptionsTitleSettings()
-
 			local container = Settings.CreateControlTextContainer();
 			local titles = MogMount:getSortedTitles();
 
@@ -301,7 +271,6 @@ local function InitSettings()
 		local variableTable = MogMountCharacterSaved["Outfit"..outfitInfo.outfitID];
 
 		local function GetOptionsFlyingMountSettings()
-
 			local container = Settings.CreateControlTextContainer();
 			local mounts = MogMount:getSortedFlyingMounts();
 
@@ -333,7 +302,6 @@ local function InitSettings()
 		local variableTable = MogMountCharacterSaved["Outfit"..outfitInfo.outfitID];
 
 		local function GetOptionsGroundMountSettings()
-
 			local container = Settings.CreateControlTextContainer();
 			local mounts = MogMount:getSortedGroundMounts();
 
@@ -358,13 +326,9 @@ local function InitSettings()
 	end
 
 	Settings.RegisterAddOnCategory(category);
-
 end
 
-
-
 function MogMountSettings:OnEvent(event, addOnName)
-
 	if event == "PLAYER_ENTERING_WORLD" and not settingsLoaded then
 
 		settingsLoaded = true;
@@ -372,7 +336,6 @@ function MogMountSettings:OnEvent(event, addOnName)
 		InitSettings();
 
 	end
-
 end
 
 MogMountSettings:RegisterEvent("ADDON_LOADED");

@@ -28,10 +28,7 @@ MogMountSelectedMount = {}
 MogMountSelectedMount.Flying = {}
 MogMountSelectedMount.Ground = {}
 
-
-
 local function getEmptyMountIcon()
-
 	local factionName = UnitFactionGroup("Player");
 	local _, raceName, raceID = UnitRace("Player");
 
@@ -116,13 +113,9 @@ local function getEmptyMountIcon()
 	end		
 
 	return emptyFlyingMountIcon, emptyGroundMountIcon;
-
 end
 
-
-
 function MogMountSummonFlying()
-
 	if MogMountCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetActiveOutfitID()].Flying > 1 then
 		C_MountJournal.SummonByID(MogMountCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetActiveOutfitID()].Flying);
 	elseif MogMountCharacterSaved.Default.Flying <= 1 then
@@ -131,13 +124,9 @@ function MogMountSummonFlying()
 	else
 		C_MountJournal.SummonByID(MogMountCharacterSaved.Default.Flying);
 	end
-
 end
 
-
-
 function MogMountSummonGround()
-
 	if MogMountCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetActiveOutfitID()].Ground > 1 then
 		C_MountJournal.SummonByID(MogMountCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetActiveOutfitID()].Ground);
 	elseif MogMountCharacterSaved.Default.Ground <= 1 then
@@ -146,47 +135,31 @@ function MogMountSummonGround()
 	else
 		C_MountJournal.SummonByID(MogMountCharacterSaved.Default.Ground);
 	end
-
 end
 
-
-
 function MogMountSummonAquatic()
-
 	if MogMountCharacterSaved.Default.Aquatic <= 1 then
 		local randomMount = MogMount:getRandomMount("aquatic");
 		C_MountJournal.SummonByID(randomMount.id);
 	else
 		C_MountJournal.SummonByID(MogMountCharacterSaved.Default.Aquatic);
 	end
-
 end
 
-
-
 function MogMountSummonSpecial()
-
 	if MogMountCharacterSaved.Default.Special <= 1 then
 		local randomMount = MogMount:getRandomMount("special");
 		C_MountJournal.SummonByID(randomMount.id);
 	else
 		C_MountJournal.SummonByID(MogMountCharacterSaved.Default.Special);
 	end
-
 end
-
-
 
 function MogMountSummonAlternative()
-
 	C_MountJournal.SummonByID(MogMountCharacterSaved.Default.Alternative);
-
 end
 
-
-
 function MogMountSummon()
-	
 	if CanExitVehicle() then
 
 		VehicleExit();
@@ -224,13 +197,9 @@ function MogMountSummon()
 	end
 
 	MogMount:UpdateTitle();
-
 end
 
-
-
 function MogMount:InitMountSlots(reset)
-
 	if reset then
 
 		local point, relativeTo, relativePoint, xOfs, yOfs = TransmogFrame.CharacterPreview.RightSlots:GetPoint();
@@ -482,13 +451,9 @@ function MogMount:InitMountSlots(reset)
 		end)
 
 	end
-
 end
 
-
-
 local function OnFlyingMountSelectionChanged(self, data, selected)
-
 	local button = FlyingMountListScrollBox:FindFrame(data);
 	local children = {FlyingMountListScrollBox.ScrollTarget:GetChildren()};
 
@@ -507,10 +472,7 @@ local function OnFlyingMountSelectionChanged(self, data, selected)
 	end
 end
 
-
-
 local function OnGroundMountSelectionChanged(self, data, selected)
-
 	local button = GroundMountListScrollBox:FindFrame(data);
 	local children = {GroundMountListScrollBox.ScrollTarget:GetChildren()};
 
@@ -528,13 +490,9 @@ local function OnGroundMountSelectionChanged(self, data, selected)
 			button:LockHighlight();
 		end
 	end
-
 end
 
-
-
 function MissingKeybindOrMacro()
-
 	local key1, key2 = '', '';
 	key1, key2 = GetBindingKey("Mount/Dismount");
 
@@ -558,25 +516,17 @@ function MissingKeybindOrMacro()
 	end
 
 	return missingMacro and missingKeys;
-
 end
-
-
 
 local function ToggleGroundMountIncludeFlying()
-
 	-- CheckboxShowFlyingInGroundList:IsSelected()
-
 end
-
-
 
 local function FilterIsChecked(filter)
 	return MogMountSaved.ShowFlyingInGround;
 end
 
 local function FilterSetChecked(filter)
-
 	if FilterIsChecked(filter) then
 		MogMountSaved.ShowFlyingInGround = false;
 	else
@@ -600,10 +550,7 @@ local function FilterSetChecked(filter)
 	
 	GroundMountListScrollView:SetDataProvider(GroundMountDataProvider);
 	GroundMountListScrollBox:ScrollToElementDataIndex(scrollToIndex);
-
 end
-
-
 
 local function ToggleReminder()
 	if MissingKeybindOrMacro() then
@@ -619,10 +566,7 @@ local function ToggleReminder()
 	end
 end
 
-
-
 local function CreateMacroButton(Parent)
-
 	macroId = false;
 
 	for i = 1, 120 do
@@ -655,13 +599,9 @@ local function CreateMacroButton(Parent)
 			end
 		end
 	end)
-
 end
 
-
-
 local function CreateShortcuts(f)
-
 	local ShortcutSettings = CreateFrame("DropdownButton", "ShortcutSettings", f, "DamageMeterSettingsDropdownButtonTemplate");
 	ShortcutSettings:SetPoint("TOPRIGHT", f, "TOPRIGHT", -26, -22);
 	ShortcutSettings:SetPoint("CENTER");
@@ -672,13 +612,9 @@ local function CreateShortcuts(f)
 		rootDescription:CreateButton(L["Create Macro"], function() CreateMacroButton(ShortcutSettings) end);
 	end)
 	ShortcutSettings:Hide()
-
 end
 
-
-
 function CreateSetupReminder(f)
-
 	SetupReminderFrame = CreateFrame("Frame", SetupReminderFrame, f);
 	SetupReminderFrame:SetAllPoints(f);
 	SetupReminderFrame:SetParent(f);
@@ -715,13 +651,9 @@ function CreateSetupReminder(f)
 	CreateMacroButtonFrame:SetScript("OnMouseDown", function()
 		CreateMacroButton(CreateMacroButtonFrame);
 	end)
-
 end
 
-
-
 function MogMount:InitMountTab()
-
 	if not TransmogFrame.WardrobeCollection.mountsTabID then
 
 		hooksecurefunc(TransmogFrame.WardrobeCollection, "OnLoad", function()
@@ -874,7 +806,6 @@ function MogMount:InitMountTab()
 		FlyingMountSelectionBehavior:RegisterCallback(SelectionBehaviorMixin.Event.OnSelectionChanged, OnFlyingMountSelectionChanged, self);
 
 		function SetSelectedFlyingMount(value)
-
 			selectedValue = value;
 			name, spellID, icon, isActive, isUsable, sourceType, isFavorite, isFactionSpecific, faction, shouldHideOnChar, isCollected, mountID, isSteadyFlight = C_MountJournal.GetMountInfoByID(value);
 			creatureDisplayInfoID, description, source, isSelfMount, mountTypeID, uiModelSceneID, animID, spellVisualKitID, disablePlayerMountPreview = C_MountJournal.GetMountInfoExtraByID(value);
@@ -904,7 +835,6 @@ function MogMount:InitMountTab()
 		end	
 
 		local function FlyingMountListInitializer(button, data)
-
 			local isSelected = FlyingMountSelectionBehavior:IsElementDataSelected(data);
 
 			if data.id == MogMountCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetActiveOutfitID()].Flying then
@@ -1039,7 +969,6 @@ function MogMount:InitMountTab()
 		GroundMountSelectionBehavior:RegisterCallback(SelectionBehaviorMixin.Event.OnSelectionChanged, OnGroundMountSelectionChanged, self);
 
 		function SetSelectedGroundMount(value)
-
 			selectedValue = value;
 			name, spellID, icon, isActive, isUsable, sourceType, isFavorite, isFactionSpecific, faction, shouldHideOnChar, isCollected, mountID, isSteadyFlight = C_MountJournal.GetMountInfoByID(value);
 			creatureDisplayInfoID, description, source, isSelfMount, mountTypeID, uiModelSceneID, animID, spellVisualKitID, disablePlayerMountPreview = C_MountJournal.GetMountInfoExtraByID(value);
@@ -1069,7 +998,6 @@ function MogMount:InitMountTab()
 		end	
 
 		local function GroundMountListInitializer(button, data)
-
 			local isSelected = GroundMountSelectionBehavior:IsElementDataSelected(data);
 
 			if data.id == MogMountCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetActiveOutfitID()].Ground then
@@ -1217,13 +1145,9 @@ MountListSearchBox:SetScript("OnTextChanged", function(self)
 	end
 
 	ToggleReminder();
-
 end
 
-
-
 function ClearSelectedFlyingMount()
-
 	FlyingMountModel:SetAlpha(0);
 
 	children = {FlyingMountListScrollBox.ScrollTarget:GetChildren()};
@@ -1234,13 +1158,9 @@ function ClearSelectedFlyingMount()
 	end   
 
 	FlyingMountListScrollBox:ScrollToElementDataIndex(1);
-
 end
 
-
-
 function ClearSelectedGroundMount()
-
 	GroundMountModel:SetAlpha(0);
 
 	children = {GroundMountListScrollBox.ScrollTarget:GetChildren()};
@@ -1251,13 +1171,9 @@ function ClearSelectedGroundMount()
 	end   
 
 	GroundMountListScrollBox:ScrollToElementDataIndex(1);
-
 end
 
-
-
 function UpdateSelectedMountRow()
-
 	if FlyingMountListScrollBox then
 
 		ClearSelectedFlyingMount();
@@ -1311,5 +1227,4 @@ function UpdateSelectedMountRow()
 		end
 
 	end
-
 end
