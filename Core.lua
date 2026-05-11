@@ -184,7 +184,15 @@ local function GetTitles()
 
 	TitleDropdown:SetScript("OnEnter", function()
 		GameTooltip:SetOwner(TitleDropdown, "ANCHOR_RIGHT");
-		GameTooltip:AddLine(L["Character Title Tooltip"], 1, 1, 1);
+		GameTooltip:AddLine(L["Character Title Tooltip Header"], 1, 1, 1);
+		local outfitID = C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID();
+		local outfitData = MogCompanionsCharacterSaved and outfitID and MogCompanionsCharacterSaved["Outfit"..outfitID];
+		local titleVal = outfitData and outfitData.Title;
+		if titleVal == nil or titleVal == 0 then
+			GameTooltip:AddLine(L["Character Title Tooltip Unset"], 1, 0.82, 0, true);
+		else
+			GameTooltip:AddLine(L["Character Title Tooltip Set"], 1, 0.82, 0, true);
+		end
 		GameTooltip:Show();
 	end)
 

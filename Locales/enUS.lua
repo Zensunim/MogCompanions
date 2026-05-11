@@ -7,7 +7,9 @@ local L = MogCompanionsLocales;
 -- Core
 
 -- Character Title
-L["Character Title Tooltip"] = "Character Title";
+L["Character Title Tooltip Header"] = "Character Title";
+L["Character Title Tooltip Set"] = "When you mount wearing this outfit, your title will change to this selection.";
+L["Character Title Tooltip Unset"] = "Your title will not change with this outfit. Select a title and your title will automatically change when you mount wearing this outfit.";
 L["Default Title"] = "[Don't Change Title]";
 
 -- Slots
