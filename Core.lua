@@ -31,6 +31,7 @@ local SetSelectedFlyingMount, SetSelectedGroundMount;
 
 local SetupReminderFrame;
 local MountListSearchBox, FilterDropdown;
+local FlyingMountPreview, FlyingMountList, GroundMountPreview, GroundMountList;
 
 MogMount.MountSearchString = "";
 
@@ -912,6 +913,7 @@ local function InitMountTab()
 			self.TabHeaders:SetTabShown(self.custmSetsTabID, true);
 			self.TabHeaders:SetTabShown(self.situationsTabID, true);
 			self.TabHeaders:SetTabShown(self.mountsTabID, true);
+			self.TabHeaders:SetTabShown(self.hearthstonesTabID, true);
 		end
 
 		local s = 0.85714285714;
@@ -989,7 +991,7 @@ local function InitMountTab()
 
 		--
 
-		local FlyingMountPreview = CreateFrame("Frame", "MountTabFlyingPreview", f);
+		FlyingMountPreview = CreateFrame("Frame", "MountTabFlyingPreview", f);
 		FlyingMountPreview:SetPoint("TOPLEFT", f, "TOPLEFT", 24 * s, -114 * s);
 		FlyingMountPreview:SetFrameStrata("HIGH");
 		FlyingMountPreview:SetSize(x, y);
@@ -1025,7 +1027,7 @@ local function InitMountTab()
 		local gap = 16 * s;
 		local r = 8;
 
-		local FlyingMountList = CreateFrame("Frame", "FlyingMountList", f);
+		FlyingMountList = CreateFrame("Frame", "FlyingMountList", f);
 		FlyingMountList:SetPoint("TOPLEFT", f, "TOPLEFT", xx + gap + x, yy - ii);
 		FlyingMountList:SetFrameStrata("HIGH");
 		FlyingMountList:SetSize(fw - (xx + ww + gap + xx + r), y - (ii * 2));
@@ -1154,7 +1156,7 @@ local function InitMountTab()
 		FlyingMountListBackground:SetAtlas("transmog-situations-containerbg", true);
 		FlyingMountListBackground:SetAllPoints(true);
 
-		local GroundMountPreview = CreateFrame("Frame", "MountTabGroundPreview", f);
+		GroundMountPreview = CreateFrame("Frame", "MountTabGroundPreview", f);
 		GroundMountPreview:SetPoint("TOPLEFT", f, "TOPLEFT", 24 * s, -564 * s);
 		GroundMountPreview:SetFrameStrata("HIGH");
 		GroundMountPreview:SetSize(x, y);
@@ -1186,7 +1188,7 @@ local function InitMountTab()
 		local _, _, _, xx, yy = GroundMountPreview:GetPoint();
 		local ww, hh = GroundMountPreview:GetSize();
 
-		local GroundMountList = CreateFrame("Frame", "MountTabGroundPreview", f);
+		GroundMountList = CreateFrame("Frame", "MountTabGroundPreview", f);
 		GroundMountList:SetPoint("TOPLEFT", f, "TOPLEFT", xx + gap + x, yy - ii);
 		GroundMountList:SetFrameStrata("HIGH");
 		GroundMountList:SetSize(fw - (xx + ww + gap + xx + r), y - (ii * 2));
@@ -1379,7 +1381,30 @@ local function InitMountTab()
 		--		
 	
 		TransmogFrame.WardrobeCollection.mountsTabID = TransmogFrame.WardrobeCollection:AddNamedTab(L["Mount Tab Title"], MountsFrame);
+		TransmogFrame.WardrobeCollection.hearthstonesTabID = TransmogFrame.WardrobeCollection:AddNamedTab(L["Hearthstone Tab Title"], MountsFrame);
 		TransmogFrame.WardrobeCollection:UpdateTabs();
+
+		hooksecurefunc(TransmogFrame.WardrobeCollection, "SetTab", function(self, tabID)
+			if tabID == self.mountsTabID then
+				if FlyingMountPreview ~= nil then FlyingMountPreview:Show(); end
+				if FlyingMountList ~= nil then FlyingMountList:Show(); end
+				if GroundMountPreview ~= nil then GroundMountPreview:Show(); end
+				if GroundMountList ~= nil then GroundMountList:Show(); end
+				if MountListSearchBox ~= nil then MountListSearchBox:Show(); end
+				if FilterDropdown ~= nil then FilterDropdown:Show(); end
+				MogMount:HideHearthstonesPage();
+			elseif tabID == self.hearthstonesTabID then
+				if FlyingMountPreview ~= nil then FlyingMountPreview:Hide(); end
+				if FlyingMountList ~= nil then FlyingMountList:Hide(); end
+				if GroundMountPreview ~= nil then GroundMountPreview:Hide(); end
+				if GroundMountList ~= nil then GroundMountList:Hide(); end
+				if MountListSearchBox ~= nil then MountListSearchBox:Hide(); end
+				if FilterDropdown ~= nil then FilterDropdown:Hide(); end
+				MogMount:ShowHearthstonesPage();
+			else
+				MogMount:HideHearthstonesPage();
+			end
+		end);
 	
 	end
 
