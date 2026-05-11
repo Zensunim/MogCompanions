@@ -276,7 +276,7 @@ function MogCompanions:InitMountSlots(reset)
 		flyingMountBorder:SetPoint("TOPLEFT", flyingMountFrame, "TOPLEFT", borderOffset * -1, borderOffset);
 		flyingMountBorder:Show();
 
-		--
+		-- Flying Mount Border Highlight
 
 		flyingMountBorderHighlight = CreateFrame("Frame", "FlyingMountBorderHighlight", flyingMountFrame);
 		flyingMountBorderHighlight:SetFrameStrata("HIGH");
@@ -342,7 +342,7 @@ function MogCompanions:InitMountSlots(reset)
 		groundMountBorder:SetPoint("TOPLEFT", groundMountFrame, "TOPLEFT", borderOffset * -1, borderOffset);
 		groundMountBorder:Show();
 
-		--
+		-- Ground Mount Border Highlight
 
 		groundMountBorderHighlight = CreateFrame("Frame", "GroundMountBorderHighlight", groundMountFrame);
 		groundMountBorderHighlight:SetFrameStrata("HIGH");
@@ -405,7 +405,7 @@ function MogCompanions:InitMountSlots(reset)
 	flyingMountTexture:SetAllPoints(flyingMountFrame);
 	flyingMountFrame.texture = flyingMountTexture;
 
-	--
+	-- Ground mount slot icon
 
 	name, spellID, icon, isActive, isUsable, sourceType, isFavorite, isFactionSpecific, faction, shouldHideOnChar, isCollected, mountID, isSteadyFlight = C_MountJournal.GetMountInfoByID(MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Ground);
 	creatureDisplayInfoID, description, source, isSelfMount, mountTypeID, uiModelSceneID, animID, spellVisualKitID, disablePlayerMountPreview = C_MountJournal.GetMountInfoExtraByID(MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Ground);
@@ -722,6 +722,7 @@ function MogCompanions:InitMountTab()
 			self.TabHeaders:SetTabShown(self.hearthstonesTabID, true);
 		end
 
+		-- Layout scale factor (6/7 ≈ 0.857) that maps the 360-unit preview design coords to the wardrobe tab's actual rendered dimensions.
 		local s = 0.85714285714;
 
 		local x, y = 360 * s, 360 * s;
@@ -743,7 +744,7 @@ function MogCompanions:InitMountTab()
 		f:SetFrameStrata("HIGH");
 		f:Hide();
 
-		--
+		-- Mount tab controls: filter dropdown, search box, setup reminder, and gear menu
 
 		FilterDropdown = CreateFrame("DropdownButton", nil, f, "WowStyle1FilterDropdownTemplate");
 		FilterDropdown:SetPoint("TOPRIGHT", f, "TOPRIGHT", -60, -24);
@@ -761,14 +762,14 @@ function MogCompanions:InitMountTab()
 		local iconPostion, iconParent, iconParentPostion, iconX, iconY = MountListSearchBox.searchIcon:GetPoint();
 		MountListSearchBox.searchIcon:SetPoint(iconPostion, iconParent, iconParentPostion, iconX, iconY + 1);
 
-		---
+		-- Setup reminder banner and shortcut gear menu
 
 		CreateSetupReminder(f);
 		CreateShortcuts(f);
 
 		ToggleReminder();
 
-		--
+		-- Flying and ground section title labels
 
 		local FlyingSlotTitle = f:CreateFontString(nil, "OVERLAY", "GameFontHighlightHuge");
 		FlyingSlotTitle:SetJustifyH("LEFT");
@@ -790,12 +791,12 @@ function MogCompanions:InitMountTab()
 		GroundSlotTitleDivider:SetAlpha(0.1);
 		GroundSlotTitleDivider:SetPoint("TOPLEFT", GroundSlotTitle, "BOTTOMLEFT", 0, -2);
 
-		--
+		-- Load display info for the flying and ground model previews
 
 		local flyingModelID, _, _, _, _, _, _, _, _ = C_MountJournal.GetMountInfoExtraByID(MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetActiveOutfitID()].Flying);
 		local groundModelID, _, _, _, _, _, _, _, _ = C_MountJournal.GetMountInfoExtraByID(MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetActiveOutfitID()].Ground);
 
-		--
+		-- Flying mount model preview frame and list
 
 		FlyingMountPreview = CreateFrame("Frame", "MountTabFlyingPreview", f);
 		FlyingMountPreview:SetPoint("TOPLEFT", f, "TOPLEFT", 24 * s, -114 * s);
@@ -839,7 +840,7 @@ function MogCompanions:InitMountTab()
 		FlyingMountList:SetSize(fw - (xx + ww + gap + xx + r), y - (ii * 2));
 		FlyingMountList:SetParent(f);
 
-		--
+		-- Flying mount scroll box and list controls
 
 		FlyingMountListScrollBox = CreateFrame("Frame", "FlyingMountListScrollBox", FlyingMountList, "WowScrollBoxList");
 		local z, zz = FlyingMountList:GetSize() ;
@@ -954,7 +955,7 @@ function MogCompanions:InitMountTab()
 
 		FlyingMountListScrollBox:ScrollToElementDataIndex(scrollToIndex);
 
-		--
+		-- Flying mount list background overlay; ground mount section follows
 
 		local FlyingMountListBackground = FlyingMountList:CreateTexture(nil, "OVERLAY");
 		FlyingMountListBackground:SetAtlas("transmog-situations-containerbg", true);
@@ -1002,7 +1003,7 @@ function MogCompanions:InitMountTab()
 		GroundMountListBackground:SetAtlas("transmog-situations-containerbg", true);
 		GroundMountListBackground:SetAllPoints(true);
 
-		--
+		-- Ground mount scroll box and list controls
 
 		GroundMountListScrollBox = CreateFrame("Frame", "GroundMountListScrollBox", GroundMountList, "WowScrollBoxList");
 		local z, zz = GroundMountList:GetSize();
@@ -1120,7 +1121,7 @@ function MogCompanions:InitMountTab()
 
 		GroundMountListScrollBox:ScrollToElementDataIndex(scrollToIndex);
 
-		---
+		-- Search box OnTextChanged: re-filter both flying and ground mount lists
 
 		MountListSearchBox:SetScript("OnTextChanged", function(self)
 			if SearchBoxTemplate_OnTextChanged ~= nil then
@@ -1151,7 +1152,7 @@ function MogCompanions:InitMountTab()
 
 			FlyingMountListScrollBox:ScrollToElementDataIndex(scrollToIndex);
 
-			--
+			-- Refresh ground mount list with updated search filter
 
 			mounts = MogCompanions:getSortedGroundMounts();
 
@@ -1192,7 +1193,6 @@ function MogCompanions:InitMountTab()
 		end
 
 		TransmogFrame.WardrobeCollection:UpdateTabs();
-
 	end
 
 	ToggleReminder();

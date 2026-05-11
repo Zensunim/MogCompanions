@@ -135,7 +135,7 @@ end
 -- Stub; actual persistence is handled by the Settings API variable binding.
 -- Extend this function if side-effects are needed when any setting changes.
 local function OnSettingChanged()
-	--
+	-- No side-effects needed; the Settings API variable binding handles persistence.
 end
 
 -- Registers all MogCompanions settings and creates the Settings panel layout.
@@ -156,7 +156,7 @@ local function InitSettings()
    
 	local key1, key2 = GetBindingKey("Mount/Dismount");
 
-	--
+	-- Default flying mount
 
 	local variable = "DefaultFlying";
 	local defaultValue = 1;
@@ -169,7 +169,7 @@ local function InitSettings()
 	Settings.CreateDropdown(category, setting, GetOptionsFlyingMount, tooltip);
 	setting:SetValueChangedCallback(OnSettingChanged);
 
-	--
+	-- Default ground mount
 
 	local variable = "DefaultGround";
 	local defaultValue = 1;
@@ -188,7 +188,7 @@ local function InitSettings()
 	Settings.CreateDropdown(category, setting, GetOptionsGroundMount, tooltip);
 	setting:SetValueChangedCallback(OnSettingChanged);
 
-	--
+	-- Default aquatic mount
 
 	local variable = "DefaultAquatic";
 	local defaultValue = 1;
@@ -204,7 +204,7 @@ local function InitSettings()
 	Settings.CreateDropdown(category, setting, GetOptionsAquaticMount, tooltip);
 	setting:SetValueChangedCallback(OnSettingChanged);
 
-	--
+	-- Default special mount
 
 	local variable = "DefaultSpecial";
 	local defaultValue = 1;
@@ -220,7 +220,7 @@ local function InitSettings()
    	Settings.CreateDropdown(category, setting, GetOptionsSpecialMount, tooltip);
 	setting:SetValueChangedCallback(OnSettingChanged);
 
-	--
+	-- Default alternative mount
 
 	local variable = "DefaultAlternative";
 	local defaultValue = 1;
@@ -238,7 +238,7 @@ local function InitSettings()
    	Settings.CreateDropdown(category, setting, GetOptionsAlternativeMount, tooltip);
 	setting:SetValueChangedCallback(OnSettingChanged);		
 
-	--
+	-- Per-outfit title and mount overrides (one section per transmog outfit)
 
 	local settingsTransmogContainer = CreateFromMixins(SettingsExpandableSectionMixin);
 
@@ -277,7 +277,7 @@ local function InitSettings()
 		Settings.CreateDropdown(category, setting, GetOptionsTitleSettings, tooltip);
 		setting:SetValueChangedCallback(OnSettingChanged);
 
-		--
+		-- Per-outfit flying mount override
 
 		local variable = "Flying"..outfitInfo.outfitID;
 		local defaultValue = 1;
@@ -308,7 +308,7 @@ local function InitSettings()
 		local dropdownTest = Settings.CreateDropdown(category, setting, GetOptionsFlyingMountSettings, tooltip);
 		setting:SetValueChangedCallback(OnSettingChanged);
 
-		---
+		-- Per-outfit ground mount override
 
 		local variable = "Ground"..outfitInfo.outfitID;
 		local defaultValue = 1;
