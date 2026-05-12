@@ -176,7 +176,12 @@ function MogCompanionsSummonSpecial()
 end
 
 function MogCompanionsSummonAlternative()
-	local randomMount = MogCompanions:getRandomMount("alternative");
+	local randomMount;
+	if IsFlyableArea() then
+		randomMount = MogCompanions:getRandomMount("flying");
+	else
+		randomMount = MogCompanions:getRandomMount("ground");
+	end
 	if randomMount then C_MountJournal.SummonByID(randomMount.id); end
 end
 
