@@ -368,10 +368,16 @@ function MogCompanions:getRandomHearthstoneToy()
 end
 
 -- ── Title Helpers ────────────────────────────────────────────────────────────
--- Formats a title ID into a displayable string: "Title PlayerName" or "PlayerName Title".
--- titleID 0 returns the bare player name (represents the "no title" selection).
-local function CreateDisplayTitle(titleID)
-	if titleID == 0 then
+-- Formats a title ID into a displayable string for dropdowns and labels.
+-- nil or 0: "[Don't Change Title]" — sentinel meaning do not change the title on mount.
+-- -1: bare player name — sentinel meaning clear the title.
+-- positive: formatted title string, e.g. "PlayerName the Explorer".
+function MogCompanions:CreateDisplayTitle(titleID)
+	if titleID == nil or titleID == 0 then
+		return MogCompanionsLocales["Default Title"];
+	end
+
+	if titleID == -1 then
 		return playerName;
 	end
 
@@ -400,7 +406,7 @@ function MogCompanions:getSortedTitles()
 		if IsTitleKnown(i) then
 			titlesRaw[count] = {};
 			titlesRaw[count].id = i;
-			titlesRaw[count].name = CreateDisplayTitle(i);
+			titlesRaw[count].name = MogCompanions:CreateDisplayTitle(i);
 			count = count + 1;				
 		end
 	end
