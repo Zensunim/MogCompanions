@@ -236,7 +236,7 @@ local function CreatePetSlot()
 	PetFrame = CreateFrame("Frame", "MogCompanionsPetFrame", _G.MogCompanionsFrame);
 	PetFrame:SetFrameStrata("MEDIUM");
 	PetFrame:SetSize(44, 44);
-	PetFrame:SetPoint("TOPLEFT", _G.MogCompanionsFrame, "TOPLEFT", 0, -192);
+	PetFrame:SetPoint("TOPLEFT", _G.MogCompanionsFrame, "TOPLEFT", 0, MogCompanions.TransmogSlotOffsets.Pet);
 	PetFrame:Show();
 
 	PetTexture = PetFrame:CreateTexture(nil, "BACKGROUND");

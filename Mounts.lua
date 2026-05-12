@@ -310,7 +310,7 @@ function MogCompanions:InitMountSlots(reset)
 		MogCompanionsFrame:SetSize(44, 120);
 
 		local point, relativeTo, relativePoint, xOfs, yOfs = TransmogFrame.CharacterPreview.RightSlots:GetPoint();
-		MogCompanionsFrame:SetPoint("TOPLEFT", TransmogFrame.CharacterPreview.RightSlots, "BOTTOMLEFT", xOfs + 35, yOfs - 124);
+		MogCompanionsFrame:SetPoint("TOPLEFT", TransmogFrame.CharacterPreview.RightSlots, "BOTTOMLEFT", xOfs + 35, yOfs + MogCompanions.TransmogSlotOffsets.FirstMount);
 		
 		-- Flying Mount Frame
 
@@ -388,7 +388,7 @@ function MogCompanions:InitMountSlots(reset)
 		groundMountFrame:SetSize(44, 44);
 
 		local point, relativeTo, relativePoint, xOfs, yOfs = MogCompanionsFrame:GetPoint();
-		groundMountFrame:SetPoint("TOPLEFT", MogCompanionsFrame, "TOPLEFT", 0, -64);
+		groundMountFrame:SetPoint("TOPLEFT", MogCompanionsFrame, "TOPLEFT", 0, MogCompanions.TransmogSlotOffsets.GroundMount);
 		groundMountFrame:Show();
 
 		groundMountTexture = groundMountFrame:CreateTexture(nil,"BACKGROUND");

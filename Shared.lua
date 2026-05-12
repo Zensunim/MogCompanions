@@ -7,6 +7,13 @@ local _, addon = ...;
 local ns = select(2,...);
 local MogCompanions = ns.MogCompanions;
 
+MogCompanions.TransmogSlotOffsets = {
+	FirstMount = -108,
+	GroundMount = -64,
+	Hearthstone = -144,
+	Pet = -208,
+};
+
 local playerName = UnitName("player");
 
 -- Sorts a table of objects with a .name field alphabetically (case-insensitive).

@@ -503,7 +503,7 @@ local function CreateHearthstoneSlot()
 	HearthstoneFrame = CreateFrame("Frame", "HearthstoneFrame", _G.MogCompanionsFrame);
 	HearthstoneFrame:SetFrameStrata("MEDIUM");
 	HearthstoneFrame:SetSize(44, 44);
-	HearthstoneFrame:SetPoint("TOPLEFT", _G.MogCompanionsFrame, "TOPLEFT", 0, -128);
+	HearthstoneFrame:SetPoint("TOPLEFT", _G.MogCompanionsFrame, "TOPLEFT", 0, MogCompanions.TransmogSlotOffsets.Hearthstone);
 	HearthstoneFrame:Show();
 
 	HearthstoneTexture = HearthstoneFrame:CreateTexture(nil, "BACKGROUND");
