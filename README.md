@@ -25,5 +25,8 @@ No third-party code is knowingly included beyond the work credited above and cod
 * Added Hearthstones tab support for selecting an owned Hearthstone toy per outfit.
 
 ### 1.1
-* Added mount cloning support
+* Consolidated the Mounts and Hearthstones tabs into a single Companions tab with Mounts, Hearthstones, and Pets sub-tabs.
 * Added modifier customization
+* Added pet support including modifiers and macros
+* Added mount cloning support
+* Renamed "Special" to "Repair" and "Alternative" to "Random"

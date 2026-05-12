@@ -16,28 +16,37 @@ L["Default Title"] = "[Don't Change Title]";
 L["Item Slot Flying Mount Title"] = "Flying Mount";
 L["Item Slot Ground Mount Title"] = "Ground Mount";
 L["Item Slot Hearthstone Title"] = "Hearthstone";
+L["Item Slot Pet Title"] = "Pet";
 L["Item Slot Flying Mount Clear Tooltip"] = "Clear Flying Mount";
 L["Item Slot Ground Mount Clear Tooltip"] = "Clear Ground Mount";
 L["Item Slot Hearthstone Clear Tooltip"] = "Clear Hearthstone";
+L["Item Slot Pet Clear Tooltip"] = "Clear Pet";
 
 -- Tab
+L["Companions Tab Title"] = "Companions";
 L["Mount Tab Title"] = "Mounts";
 L["Mount Tab Flying Section Title"] = "Flying";
 L["Mount Tab Ground Section Title"] = "Ground";
 L["Hearthstone Tab Title"] = "Hearthstones";
+L["Pets Tab Title"] = "Pets";
+L["Pets Tab Section Title"] = "Pet";
 
 -- Settings buttons
 L["Open Settings"] = "Open Options";
 L["Open Keybinds"] = "Open Keybinds";
-L["Create Macro"] = "Create Macro";
+L["Create Mount Macro"] = "Create Mount Macro";
+L["Create Pet Macro"] = "Create Pet Macro";
+L["Create Hearthstone Macro"] = "Create Hearthstone Macro";
 L["Setup Reminder"] = "Set up a MogCompanions keybind and/or macro";
-L["Hearthstone Setup Reminder"] = "Set up a MogCompanions Hearthstone macro";
 L["Drop Macro Tooltip"] = "Drop this Mount macro in |nyour action bar";
+L["Drop Pet Macro Tooltip"] = "Drop this pet macro in |nyour action bar";
 L["Drop Hearthstone Macro Tooltip"] = "Drop this Hearthstone macro in |nyour action bar";
 L["Show Flying In Ground Toggle"] = "Show flying mounts in ground mount list";
 L["Slash Help Mount"] = "Summon or dismount using MogCompanions";
+L["Slash Help Pet"] = "Summon the active outfit pet, or a random pet if none is set. Pet macro modifiers can also summon random pets or dismiss your current pet.";
 L["Slash Help Options"] = "Open the MogCompanions options panel";
 L["No Hearthstone Toys"] = "No Hearthstone toys are available.";
+L["Pet Command Stub"] = "Pets companion actions are not implemented yet.";
 L["Use Hearthstone"] = "Use Hearthstone";
 L["Macro Combat Error"] = "MogCompanions cannot create macros while you are in combat.";
 
@@ -72,6 +81,13 @@ L["Settings Use Selected Hearthstone"] = "Use Selected Hearthstone";
 L["Settings Use Garrison Hearthstone"] = "Use Garrison Hearthstone";
 L["Settings Use Dalaran Hearthstone"] = "Use Dalaran Hearthstone";
 L["Settings Teleport Home"] = "Teleport Home (Coming Soon)";
+
+-- Pet Macro Modifier Settings
+L["Settings Pet Macro Title"] = "Pet Macro";
+L["Settings Summon Selected Pet"] = "Summon Selected Pet";
+L["Settings Summon Random Pet"] = "Summon Random Pet";
+L["Settings Summon Random Favorite Pet"] = "Summon Random Favorite Pet";
+L["Settings Dismiss Pet"] = "Dismiss Pet";
 
 -- Modifier Key Labels
 L["Settings CTRL"] = "CTRL";

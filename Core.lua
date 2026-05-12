@@ -61,6 +61,7 @@ end
 local function PrintSlashHelp()
 	print("|cFF00CCFFMogCompanions commands:|r");
 	print("|cFFFFFFFF/mcomp mount|r - "..L["Slash Help Mount"]);
+	print("|cFFFFFFFF/mcomp pet|r - "..L["Slash Help Pet"]);
 	print("|cFFFFFFFF/mcomp options|r - "..L["Slash Help Options"]);
 end
 
@@ -74,6 +75,106 @@ function MogCompanions:OpenSettings()
 	OpenSettingsToMogCompanions();
 end
 
+-- Returns true if the modifier key configured for the pet macro action is held.
+-- modType: "Random" | "Favorite" | "Dismiss"
+-- Reads MogCompanionsSaved.PetMods: 1=CTRL, 2=SHIFT, 3=ALT.
+-- Falls back to the default pet macro mapping if PetMods is not initialised yet.
+local function GetPetModKey(modType)
+	local mods = {};
+	mods[1] = IsControlKeyDown();
+	mods[2] = IsShiftKeyDown();
+	mods[3] = IsAltKeyDown();
+
+	if MogCompanionsSaved and MogCompanionsSaved.PetMods then
+		if modType == "Random" then
+			return mods[MogCompanionsSaved.PetMods.Random] or false;
+		elseif modType == "Favorite" then
+			return mods[MogCompanionsSaved.PetMods.Favorite] or false;
+		elseif modType == "Dismiss" then
+			return mods[MogCompanionsSaved.PetMods.Dismiss] or false;
+		end
+	else
+		if modType == "Random" then return IsControlKeyDown(); end
+		if modType == "Favorite" then return IsShiftKeyDown(); end
+		if modType == "Dismiss" then return IsAltKeyDown(); end
+	end
+
+	return false;
+end
+
+function MogCompanions:DismissPet()
+	local petJournal = C_PetJournal;
+	if petJournal == nil or petJournal.SummonPetByGUID == nil or petJournal.GetSummonedPetGUID == nil then
+		return;
+	end
+
+	local activePetGUID = petJournal.GetSummonedPetGUID();
+	if activePetGUID ~= nil and activePetGUID ~= "" then
+		petJournal.SummonPetByGUID(activePetGUID);
+	end
+end
+
+function MogCompanions:SummonRandomPet()
+	local petJournal = C_PetJournal;
+	if petJournal == nil or petJournal.SummonPetByGUID == nil or petJournal.GetSummonedPetGUID == nil then
+		return;
+	end
+
+	local activePetGUID = petJournal.GetSummonedPetGUID();
+	local randomPetGUID = MogCompanions:getRandomPet(activePetGUID);
+	if randomPetGUID ~= nil and randomPetGUID ~= "" then
+		petJournal.SummonPetByGUID(randomPetGUID);
+	end
+end
+
+function MogCompanions:SummonRandomFavoritePet()
+	local petJournal = C_PetJournal;
+	if petJournal == nil or petJournal.SummonPetByGUID == nil or petJournal.GetSummonedPetGUID == nil then
+		return;
+	end
+
+	local activePetGUID = petJournal.GetSummonedPetGUID();
+	local randomPetGUID = MogCompanions:getRandomPet(activePetGUID, true);
+	if randomPetGUID ~= nil and randomPetGUID ~= "" then
+		petJournal.SummonPetByGUID(randomPetGUID);
+	end
+end
+
+function MogCompanions:SummonPet()
+	local petJournal = C_PetJournal;
+	if petJournal == nil or petJournal.SummonPetByGUID == nil or petJournal.GetSummonedPetGUID == nil then
+		return;
+	end
+
+	local activePetGUID = petJournal.GetSummonedPetGUID();
+	local outfitData = MogCompanions:GetActiveOutfitTable();
+	local selectedPetGUID = outfitData and outfitData.Pet;
+
+	if selectedPetGUID ~= nil and selectedPetGUID ~= "" then
+		if activePetGUID ~= selectedPetGUID then
+			petJournal.SummonPetByGUID(selectedPetGUID);
+		end
+		return;
+	end
+
+	local randomPetGUID = MogCompanions:getRandomPet(activePetGUID);
+	if randomPetGUID ~= nil and randomPetGUID ~= "" then
+		petJournal.SummonPetByGUID(randomPetGUID);
+	end
+end
+
+function MogCompanions:HandlePetAction()
+	if GetPetModKey("Dismiss") then
+		MogCompanions:DismissPet();
+	elseif GetPetModKey("Favorite") then
+		MogCompanions:SummonRandomFavoritePet();
+	elseif GetPetModKey("Random") then
+		MogCompanions:SummonRandomPet();
+	else
+		MogCompanions:SummonPet();
+	end
+end
+
 SLASH_MOGCOMPANIONS1 = "/mcomp";
 SlashCmdList["MOGCOMPANIONS"] = function(msg)
 	local command = string.lower(string.match(msg or "", "^%s*(.-)%s*$"));
@@ -82,6 +183,8 @@ SlashCmdList["MOGCOMPANIONS"] = function(msg)
 		PrintSlashHelp();
 	elseif command == "mount" then
 		MogCompanionsSummon();
+	elseif command == "pet" then
+		MogCompanions:HandlePetAction();
 	elseif command == "options" then
 		OpenSettingsToMogCompanions();
 	else
@@ -199,6 +302,23 @@ end
 
 function MogCompanions:OpenKeybinds()
 	OpenKeybindingsToMogCompanions();
+end
+
+-- Shared gear dropdown used by the Mounts, Hearthstones, and Pets tabs.
+-- The caller owns positioning; this helper only creates the button and standard menu.
+function MogCompanions:CreateCompanionsShortcutMenu(parent, frameName)
+	local dropdown = CreateFrame("DropdownButton", frameName, parent, "DamageMeterSettingsDropdownButtonTemplate");
+	dropdown:SetupMenu(function(_, rootDescription)
+		rootDescription:CreateTitle("MogCompanions");
+		rootDescription:CreateButton(L["Open Settings"], function() MogCompanions:OpenSettings() end);
+		rootDescription:CreateButton(L["Open Keybinds"], function() MogCompanions:OpenKeybinds() end);
+		rootDescription:CreateDivider();
+		rootDescription:CreateButton(L["Create Mount Macro"], function() MogCompanions:CreateMountMacro(dropdown) end);
+		rootDescription:CreateButton(L["Create Pet Macro"], function() MogCompanions:CreatePetMacro(dropdown) end);
+		rootDescription:CreateButton(L["Create Hearthstone Macro"], function() MogCompanions:CreateHearthstoneMacro(dropdown) end);
+	end);
+
+	return dropdown;
 end
 
 -- Called on VIEWED_TRANSMOG_OUTFIT_CHANGED to refresh the title dropdown.

@@ -7,12 +7,141 @@ local _, addon = ...;
 local ns = select(2,...);
 local MogCompanions = ns.MogCompanions;
 
+MogCompanions.TransmogSlotOffsets = {
+	FirstMount = -108,
+	GroundMount = -64,
+	Hearthstone = -144,
+	Pet = -208,
+};
+
 local playerName = UnitName("player");
 
 -- Sorts a table of objects with a .name field alphabetically (case-insensitive).
 -- Used as the comparator for table.sort throughout the addon.
 function MogCompanionsSortAlphabetical(a, b)
 	return a.name:lower() < b.name:lower();
+end
+
+local function Clamp(value, minValue, maxValue)
+	if value < minValue then
+		return minValue;
+	elseif value > maxValue then
+		return maxValue;
+	end
+
+	return value;
+end
+
+function MogCompanions:AttachPreviewModelControls(previewFrame, modelFrame, defaults)
+	if previewFrame == nil or modelFrame == nil then
+		return nil;
+	end
+
+	defaults = defaults or {};
+
+	local state = {
+		zoom = defaults.zoom or 1,
+		minZoom = defaults.minZoom or 0.4,
+		maxZoom = defaults.maxZoom or 3.0,
+		facing = defaults.facing or 0,
+		x = defaults.x or 0,
+		y = defaults.y or 0,
+		z = defaults.z or 0,
+		dragButton = nil,
+		lastX = nil,
+		lastY = nil,
+	};
+
+	state.zoom = Clamp(state.zoom, state.minZoom, state.maxZoom);
+
+	local function ApplyView()
+		modelFrame:SetPortraitZoom(0);
+		modelFrame:SetCamDistanceScale(state.zoom);
+		modelFrame:SetFacing(state.facing);
+		modelFrame:SetPosition(state.x, state.y, state.z);
+	end
+
+	local function StopDragging(self)
+		state.dragButton = nil;
+		state.lastX = nil;
+		state.lastY = nil;
+		self:SetScript("OnUpdate", nil);
+	end
+
+	local function ResetView()
+		state.zoom = Clamp(defaults.zoom or 1, state.minZoom, state.maxZoom);
+		state.facing = defaults.facing or 0;
+		state.x = defaults.x or 0;
+		state.y = defaults.y or 0;
+		state.z = defaults.z or 0;
+		ApplyView();
+
+		if defaults.onReset ~= nil then
+			defaults.onReset(modelFrame, state);
+		end
+	end
+
+	modelFrame:EnableMouse(true);
+	modelFrame:EnableMouseWheel(true);
+	modelFrame:SetScript("OnMouseWheel", function(self, delta)
+		state.zoom = Clamp(state.zoom - (delta * 0.12), state.minZoom, state.maxZoom);
+		ApplyView();
+	end);
+
+	modelFrame:SetScript("OnMouseDown", function(self, button)
+		if button ~= "LeftButton" and button ~= "RightButton" then
+			return;
+		end
+
+		state.dragButton = button;
+		state.lastX, state.lastY = GetCursorPosition();
+
+		self:SetScript("OnUpdate", function()
+			local cursorX, cursorY = GetCursorPosition();
+
+			if state.lastX == nil or state.lastY == nil then
+				state.lastX = cursorX;
+				state.lastY = cursorY;
+				return;
+			end
+
+			local scale = UIParent:GetEffectiveScale();
+			local deltaX = (cursorX - state.lastX) / scale;
+			local deltaY = (cursorY - state.lastY) / scale;
+
+			if state.dragButton == "LeftButton" then
+				state.facing = state.facing + (deltaX * 0.01);
+			elseif state.dragButton == "RightButton" then
+				state.x = state.x + (deltaX * 0.0025);
+				state.z = state.z + (deltaY * 0.0025);
+			end
+
+			state.lastX = cursorX;
+			state.lastY = cursorY;
+			ApplyView();
+		end);
+	end);
+
+	modelFrame:SetScript("OnMouseUp", function(self)
+		StopDragging(self);
+	end);
+
+	modelFrame:HookScript("OnHide", function(self)
+		StopDragging(self);
+	end);
+
+	ResetView();
+
+	local attachedControls = {
+		controls = nil,
+		reset = ResetView,
+		apply = ApplyView,
+		state = state,
+	};
+
+	modelFrame.MogCompanionsPreviewControls = attachedControls;
+
+	return attachedControls;
 end
 
 -- Returns true if 'value' exists anywhere in the given array table.
@@ -43,8 +172,6 @@ function MogCompanions:GetCollectedMounts()
 end
 
 -- Converts a raw array of mount IDs into a sorted array of mount info tables.
--- Each entry: { name, icon, nameAndIcon, id, model (creatureDisplayInfoID), mountTypeID }.
--- Filters to only collected + usable mounts, then sorts alphabetically.
 function MogCompanions:sortMounts(mountsRaw)
 	local mounts = {};
 
@@ -70,6 +197,114 @@ function MogCompanions:sortMounts(mountsRaw)
 	table.sort(mounts, MogCompanionsSortAlphabetical);
 
 	return mounts;
+end
+
+local sortedPetsCache = nil;
+
+function MogCompanions:InvalidateSortedPetsCache()
+	sortedPetsCache = nil;
+end
+
+-- Returns collected battle pets as sorted display entries for the pets UI.
+-- Each entry: { id, name, icon }.
+-- Builds the cache synchronously on first call using the fastest available API.
+-- Duplicate display names are collapsed to the first owned pet with that name.
+function MogCompanions:GetSortedPets()
+	if sortedPetsCache == nil then
+		if C_PetJournal == nil or C_PetJournal.GetOwnedPetIDs == nil then
+			return {};
+		end
+
+		sortedPetsCache = {};
+		local uniqueNames = {};
+		local petsRaw = C_PetJournal.GetOwnedPetIDs();
+		local useTableAPI = C_PetJournal.GetPetInfoTableByPetID ~= nil;
+
+		for i = 1, #petsRaw do
+			local petID = petsRaw[i];
+			local displayName, icon;
+
+			if useTableAPI then
+				local info = C_PetJournal.GetPetInfoTableByPetID(petID);
+				if info ~= nil then
+					if info.customName ~= nil and info.customName ~= "" then
+						displayName = info.customName .. " (" .. info.name .. ")";
+					else
+						displayName = info.name;
+					end
+					icon = info.icon;
+				end
+			else
+				local _, customName, _, _, _, _, _, name, petIcon = C_PetJournal.GetPetInfoByPetID(petID);
+				if customName ~= nil and customName ~= "" then
+					displayName = customName .. " (" .. name .. ")";
+				else
+					displayName = name;
+				end
+				icon = petIcon;
+			end
+
+			if displayName ~= nil and displayName ~= "" and icon ~= nil and not uniqueNames[displayName] then
+				uniqueNames[displayName] = true;
+				table.insert(sortedPetsCache, { id = petID, name = displayName, icon = icon });
+			end
+		end
+
+		table.sort(sortedPetsCache, MogCompanionsSortAlphabetical);
+	end
+
+	local searchString = MogCompanions.PetSearchString;
+
+	if searchString == nil or searchString == "" then
+		return sortedPetsCache;
+	end
+
+	local pets = {};
+	local lowered = searchString:lower();
+
+	for i = 1, #sortedPetsCache do
+		if string.find(sortedPetsCache[i].name:lower(), lowered, 1, true) ~= nil then
+			table.insert(pets, sortedPetsCache[i]);
+		end
+	end
+
+	return pets;
+end
+
+-- Returns a random owned pet GUID.
+-- excludedPetID is never added to the pool.
+-- favoritesOnly limits the pool to favorite pets.
+function MogCompanions:getRandomPet(excludedPetID, favoritesOnly)
+	if C_PetJournal == nil or C_PetJournal.GetOwnedPetIDs == nil then
+		return nil;
+	end
+
+	local petsRaw = C_PetJournal.GetOwnedPetIDs();
+	local pets = {};
+	local useTableAPI = C_PetJournal.GetPetInfoTableByPetID ~= nil;
+
+	for i = 1, #petsRaw do
+		local petID = petsRaw[i];
+		local isFavorite = false;
+
+		if useTableAPI then
+			local info = C_PetJournal.GetPetInfoTableByPetID(petID);
+			isFavorite = info ~= nil and info.isFavorite == true;
+		else
+			local _, _, _, _, _, _, favorite = C_PetJournal.GetPetInfoByPetID(petID);
+			isFavorite = favorite == true;
+		end
+
+		if petID ~= nil and petID ~= "" and petID ~= excludedPetID and (not favoritesOnly or isFavorite) then
+			table.insert(pets, petID);
+		end
+	end
+
+	if #pets == 0 then
+		return nil;
+	end
+
+	return pets[math.random(1, #pets)];
 end
 
 -- Returns true if the mount name contains MogCompanions.MountSearchString (case-insensitive),
@@ -436,6 +671,7 @@ end
 --   Flying = 1: no per-outfit selection; summon a random flying mount.
 --   Ground = 1: no per-outfit selection; summon a random ground mount.
 --   Hearthstone = 1: no per-outfit selection; use a random hearthstone toy.
+--   Pet = "": no per-outfit pet selection.
 --   Title = 0: do not change the title on mount.
 --   Title = -1: clear the title (bare player name).
 -- Safe to call multiple times; only writes fields that are missing.
@@ -464,6 +700,10 @@ function MogCompanions:CreateEmptyOutfit(id)
 
 	if outfit.Hearthstone == nil then
 		outfit.Hearthstone = 1;
+	end
+
+	if outfit.Pet == nil then
+		outfit.Pet = "";
 	end
 
 	if outfit.Title == nil then

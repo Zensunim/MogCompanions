@@ -69,6 +69,10 @@ local function OnSettingChanged()
 	-- No side-effects needed; the Settings API variable binding handles persistence.
 end
 
+local function OnPetSettingChanged()
+	MogCompanions:CreatePetMacro();
+end
+
 -- ── Modifier Key Helpers ─────────────────────────────────────────────────────
 -- Returns the display label (e.g. "CTRL") for a modifier index (1=CTRL,2=SHIFT,3=ALT).
 local function modKeyToLabel(key)
@@ -124,6 +128,22 @@ local function InitSettings()
 	end
 	if MogCompanionsSaved.HearthstoneMods.TeleportHome == nil then
 		MogCompanionsSaved.HearthstoneMods.TeleportHome = 3;  -- ALT (reserved)
+	end
+
+	if MogCompanionsSaved.PetMods == nil then
+		MogCompanionsSaved.PetMods = {};
+	end
+	if MogCompanionsSaved.PetMods.Selected == nil then
+		MogCompanionsSaved.PetMods.Selected = 1;       -- display-only (always Click)
+	end
+	if MogCompanionsSaved.PetMods.Random == nil then
+		MogCompanionsSaved.PetMods.Random = 1;         -- CTRL summons a random pet
+	end
+	if MogCompanionsSaved.PetMods.Favorite == nil then
+		MogCompanionsSaved.PetMods.Favorite = 2;       -- SHIFT summons a random favorite pet
+	end
+	if MogCompanionsSaved.PetMods.Dismiss == nil then
+		MogCompanionsSaved.PetMods.Dismiss = 3;        -- ALT dismisses the active pet
 	end
 
 	-- ────────────────────────────────────────────────────────────────────────────
@@ -375,6 +395,84 @@ local function InitSettings()
 	Settings.CreateDropdown(category, setting, GetOptionsHearthstoneMods, false);
 	setting:SetValueChangedCallback(OnHearthstoneModSettingChanged);
 	tinsert(HearthstoneModDropdowns, setting);
+
+	-- ── Pet Macro Modifier Keys ──────────────────────────────────────────────────
+
+	local PetModDropdowns = {};
+
+	local function OnPetModSettingChanged(setting, value)
+		local otherValues = {};
+		for i = 1, #PetModDropdowns do
+			if setting ~= PetModDropdowns[i] then
+				otherValues[i] = PetModDropdowns[i]:GetValue();
+			else
+				otherValues[i] = false;
+			end
+		end
+
+		local valMap = arrayToMap(otherValues);
+		local missing = 0;
+		for i = 1, 3 do
+			if not valMap[i] then
+				missing = i;
+			end
+		end
+
+		for i = 1, #otherValues do
+			if otherValues[i] ~= false and otherValues[i] == value then
+				PetModDropdowns[i]:SetValue(missing);
+			end
+		end
+
+		OnPetSettingChanged();
+	end
+
+	layout:AddInitializer(CreateSettingsListSectionHeaderInitializer(L["Settings Pet Macro Title"], ''));
+
+	local variable = "PetModSelected";
+	local defaultValue = 1;
+	local name = L["Settings Summon Selected Pet"];
+	local variableKey = "Selected";
+	local variableTable = MogCompanionsSaved.PetMods;
+
+	local setting = Settings.RegisterAddOnSetting(category, variable, variableKey, variableTable, type(defaultValue), name, defaultValue);
+	local initializer = Settings.CreateDropdown(category, setting, GetOptionsMountModsClick, false);
+	setting:SetValueChangedCallback(OnPetModSettingChanged);
+	-- Disable: click without a modifier always uses the selected/random pet action.
+	hooksecurefunc(initializer, "InitFrame", function(self, frame) DisableDropdown(frame); end);
+
+	local variable = "PetModRandom";
+	local defaultValue = 1;
+	local name = L["Settings Summon Random Pet"];
+	local variableKey = "Random";
+	local variableTable = MogCompanionsSaved.PetMods;
+
+	local setting = Settings.RegisterAddOnSetting(category, variable, variableKey, variableTable, type(defaultValue), name, defaultValue);
+	Settings.CreateDropdown(category, setting, GetOptionsHearthstoneMods, false);
+	setting:SetValueChangedCallback(OnPetModSettingChanged);
+	tinsert(PetModDropdowns, setting);
+
+	local variable = "PetModFavorite";
+	local defaultValue = 2;
+	local name = L["Settings Summon Random Favorite Pet"];
+	local variableKey = "Favorite";
+	local variableTable = MogCompanionsSaved.PetMods;
+
+	local setting = Settings.RegisterAddOnSetting(category, variable, variableKey, variableTable, type(defaultValue), name, defaultValue);
+	Settings.CreateDropdown(category, setting, GetOptionsHearthstoneMods, false);
+	setting:SetValueChangedCallback(OnPetModSettingChanged);
+	tinsert(PetModDropdowns, setting);
+
+	local variable = "PetModDismiss";
+	local defaultValue = 3;
+	local name = L["Settings Dismiss Pet"];
+	local variableKey = "Dismiss";
+	local variableTable = MogCompanionsSaved.PetMods;
+
+	local setting = Settings.RegisterAddOnSetting(category, variable, variableKey, variableTable, type(defaultValue), name, defaultValue);
+	Settings.CreateDropdown(category, setting, GetOptionsHearthstoneMods, false);
+	setting:SetValueChangedCallback(OnPetModSettingChanged);
+	tinsert(PetModDropdowns, setting);
 
 	-- ────────────────────────────────────────────────────────────────────────────
 

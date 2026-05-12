@@ -13,7 +13,6 @@
 -- UI sections:
 --   • Flying/ground mount slot icons in CharacterPreview.RightSlots (InitMountSlots)
 --   • Mounts tab in WardrobeCollection with model previews + scrollable lists (InitMountTab)
---   • Setup reminder banner shown when no keybind or macro exists
 --
 -- SetSelectedFlyingMount / SetSelectedGroundMount are defined inside InitMountTab
 -- (they close over local scroll-box references) and are forward-declared at file scope.
@@ -28,6 +27,7 @@ local groundMountFrame, groundMountTexture, groundMountBorder, groundMountBorder
 
 local FlyingMountPreview, GroundMountPreview;
 local FlyingMountModel, GroundMountModel;
+local FlyingMountPreviewControls, GroundMountPreviewControls;
 
 local FlyingMountListScrollBox, FlyingMountSelectionBehavior;
 
@@ -36,8 +36,7 @@ local GroundMountListScrollView, GroundMountListScrollBox, GroundMountListScroll
 local FlyingMountClear, GroundMountClear;
 local SetSelectedFlyingMount, SetSelectedGroundMount;
 
-local SetupReminderFrame;
-local MountListSearchBox, FilterDropdown;
+local MountListSearchBox, FilterDropdown, ShortcutSettings;
 
 MogCompanions.MountSearchString = "";
 
@@ -312,7 +311,7 @@ function MogCompanions:InitMountSlots(reset)
 		MogCompanionsFrame:SetSize(44, 120);
 
 		local point, relativeTo, relativePoint, xOfs, yOfs = TransmogFrame.CharacterPreview.RightSlots:GetPoint();
-		MogCompanionsFrame:SetPoint("TOPLEFT", TransmogFrame.CharacterPreview.RightSlots, "BOTTOMLEFT", xOfs + 35, yOfs - 124);
+		MogCompanionsFrame:SetPoint("TOPLEFT", TransmogFrame.CharacterPreview.RightSlots, "BOTTOMLEFT", xOfs + 35, yOfs + MogCompanions.TransmogSlotOffsets.FirstMount);
 		
 		-- Flying Mount Frame
 
@@ -390,7 +389,7 @@ function MogCompanions:InitMountSlots(reset)
 		groundMountFrame:SetSize(44, 44);
 
 		local point, relativeTo, relativePoint, xOfs, yOfs = MogCompanionsFrame:GetPoint();
-		groundMountFrame:SetPoint("TOPLEFT", MogCompanionsFrame, "TOPLEFT", 0, -64);
+		groundMountFrame:SetPoint("TOPLEFT", MogCompanionsFrame, "TOPLEFT", 0, MogCompanions.TransmogSlotOffsets.GroundMount);
 		groundMountFrame:Show();
 
 		groundMountTexture = groundMountFrame:CreateTexture(nil,"BACKGROUND");
@@ -518,7 +517,7 @@ function MogCompanions:InitMountSlots(reset)
 		end)
 
 		flyingMountBorder:SetScript("OnMouseDown", function (self, button)
-			TransmogFrame.WardrobeCollection:SetTab(TransmogFrame.WardrobeCollection.mountsTabID);
+			MogCompanions:OpenCompanionsTab("Mounts");
 		 	PlaySound(SOUNDKIT.UI_TRANSMOG_GEAR_SLOT_CLICK);
 		end)
 
@@ -542,7 +541,7 @@ function MogCompanions:InitMountSlots(reset)
 		end)
 
 		groundMountBorder:SetScript("OnMouseDown", function (self, button)
-			TransmogFrame.WardrobeCollection:SetTab(TransmogFrame.WardrobeCollection.mountsTabID);
+			MogCompanions:OpenCompanionsTab("Mounts");
 			PlaySound(SOUNDKIT.UI_TRANSMOG_GEAR_SLOT_CLICK);
 		end)
 
@@ -592,7 +591,7 @@ local function OnGroundMountSelectionChanged(self, data, selected)
 end
 
 -- Returns true if the player has neither a MogCompanions keybind nor a MogCompanions macro
--- on any action bar slot. Used to decide whether to show the setup reminder banner.
+-- on any action bar slot. Retained as a compatibility helper for setup state checks.
 function MissingKeybindOrMacro()
 	local key1, key2 = '', '';
 	key1, key2 = GetBindingKey("Mount/Dismount");
@@ -650,132 +649,121 @@ local function FilterSetChecked(filter)
 	GroundMountListScrollBox:ScrollToElementDataIndex(scrollToIndex);
 end
 
--- Shows/hides the setup reminder banner based on whether the player has a MogCompanions keybind or macro set up.
--- Called on load and after the player drops the macro onto an action bar.
-local function ToggleReminder()
-	if MissingKeybindOrMacro() then
-		SetupReminderFrame:Show();
-	else
-		SetupReminderFrame:Hide();
-	end
-	ShortcutSettings:Show();
-	MountListSearchBox:Show();
-	FilterDropdown:Show();
+local function CreateShortcuts(f, topOffset)
+	ShortcutSettings = MogCompanions:CreateCompanionsShortcutMenu(f, "ShortcutSettings");
+	ShortcutSettings:SetPoint("TOPRIGHT", f, "TOPRIGHT", -26, -50 + (topOffset or 0));
 end
 
--- Creates the "MogComp Mount" macro (or edits the existing one) and puts it on the cursor
--- for the player to drag to an action bar. Registers a one-shot event to detect the drop.
-local function CreateMacroButton(Parent)
-	local macroId = false;
+local function GetConfiguredMountMacroConditionLabel(mountID)
+	if mountID == nil or mountID <= 1 then
+		return nil;
+	end
 
+	local mountName = C_MountJournal.GetMountInfoByID(mountID);
+	if mountName ~= nil and mountName ~= "" then
+		return mountName;
+	end
+
+	return nil;
+end
+
+function MogCompanions:CreateMountMacro(parent)
+	if InCombatLockdown and InCombatLockdown() then
+		print(L["Macro Combat Error"]);
+		return nil;
+	end
+
+	local macroId = false;
 	for i = 1, 120 do
 		if C_Macro.GetMacroName(i) == "MogComp Mount" then
 			macroId = i;
 		end
 	end
 
-	if not macroId then
-		macroId = CreateMacro("MogComp Mount", 1769015, "/mcomp mount", nil);
+	local outfitData = MogCompanions:GetActiveOutfitTable();
+	local mountMods = MogCompanionsSaved and MogCompanionsSaved.MountMods or {};
+	local modTokens = { "ctrl", "shift", "alt" };
+	local groundToken = modTokens[mountMods.Ground or 1] or "ctrl";
+	local repairToken = modTokens[mountMods.Repair or 2] or "shift";
+	local tooltipParts = {};
+
+	local aquaticName = GetConfiguredMountMacroConditionLabel(MogCompanionsCharacterSaved and MogCompanionsCharacterSaved.Default and MogCompanionsCharacterSaved.Default.Aquatic);
+	if aquaticName ~= nil then
+		table.insert(tooltipParts, "[swimming,mod:"..groundToken.."]"..aquaticName);
 	end
 
-	MogCompanionsSaved["MacroID"] = macroId;
-	PickupMacro(macroId);
+	local repairName = GetConfiguredMountMacroConditionLabel(MogCompanionsCharacterSaved and MogCompanionsCharacterSaved.Default and MogCompanionsCharacterSaved.Default.Repair);
+	if repairName ~= nil then
+		table.insert(tooltipParts, "[mod:"..repairToken.."]"..repairName);
+	end
 
-	GameTooltip:SetOwner(Parent, "ANCHOR_CURSOR_RIGHT");
-	GameTooltip:AddLine(L["Drop Macro Tooltip"], 1, 1, 1);
-	GameTooltip:Show();
+	local flyingName = nil;
+	local groundName = nil;
+	if outfitData ~= nil then
+		flyingName = GetConfiguredMountMacroConditionLabel(outfitData.Flying);
+		groundName = GetConfiguredMountMacroConditionLabel(outfitData.Ground);
+	end
 
-	local MacroDropEventFrame = CreateFrame("EventFrame")
-	MacroDropEventFrame:RegisterEvent("ACTIONBAR_SLOT_CHANGED")
+	if flyingName ~= nil then
+		table.insert(tooltipParts, "[flyable,nomod:"..groundToken.."]"..flyingName);
+	end
+	if groundName ~= nil then
+		table.insert(tooltipParts, groundName);
+	end
 
-	MacroDropEventFrame:SetScript("OnEvent", function(self, event, slot)
-		if slot then
-			local actionType, id, subType = GetActionInfo(slot)
-			if actionType == "macro" then
-				ToggleReminder();
-				MacroDropEventFrame:UnregisterAllEvents();
-				MacroDropEventFrame = nil;
-			end
-		end
-	end)
-end
+	local macroBody = "#showtooltip";
+	if #tooltipParts > 0 then
+		macroBody = macroBody.." "..table.concat(tooltipParts, ";")..";";
+	end
+	macroBody = macroBody.."\n/run MogCompanionsSummon();";
 
--- Creates the gear dropdown (ShortcutSettings) with Settings / Keybinds / Macro buttons.
-local function CreateShortcuts(f)
-	local ShortcutSettings = CreateFrame("DropdownButton", "ShortcutSettings", f, "DamageMeterSettingsDropdownButtonTemplate");
-	ShortcutSettings:SetPoint("TOPRIGHT", f, "TOPRIGHT", -26, -50);
-	ShortcutSettings:SetPoint("CENTER");
-	ShortcutSettings:SetupMenu(function(dropdown, rootDescription)
-		rootDescription:CreateTitle("MogCompanions");
-		rootDescription:CreateButton(L["Open Settings"], function() MogCompanions:OpenSettings() end);
-		rootDescription:CreateButton(L["Open Keybinds"], function() MogCompanions:OpenKeybinds() end);
-		rootDescription:CreateButton(L["Create Macro"], function() CreateMacroButton(ShortcutSettings) end);
-	end)
-	ShortcutSettings:Hide()
-end
+	if not macroId then
+		macroId = CreateMacro("MogComp Mount", 6841475, macroBody, nil);
+	else
+		EditMacro(macroId, "MogComp Mount", 6841475, macroBody, nil);
+	end
 
--- Builds the setup-reminder banner with a warning icon, explanatory text,
--- and buttons to create the macro or open keybindings.
--- SetupReminderFrame is a global (used by ToggleReminder) and stored at file scope.
-function CreateSetupReminder(f)
-	SetupReminderFrame = CreateFrame("Frame", "MogCompanionsSetupReminderFrame", f);
-	SetupReminderFrame:SetAllPoints(f);
-	SetupReminderFrame:SetParent(f);
+	if MogCompanionsSaved ~= nil then
+		MogCompanionsSaved.MacroID = macroId;
+	end
 
-	local SetupReminderIcon = SetupReminderFrame:CreateTexture(nil,"BACKGROUND");
-	SetupReminderIcon:SetAtlas("transmog-icon-warning");
-	SetupReminderIcon:SetSize(20,20);
-	SetupReminderIcon:SetPoint("TOPLEFT", 24, -24);	
+	if parent ~= nil then
+		PickupMacro(macroId);
+		GameTooltip:SetOwner(parent, "ANCHOR_CURSOR_RIGHT");
+		GameTooltip:AddLine(L["Drop Macro Tooltip"], 1, 1, 1);
+		GameTooltip:Show();
+	end
 
-	local SetupReminderText = SetupReminderFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlight");
-	SetupReminderText:SetJustifyH("LEFT");
-	SetupReminderText:SetPoint("TOPLEFT", 48, -28);
-	SetupReminderText:SetText("|cFFE36F1B"..L["Setup Reminder"].."|r");
-
-	local characterWidth = 8;
-	local buttonPadding = 12;
-
-	local CreateMacroButtonFrame = CreateFrame("Button", "CreateMacroButtonFrame", SetupReminderFrame, "UIPanelButtonTemplate");
-	CreateMacroButtonFrame:SetPoint("TOPRIGHT", SetupReminderFrame, "TOPRIGHT", -26, -22);
-	local length = string.len(L["Create Macro"]);
-	CreateMacroButtonFrame:SetSize(length * characterWidth + buttonPadding, 22);
-	CreateMacroButtonFrame:SetText(L["Create Macro"]);
-
-	local OpenKeybindingsButton = CreateFrame("Button", "MogCompanionsOpenKeybindingsButton", SetupReminderFrame, "UIPanelButtonTemplate");
-	OpenKeybindingsButton:SetPoint("TOPRIGHT", SetupReminderFrame, "TOPRIGHT", (-1 * length * characterWidth) - buttonPadding - 26 - 8, -22);
-	length = string.len(L["Open Keybinds"]);
-	OpenKeybindingsButton:SetSize(length * characterWidth + buttonPadding, 22);
-	OpenKeybindingsButton:SetText(L["Open Keybinds"]);
-
-	OpenKeybindingsButton:SetScript("OnClick", function()
-		MogCompanions:OpenKeybinds();
-	end)	
-
-	CreateMacroButtonFrame:SetScript("OnMouseDown", function()
-		CreateMacroButton(CreateMacroButtonFrame);
-	end)
+	return macroId;
 end
 
 -- ── Mounts Tab UI (WardrobeCollection) ────────────────────────────────────────
 -- Creates the full Mounts tab inside WardrobeCollection on first call (idempotent).
 -- Contains: flying/ground model preview frames, scrollable mount lists, search box,
--- filter dropdown (show flying in ground list), setup reminder, gear menu.
+-- and filter dropdown (show flying in ground list).
 -- SetSelectedFlyingMount and SetSelectedGroundMount are defined here as closures
 -- over the local scroll-box and data-provider references.
 function MogCompanions:InitMountTab()
-	if not TransmogFrame.WardrobeCollection.mountsTabID then
+	local collection = TransmogFrame and TransmogFrame.WardrobeCollection;
+	if collection == nil or collection.TabContent == nil or collection.AddNamedTab == nil then
+		return;
+	end
+
+	if not collection.companionsTabID then
 
 		function TransmogFrame.WardrobeCollection:UpdateTabs()
-			self.TabHeaders:SetTabShown(self.itemsTabID, true);
-			self.TabHeaders:SetTabShown(self.setsTabID, true);
-			self.TabHeaders:SetTabShown(self.custmSetsTabID, true);
-			self.TabHeaders:SetTabShown(self.situationsTabID, true);
-			self.TabHeaders:SetTabShown(self.mountsTabID, true);
-			self.TabHeaders:SetTabShown(self.hearthstonesTabID, true);
+			if self.TabHeaders then
+				if self.itemsTabID then self.TabHeaders:SetTabShown(self.itemsTabID, true); end
+				if self.setsTabID then self.TabHeaders:SetTabShown(self.setsTabID, true); end
+				if self.custmSetsTabID then self.TabHeaders:SetTabShown(self.custmSetsTabID, true); end
+				if self.situationsTabID then self.TabHeaders:SetTabShown(self.situationsTabID, true); end
+				if self.companionsTabID then self.TabHeaders:SetTabShown(self.companionsTabID, true); end
+			end
 		end
 
 		-- Layout scale factor (6/7 ≈ 0.857) that maps the 360-unit preview design coords to the wardrobe tab's actual rendered dimensions.
 		local s = 0.85714285714;
+		local topOffset = 26;
 
 		local x, y = 360 * s, 360 * s;
 		local inset = 12;
@@ -791,15 +779,22 @@ function MogCompanions:InitMountTab()
 		default.icon = 1769016;
 		default.model = 0;		
 
-		local f = CreateFrame("Frame", "MountsFrame", TransmogFrame.WardrobeCollection.TabContent);
+		local CompanionsFrame = CreateFrame("Frame", "MogCompanionsCompanionsFrame", collection.TabContent);
+		CompanionsFrame:SetAllPoints(true);
+		CompanionsFrame:SetFrameStrata("HIGH");
+		CompanionsFrame:Hide();
+
+		local f = CreateFrame("Frame", "MountsFrame", CompanionsFrame);
 		f:SetAllPoints(true);
 		f:SetFrameStrata("HIGH");
 		f:Hide();
 
-		-- Mount tab controls: filter dropdown, search box, setup reminder, and gear menu
+		-- Mount tab controls: gear dropdown, filter dropdown, and search box
+
+		CreateShortcuts(f, topOffset);
 
 		FilterDropdown = CreateFrame("DropdownButton", nil, f, "WowStyle1FilterDropdownTemplate");
-		FilterDropdown:SetPoint("TOPRIGHT", f, "TOPRIGHT", -60, -50);
+		FilterDropdown:SetPoint("TOPRIGHT", f, "TOPRIGHT", -60, -50 + topOffset);
 		FilterDropdown:SetWidth(104);		
 		FilterDropdown.resizeToText = false;
 		FilterDropdown:SetupMenu(function(dropdown, rootDescription)
@@ -809,23 +804,16 @@ function MogCompanions:InitMountTab()
 		---		
 
 		MountListSearchBox = CreateFrame("EditBox", "MountListSearchBox", f, "TransmogSearchBoxTemplate");
-		MountListSearchBox:SetPoint("TOPRIGHT", -174, -50); --- -32, -444
+		MountListSearchBox:SetPoint("TOPRIGHT", -174, -50 + topOffset); --- -32, -444
 
 		local iconPostion, iconParent, iconParentPostion, iconX, iconY = MountListSearchBox.searchIcon:GetPoint();
 		MountListSearchBox.searchIcon:SetPoint(iconPostion, iconParent, iconParentPostion, iconX, iconY + 1);
-
-		-- Setup reminder banner and shortcut gear menu
-
-		CreateSetupReminder(f);
-		CreateShortcuts(f);
-
-		ToggleReminder();
 
 		-- Flying and ground section title labels
 
 		local FlyingSlotTitle = f:CreateFontString(nil, "OVERLAY", "GameFontHighlightHuge");
 		FlyingSlotTitle:SetJustifyH("LEFT");
-		FlyingSlotTitle:SetPoint("TOPLEFT", 24, -76);
+		FlyingSlotTitle:SetPoint("TOPLEFT", 24, -76 + topOffset);
 		FlyingSlotTitle:SetText(L["Mount Tab Flying Section Title"]);
 
 		local FlyingSlotTitleDivider = f:CreateTexture();
@@ -835,7 +823,7 @@ function MogCompanions:InitMountTab()
 
 		local GroundSlotTitle = f:CreateFontString(nil, "OVERLAY", "GameFontHighlightHuge");
 		GroundSlotTitle:SetJustifyH("LEFT");
-		GroundSlotTitle:SetPoint("TOPLEFT", 24, -444);
+		GroundSlotTitle:SetPoint("TOPLEFT", 24, -444 + topOffset);
 		GroundSlotTitle:SetText(L["Mount Tab Ground Section Title"]);
 
 		local GroundSlotTitleDivider = f:CreateTexture();
@@ -851,7 +839,7 @@ function MogCompanions:InitMountTab()
 		-- Flying mount model preview frame and list
 
 		FlyingMountPreview = CreateFrame("Frame", "MountTabFlyingPreview", f);
-		FlyingMountPreview:SetPoint("TOPLEFT", f, "TOPLEFT", 24 * s, -114 * s);
+		FlyingMountPreview:SetPoint("TOPLEFT", f, "TOPLEFT", 24 * s, (-114 + topOffset) * s);
 		FlyingMountPreview:SetFrameStrata("HIGH");
 		FlyingMountPreview:SetSize(x, y);
 		FlyingMountPreview:SetParent(f);
@@ -873,6 +861,17 @@ function MogCompanions:InitMountTab()
 		end
 		-- FlyingMountModel:SetPosition(-0.2, -0.1, -0.1)
 		FlyingMountModel:SetFacing(-5.5);
+		FlyingMountPreviewControls = MogCompanions:AttachPreviewModelControls(FlyingMountPreview, FlyingMountModel, {
+			zoom = 1,
+			minZoom = 0.4,
+			maxZoom = 3.0,
+			facing = -5.5,
+			x = 0,
+			y = 0,
+			z = 0,
+			buttonOffsetY = -8,
+			controlNamePrefix = "MogCompanionsFlyingMountPreview",
+		});
 
 		local FlyingMountPreviewBorder = FlyingMountPreview:CreateTexture(nil, "OVERLAY");
 		FlyingMountPreviewBorder:SetAtlas("transmog-itemCard-default", true);
@@ -955,8 +954,11 @@ function MogCompanions:InitMountTab()
 			end
 
 			button:SetScript("OnEnter", function()
-				if FlyingMountModel:GetDisplayInfo() ~= data.model and data.model ~= nil then
+				if data.model ~= nil then
 					FlyingMountModel:SetDisplayInfo(data.model);
+					if FlyingMountPreviewControls ~= nil then
+						FlyingMountPreviewControls.reset();
+					end
 				end
 				FlyingMountModel:SetAlpha(1);
 			end)
@@ -966,9 +968,15 @@ function MogCompanions:InitMountTab()
 
 				if SavedFlyingMoundID ~= nil and SavedFlyingMoundID > 0 then
 					FlyingMountModel:SetDisplayInfo(SavedFlyingMoundID);
+					if FlyingMountPreviewControls ~= nil then
+						FlyingMountPreviewControls.reset();
+					end
 					FlyingMountModel:SetAlpha(1);
 				else
 					FlyingMountModel:SetDisplayInfo(0);
+					if FlyingMountPreviewControls ~= nil then
+						FlyingMountPreviewControls.reset();
+					end
 					FlyingMountModel:SetAlpha(0);
 				end
 			end)
@@ -1009,7 +1017,7 @@ function MogCompanions:InitMountTab()
 		FlyingMountListBackground:SetAllPoints(true);
 
 		GroundMountPreview = CreateFrame("Frame", "MountTabGroundPreview", f);
-		GroundMountPreview:SetPoint("TOPLEFT", f, "TOPLEFT", 24 * s, -564 * s);
+		GroundMountPreview:SetPoint("TOPLEFT", f, "TOPLEFT", 24 * s, (-564 + topOffset) * s);
 		GroundMountPreview:SetFrameStrata("HIGH");
 		GroundMountPreview:SetSize(x, y);
 		GroundMountPreview:SetParent(f);
@@ -1031,6 +1039,17 @@ function MogCompanions:InitMountTab()
 	   	end
 		GroundMountModel:SetPosition(-0.2, -0.1, -0.1);
 		GroundMountModel:SetFacing(-5.5);
+		GroundMountPreviewControls = MogCompanions:AttachPreviewModelControls(GroundMountPreview, GroundMountModel, {
+			zoom = 1,
+			minZoom = 0.4,
+			maxZoom = 3.0,
+			facing = -5.5,
+			x = -0.2,
+			y = -0.1,
+			z = -0.1,
+			buttonOffsetY = -8,
+			controlNamePrefix = "MogCompanionsGroundMountPreview",
+		});
 
 		local GroundMountPreviewBorder = GroundMountPreview:CreateTexture(nil, "OVERLAY");
 		GroundMountPreviewBorder:SetAtlas("transmog-itemCard-default", true);
@@ -1113,8 +1132,11 @@ function MogCompanions:InitMountTab()
 			end
 
 			button:SetScript("OnEnter", function()
-				if GroundMountModel:GetDisplayInfo() ~= data.model and data.model ~= nil then
+				if data.model ~= nil then
 					GroundMountModel:SetDisplayInfo(data.model);
+					if GroundMountPreviewControls ~= nil then
+						GroundMountPreviewControls.reset();
+					end
 				end
 				GroundMountModel:SetAlpha(1);
 			end)
@@ -1124,9 +1146,15 @@ function MogCompanions:InitMountTab()
 
 				if SavedGroundMoundID ~= nil and SavedGroundMoundID > 0 then
 					GroundMountModel:SetDisplayInfo(SavedGroundMoundID);
+					if GroundMountPreviewControls ~= nil then
+						GroundMountPreviewControls.reset();
+					end
 					GroundMountModel:SetAlpha(1);
 				else
 					GroundMountModel:SetDisplayInfo(0);
+					if GroundMountPreviewControls ~= nil then
+						GroundMountPreviewControls.reset();
+					end
 					GroundMountModel:SetAlpha(0);
 				end
 			end)
@@ -1219,22 +1247,109 @@ function MogCompanions:InitMountTab()
 
 		--		
 
-		local HearthstonesFrame = nil;
-
 		if MogCompanions.CreateHearthstonesFrame ~= nil then
-			HearthstonesFrame = MogCompanions:CreateHearthstonesFrame(TransmogFrame.WardrobeCollection, MountsFrame);
+			MogCompanions:CreateHearthstonesFrame(CompanionsFrame);
 		end
 
-		TransmogFrame.WardrobeCollection.mountsTabID = TransmogFrame.WardrobeCollection:AddNamedTab(L["Mount Tab Title"], MountsFrame);
+		-- Companions sub-tab buttons (Mounts, Hearthstones, Pets) at bottom of container.
+		-- numTabs and Tabs are assigned manually; PanelTemplates_SetNumTabs is NOT used
+		-- because it calls AnchorTabs internally, which would fight our manual anchors.
 
-		if HearthstonesFrame ~= nil then
-			TransmogFrame.WardrobeCollection.hearthstonesTabID = TransmogFrame.WardrobeCollection:AddNamedTab(L["Hearthstone Tab Title"], HearthstonesFrame);
-		end
+		local mountsTab = CreateFrame("Button", "MogCompanionsCompanionsTab1", CompanionsFrame, "PanelTabButtonTemplate", 1);
+		mountsTab:SetID(1);
+		mountsTab:SetText(L["Mount Tab Title"]);
+		PanelTemplates_TabResize(mountsTab, 0);
+		mountsTab:SetPoint("BOTTOMLEFT", CompanionsFrame, "BOTTOMLEFT", 16, 2);
+		mountsTab:SetScript("OnClick", function(self)
+			MogCompanions:OpenCompanionsSubTab(self:GetID());
+		end);
 
-		TransmogFrame.WardrobeCollection:UpdateTabs();
+		local hearthstonesTab = CreateFrame("Button", "MogCompanionsCompanionsTab2", CompanionsFrame, "PanelTabButtonTemplate", 2);
+		hearthstonesTab:SetID(2);
+		hearthstonesTab:SetText(L["Hearthstone Tab Title"]);
+		PanelTemplates_TabResize(hearthstonesTab, 0);
+		hearthstonesTab:SetPoint("LEFT", mountsTab, "RIGHT", 3, 0);
+		hearthstonesTab:SetScript("OnClick", function(self)
+			MogCompanions:OpenCompanionsSubTab(self:GetID());
+		end);
+
+		local petsTab = CreateFrame("Button", "MogCompanionsCompanionsTab3", CompanionsFrame, "PanelTabButtonTemplate", 3);
+		petsTab:SetID(3);
+		petsTab:SetText(L["Pets Tab Title"]);
+		PanelTemplates_TabResize(petsTab, 0);
+		petsTab:SetPoint("LEFT", hearthstonesTab, "RIGHT", 3, 0);
+		petsTab:SetScript("OnClick", function(self)
+			MogCompanions:OpenCompanionsSubTab(self:GetID());
+		end);
+
+		CompanionsFrame.numTabs = 3;
+		CompanionsFrame.Tabs = { mountsTab, hearthstonesTab, petsTab };
+
+		collection.companionsTabID = collection:AddNamedTab(L["Companions Tab Title"], CompanionsFrame);
+		collection:UpdateTabs();
+
+		MogCompanions:OpenCompanionsSubTab(1);
 	end
 
-	ToggleReminder();
+end
+
+-- Shows a specific Companions sub-tab (1=Mounts, 2=Hearthstones, 3=Pets) and updates
+-- the PanelTab selection state. PanelTemplates_SetTab calls PanelTemplates_UpdateTabs
+-- internally; do not call it again here.
+function MogCompanions:OpenCompanionsSubTab(tabIndex)
+	local companionsFrame = _G.MogCompanionsCompanionsFrame;
+	if companionsFrame == nil then return; end
+
+	if tabIndex ~= 1 and tabIndex ~= 2 and tabIndex ~= 3 then
+		tabIndex = 1;
+	end
+
+	if _G.MountsFrame then
+		_G.MountsFrame:SetShown(tabIndex == 1);
+	end
+	if _G.MogCompanionsHearthstonesPage then
+		_G.MogCompanionsHearthstonesPage:SetShown(tabIndex == 2);
+	end
+	if tabIndex == 3 then
+		if MogCompanions.ShowPetsPage ~= nil then
+			MogCompanions:ShowPetsPage();
+		elseif _G.MogCompanionsPetsFrame then
+			_G.MogCompanionsPetsFrame:Show();
+		end
+	elseif MogCompanions.HidePetsPage ~= nil then
+		MogCompanions:HidePetsPage();
+	elseif _G.MogCompanionsPetsFrame then
+		_G.MogCompanionsPetsFrame:Hide();
+	end
+
+	PanelTemplates_SetTab(companionsFrame, tabIndex);
+end
+
+-- Opens the Companions top-level tab and navigates to the given sub-tab by name
+-- ("Mounts", "Hearthstones", or "Pets"). Builds the tab UI via InitMountTab if it
+-- has not been built yet. Safe to call before the wardrobe has been opened.
+function MogCompanions:OpenCompanionsTab(subTabName)
+	if TransmogFrame == nil or TransmogFrame.WardrobeCollection == nil then return; end
+	local collection = TransmogFrame.WardrobeCollection;
+
+	if collection.companionsTabID == nil then
+		MogCompanions:InitMountTab();
+	end
+
+	if collection.companionsTabID == nil then return; end
+
+	if collection.SetTab then
+		collection:SetTab(collection.companionsTabID);
+	end
+
+	local subTabIndex = 1;
+	if subTabName == "Hearthstones" then
+		subTabIndex = 2;
+	elseif subTabName == "Pets" then
+		subTabIndex = 3;
+	end
+
+	MogCompanions:OpenCompanionsSubTab(subTabIndex);
 end
 
 -- Resets the flying mount list selection and scrolls back to the top.
