@@ -9,9 +9,39 @@ local L = MogCompanionsLocales;
 
 local PetsFrame;
 
+function MogCompanions:CreatePetMacro(parent)
+	if InCombatLockdown and InCombatLockdown() then
+		print(L["Macro Combat Error"]);
+		return nil;
+	end
+
+	local macroId = false;
+	for i = 1, 120 do
+		if C_Macro.GetMacroName(i) == "MComp Pets" then
+			macroId = i;
+		end
+	end
+
+	local macroBody = "#showtooltip\n/mcomp pet";
+	if not macroId then
+		macroId = CreateMacro("MComp Pets", 656575, macroBody, nil);
+	else
+		EditMacro(macroId, "MComp Pets", 656575, macroBody, nil);
+	end
+
+	if parent ~= nil then
+		PickupMacro(macroId);
+		GameTooltip:SetOwner(parent, "ANCHOR_CURSOR_RIGHT");
+		GameTooltip:AddLine(L["Drop Pet Macro Tooltip"], 1, 1, 1);
+		GameTooltip:Show();
+	end
+
+	return macroId;
+end
+
 -- Idempotent: returns early if PetsFrame already exists.
 -- Creates the Pets placeholder page parented directly to the given frame.
--- Contains: search box, section title, scrollable empty list + scrollbar.
+-- Contains: search box, shared gear menu, section title, scrollable empty list + scrollbar.
 -- No C_PetJournal calls; data provider stays empty until pet logic is added.
 function MogCompanions:CreatePetsFrame(parent)
 	if PetsFrame ~= nil then
@@ -33,6 +63,9 @@ function MogCompanions:CreatePetsFrame(parent)
 		local iconPos, iconParent, iconParentPos, iconX, iconY = PetsSearchBox.searchIcon:GetPoint();
 		PetsSearchBox.searchIcon:SetPoint(iconPos, iconParent, iconParentPos, iconX, iconY + 1);
 	end
+
+	local PetsShortcuts = MogCompanions:CreateCompanionsShortcutMenu(PetsFrame, "MogCompanionsPetsShortcuts");
+	PetsShortcuts:SetPoint("TOPRIGHT", PetsFrame, "TOPRIGHT", -26, -50);
 
 	-- Section title (matching Hearthstones tab style)
 	local PetsSlotTitle = PetsFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightHuge");

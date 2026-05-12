@@ -31,15 +31,19 @@ L["Pets Tab Title"] = "Pets";
 -- Settings buttons
 L["Open Settings"] = "Open Options";
 L["Open Keybinds"] = "Open Keybinds";
-L["Create Macro"] = "Create Macro";
+L["Create Mount Macro"] = "Create Mount Macro";
+L["Create Pet Macro"] = "Create Pet Macro";
+L["Create Hearthstone Macro"] = "Create Hearthstone Macro";
 L["Setup Reminder"] = "Set up a MogCompanions keybind and/or macro";
-L["Hearthstone Setup Reminder"] = "Set up a MogCompanions Hearthstone macro";
 L["Drop Macro Tooltip"] = "Drop this Mount macro in |nyour action bar";
+L["Drop Pet Macro Tooltip"] = "Drop this pet macro in |nyour action bar";
 L["Drop Hearthstone Macro Tooltip"] = "Drop this Hearthstone macro in |nyour action bar";
 L["Show Flying In Ground Toggle"] = "Show flying mounts in ground mount list";
 L["Slash Help Mount"] = "Summon or dismount using MogCompanions";
+L["Slash Help Pet"] = "Run the pets companion action (currently a stub)";
 L["Slash Help Options"] = "Open the MogCompanions options panel";
 L["No Hearthstone Toys"] = "No Hearthstone toys are available.";
+L["Pet Command Stub"] = "Pets companion actions are not implemented yet.";
 L["Use Hearthstone"] = "Use Hearthstone";
 L["Macro Combat Error"] = "MogCompanions cannot create macros while you are in combat.";
 

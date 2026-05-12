@@ -30,7 +30,6 @@ local HearthstoneSelectionBehavior;
 local HearthstonesInitialized = false;
 local HearthstoneSecureButton;
 local HearthstonePendingItemID;
-local HearthstoneSetupReminderFrame;
 local HearthstoneShortcuts;
 
 MogCompanions.HearthstoneSearchString = "";
@@ -332,82 +331,11 @@ local function RefreshHearthstoneList()
 	end
 end
 
--- Returns true if the "MogComp Hearth" macro does not exist and no keybind is set.
--- Checks the direct CLICK binding registered in Bindings.xml.
-local function MissingHearthstoneKeybindOrMacro()
-	local key1, key2 = GetBindingKey("CLICK MCHearthButton:LeftButton");
-	if key1 and key1 ~= "" then
-		return false;
-	end
-	if key2 and key2 ~= "" then
-		return false;
-	end
-
-	for i = 1, 120 do
-		if C_Macro.GetMacroName(i) == "MogComp Hearth" then
-			return false;
-		end
-	end
-
-	return true;
-end
-
-local CreateHearthstoneMacro; -- forward declaration: CreateHearthstoneSetupReminder references this before its definition
-
--- Builds the Hearthstone setup-reminder banner with a warning icon, explanatory text,
--- and buttons to create the macro or open keybindings.
-local function CreateHearthstoneSetupReminder(f)
-	HearthstoneSetupReminderFrame = CreateFrame("Frame", nil, f);
-	HearthstoneSetupReminderFrame:SetAllPoints(f);
-
-	local icon = HearthstoneSetupReminderFrame:CreateTexture(nil, "BACKGROUND");
-	icon:SetAtlas("transmog-icon-warning");
-	icon:SetSize(20, 20);
-	icon:SetPoint("TOPLEFT", 24, -24);
-
-	local text = HearthstoneSetupReminderFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlight");
-	text:SetJustifyH("LEFT");
-	text:SetPoint("TOPLEFT", 48, -28);
-	text:SetText("|cFFE36F1B"..L["Hearthstone Setup Reminder"].."|r");
-
-	local characterWidth = 8;
-	local buttonPadding = 12;
-	local createLen = string.len(L["Create Macro"]);
-
-	local createBtn = CreateFrame("Button", nil, HearthstoneSetupReminderFrame, "UIPanelButtonTemplate");
-	createBtn:SetPoint("TOPRIGHT", HearthstoneSetupReminderFrame, "TOPRIGHT", -26, -22);
-	createBtn:SetSize(createLen * characterWidth + buttonPadding, 22);
-	createBtn:SetText(L["Create Macro"]);
-	createBtn:SetScript("OnMouseDown", function()
-		CreateHearthstoneMacro(createBtn);
-	end)
-
-	local keybindLen = string.len(L["Open Keybinds"]);
-	local keybindBtn = CreateFrame("Button", nil, HearthstoneSetupReminderFrame, "UIPanelButtonTemplate");
-	keybindBtn:SetPoint("TOPRIGHT", HearthstoneSetupReminderFrame, "TOPRIGHT", (-1 * createLen * characterWidth) - buttonPadding - 26 - 8, -22);
-	keybindBtn:SetSize(keybindLen * characterWidth + buttonPadding, 22);
-	keybindBtn:SetText(L["Open Keybinds"]);
-	keybindBtn:SetScript("OnClick", function()
-		MogCompanions:OpenKeybinds();
-	end)
-end
-
--- Shows/hides the Hearthstone setup reminder. Search box and gear menu are always visible.
-local function ToggleHearthstoneReminder()
-	if MissingHearthstoneKeybindOrMacro() then
-		HearthstoneSetupReminderFrame:Show();
-	else
-		HearthstoneSetupReminderFrame:Hide();
-	end
-	HearthstoneShortcuts:Show();
-	HearthstonesSearchBox:Show();
-end
-
 -- Creates a "MogComp Hearth" macro (or edits the existing one) and puts it on the cursor
 -- so the player can drag it to an action bar.
 -- The macro body is always "/click MCHearthButton"; modifier routing is handled in PreClick.
 -- Cannot be created during combat (combat lockdown).
-CreateHearthstoneMacro = function(parent)
+function MogCompanions:CreateHearthstoneMacro(parent)
 	if InCombatLockdown and InCombatLockdown() then
 		print(L["Macro Combat Error"]);
 		return;
@@ -433,7 +361,6 @@ CreateHearthstoneMacro = function(parent)
 	end
 
 	PickupMacro(macroId);
-	ToggleHearthstoneReminder();
 
 	GameTooltip:SetOwner(parent, "ANCHOR_CURSOR_RIGHT");
 	GameTooltip:AddLine(L["Drop Hearthstone Macro Tooltip"], 1, 1, 1);
@@ -477,19 +404,8 @@ function MogCompanions:CreateHearthstonesFrame(parent)
 	end)
 
 	-- Gear dropdown (matching Mounts tab ShortcutSettings)
-	HearthstoneShortcuts = CreateFrame("DropdownButton", "MogCompanionsHearthstoneShortcuts", HearthstonesPage, "DamageMeterSettingsDropdownButtonTemplate");
+	HearthstoneShortcuts = MogCompanions:CreateCompanionsShortcutMenu(HearthstonesPage, "MogCompanionsHearthstoneShortcuts");
 	HearthstoneShortcuts:SetPoint("TOPRIGHT", HearthstonesPage, "TOPRIGHT", -26, -50);
-	HearthstoneShortcuts:SetupMenu(function(dropdown, rootDescription)
-		rootDescription:CreateTitle("MogCompanions");
-		rootDescription:CreateButton(L["Open Settings"], function() MogCompanions:OpenSettings() end);
-		rootDescription:CreateButton(L["Open Keybinds"], function() MogCompanions:OpenKeybinds() end);
-		rootDescription:CreateButton(L["Create Macro"], function() CreateHearthstoneMacro(HearthstoneShortcuts) end);
-	end)
-	HearthstoneShortcuts:Hide();
-
-	-- Setup reminder banner
-	CreateHearthstoneSetupReminder(HearthstonesPage);
-	ToggleHearthstoneReminder();
 
 	-- Section title (matching Mounts FlyingSlotTitle style)
 	local HearthstoneSlotTitle = HearthstonesPage:CreateFontString(nil, "OVERLAY", "GameFontHighlightHuge");
