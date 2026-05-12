@@ -905,18 +905,19 @@ function MogCompanions:InitMountTab()
 			end)
 
 			button:SetScript("OnLeave", function()
-					local SavedFlyingMoundID, _, _, _, _, _, _, _, _ = C_MountJournal.GetMountInfoExtraByID(MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Flying);
+				local SavedFlyingMoundID, _, _, _, _, _, _, _, _ = C_MountJournal.GetMountInfoExtraByID(MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Flying);
+
+				if SavedFlyingMoundID ~= nil and SavedFlyingMoundID > 0 then
 					FlyingMountModel:SetDisplayInfo(SavedFlyingMoundID);
-				end
-				if SavedFlyingMoundID == nil then
+					FlyingMountModel:SetAlpha(1);
+				else
+					FlyingMountModel:SetDisplayInfo(0);
 					FlyingMountModel:SetAlpha(0);
 				end
 			end)
-
 			button:SetScript("OnClick", function()
 				FlyingMountSelectionBehavior:Select(button);
 				SetSelectedFlyingMount(data.id);
-					local SavedFlyingMoundID, _, _, _, _, _, _, _, _ = C_MountJournal.GetMountInfoExtraByID(MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Flying);
 				FlyingMountModel:SetAlpha(1);	
 			end)
 
@@ -1063,20 +1064,20 @@ function MogCompanions:InitMountTab()
 			end)
 
 			button:SetScript("OnLeave", function()
-					local SavedGroundMoundID, _, _, _, _, _, _, _, _ = C_MountJournal.GetMountInfoExtraByID(MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Ground);
+				local SavedGroundMoundID, _, _, _, _, _, _, _, _ = C_MountJournal.GetMountInfoExtraByID(MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Ground);
+
+				if SavedGroundMoundID ~= nil and SavedGroundMoundID > 0 then
 					GroundMountModel:SetDisplayInfo(SavedGroundMoundID);
 					GroundMountModel:SetAlpha(1);
-				end
-				if SavedGroundMoundID == nil then
+				else
+					GroundMountModel:SetDisplayInfo(0);
 					GroundMountModel:SetAlpha(0);
 				end
 			end)
-
 			button:SetScript("OnClick", function()
 				GroundMountSelectionBehavior:Select(button);
 				SetSelectedGroundMount(data.id);
-					local SavedGroundMoundID, _, _, _, _, _, _, _, _ = C_MountJournal.GetMountInfoExtraByID(MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Ground);
-				GroundMountModel:SetAlpha(1);				
+				GroundMountModel:SetAlpha(1);
 			end)
 
 		end
