@@ -39,8 +39,6 @@ local SetSelectedFlyingMount, SetSelectedGroundMount;
 local SetupReminderFrame;
 local MountListSearchBox, FilterDropdown;
 
-local CheckboxShowFlyingInGroundList;
-
 MogCompanions.MountSearchString = "";
 
 MogCompanionsSelectedMount = {}
@@ -260,8 +258,6 @@ function MogCompanions:InitMountSlots(reset)
 		local borderSize = 59;
 		local borderOffset = 7;
 
-		local appearanceSlotInfo, illusionSlotInfo = C_TransmogOutfitInfo.GetAllSlotLocationInfo();
-
 		flyingMountBorder = CreateFrame("Frame", "FlyingMountBorder", flyingMountFrame);
 		flyingMountBorder:SetFrameStrata("HIGH");
 		flyingMountBorder:SetSize(borderSize, borderSize);
@@ -311,7 +307,7 @@ function MogCompanions:InitMountSlots(reset)
 			FlyingMountModel:SetDisplayInfo(0);
 			FlyingMountModel:SetAlpha(1);
 			FlyingMountClear:Hide();
-			ClearSelectedFlyingMount(); 				
+			ClearSelectedFlyingMount();
 		end)				
 
 		-- Ground Mount Frame
@@ -376,13 +372,12 @@ function MogCompanions:InitMountSlots(reset)
 			GroundMountModel:SetDisplayInfo(0);
 			GroundMountModel:SetAlpha(0);
 			GroundMountClear:Hide();
-			ClearSelectedGroundMount();			
+			ClearSelectedGroundMount();
 		end)	
 
 	end
 
-	local name, spellID, icon, isActive, isUsable, sourceType, isFavorite, isFactionSpecific, faction, shouldHideOnChar, isCollected, mountID, isSteadyFlight = C_MountJournal.GetMountInfoByID(MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Flying);
-	local creatureDisplayInfoID, description, source, isSelfMount, mountTypeID, uiModelSceneID, animID, spellVisualKitID, disablePlayerMountPreview = C_MountJournal.GetMountInfoExtraByID(MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Flying);
+	local _, _, icon = C_MountJournal.GetMountInfoByID(MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Flying);
 
 	MogCompanions:UpdateSelectMountDetails("Flying", MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Flying);
 
@@ -406,8 +401,7 @@ function MogCompanions:InitMountSlots(reset)
 
 	-- Ground mount slot icon
 
-	local name, spellID, icon, isActive, isUsable, sourceType, isFavorite, isFactionSpecific, faction, shouldHideOnChar, isCollected, mountID, isSteadyFlight = C_MountJournal.GetMountInfoByID(MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Ground);
-	local creatureDisplayInfoID, description, source, isSelfMount, mountTypeID, uiModelSceneID, animID, spellVisualKitID, disablePlayerMountPreview = C_MountJournal.GetMountInfoExtraByID(MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Ground);
+	local _, _, icon = C_MountJournal.GetMountInfoByID(MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Ground);
 
 	MogCompanions:UpdateSelectMountDetails("Ground", MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Ground);
 
@@ -553,10 +547,6 @@ function MissingKeybindOrMacro()
 end
 
 -- ── Mount Tab UI Helpers ────────────────────────────────────────────────────────
-local function ToggleGroundMountIncludeFlying()
-	-- CheckboxShowFlyingInGroundList:IsSelected()
-end
-
 local function FilterIsChecked(filter)
 	return MogCompanionsSaved.ShowFlyingInGround;
 end
@@ -740,7 +730,7 @@ function MogCompanions:InitMountTab()
 		FilterDropdown:SetWidth(104);		
 		FilterDropdown.resizeToText = false;
 		FilterDropdown:SetupMenu(function(dropdown, rootDescription)
-			CheckboxShowFlyingInGroundList = rootDescription:CreateCheckbox(L["Show Flying In Ground Toggle"], FilterIsChecked, FilterSetChecked);
+				rootDescription:CreateCheckbox(L["Show Flying In Ground Toggle"], FilterIsChecked, FilterSetChecked);
 		end)
 
 		---		
@@ -848,8 +838,7 @@ function MogCompanions:InitMountTab()
 		FlyingMountSelectionBehavior:RegisterCallback(SelectionBehaviorMixin.Event.OnSelectionChanged, OnFlyingMountSelectionChanged, self);
 
 		function SetSelectedFlyingMount(value)
-			local name, spellID, icon, isActive, isUsable, sourceType, isFavorite, isFactionSpecific, faction, shouldHideOnChar, isCollected, mountID, isSteadyFlight = C_MountJournal.GetMountInfoByID(value);
-			local creatureDisplayInfoID, description, source, isSelfMount, mountTypeID, uiModelSceneID, animID, spellVisualKitID, disablePlayerMountPreview = C_MountJournal.GetMountInfoExtraByID(value);
+			local _, _, icon = C_MountJournal.GetMountInfoByID(value);
 
 			MogCompanions:UpdateSelectMountDetails("Flying", value);
 
@@ -1007,8 +996,7 @@ function MogCompanions:InitMountTab()
 		GroundMountSelectionBehavior:RegisterCallback(SelectionBehaviorMixin.Event.OnSelectionChanged, OnGroundMountSelectionChanged, self);
 
 		function SetSelectedGroundMount(value)
-			local name, spellID, icon, isActive, isUsable, sourceType, isFavorite, isFactionSpecific, faction, shouldHideOnChar, isCollected, mountID, isSteadyFlight = C_MountJournal.GetMountInfoByID(value);
-			local creatureDisplayInfoID, description, source, isSelfMount, mountTypeID, uiModelSceneID, animID, spellVisualKitID, disablePlayerMountPreview = C_MountJournal.GetMountInfoExtraByID(value);
+			local _, _, icon = C_MountJournal.GetMountInfoByID(value);
 
 			MogCompanions:UpdateSelectMountDetails("Ground", value);
 

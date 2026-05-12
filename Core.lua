@@ -17,7 +17,6 @@ local playerName = UnitName("player");
 local transmogs = {};
 local loaded = false;
 local firstLoad = true;
-local titleLoaded = false;
 
 local TitleDropdown;
 
@@ -132,7 +131,6 @@ end
 -- Saves the chosen title for the currently viewed outfit and immediately applies it.
 -- value: title ID (0 = [Default Title] / do not change, -1 = bare player name).
 local function SetSelectedTitle(value)
-	titleLoaded = false;
 	TitleDropdown:SetDefaultText(CreateDisplayTitle(value));
 	MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Title = value;
 	
