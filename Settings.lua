@@ -28,9 +28,6 @@ local function GetOptionsFlyingMount()
 	for i = 1, #mounts do
 		local mount = mounts[i];
 		container:Add(mount.id, mount.nameAndIcon);
-		if mount.id == MogCompanionsCharacterSaved.Default.Flying then
-			defaultValue = i;
-		end
 	end
 
 	return container:GetData();
@@ -46,9 +43,6 @@ local function GetOptionsGroundMount()
 	for i = 1, #mounts do
 		local mount = mounts[i];
 		container:Add(mount.id, mount.nameAndIcon);
-		if mount.id == MogCompanionsCharacterSaved.Default.Ground then
-			defaultValue = i;
-		end
 	end
 
 	return container:GetData();
@@ -65,9 +59,6 @@ local function GetOptionsAquaticMount()
 		for i = 1, #mounts do
 			local mount = mounts[i];
 			container:Add(mount.id, mount.nameAndIcon);
-			if mount.id == MogCompanionsCharacterSaved.Default.Aquatic then
-				defaultValue = i;
-			end
 		end
 
 	else 
@@ -90,9 +81,6 @@ local function GetOptionsSpecialMount()
 		for i = 1, #mounts do
 			local mount = mounts[i];
 			container:Add(mount.id, mount.nameAndIcon);
-			if mount.id == MogCompanionsCharacterSaved.Default.Special then
-				defaultValue = i;
-			end
 		end
 
 	else 
@@ -115,9 +103,6 @@ local function GetOptionsAlternativeMount()
 		for i = 1, #mounts do
 			local mount = mounts[i];
 			container:Add(mount.id, mount.nameAndIcon);
-			if mount.id == MogCompanionsCharacterSaved.Default.Alternative then
-				defaultValue = i;
-			end
 		end
 
 	else 
@@ -182,7 +167,7 @@ local function InitSettings()
 	local variable = "DefaultAquatic";
 	local defaultValue = 1;
 	local name = L["Settings Aquatic Mount"];
-	local tooltip = false;
+	local tooltip = nil;
 	if key1 or key2 then
 		tooltip = WrapTextInColorCode(L["Settings Aquatic Mount Keybind Reminder"], "00999999");
 	end
@@ -198,7 +183,7 @@ local function InitSettings()
 	local variable = "DefaultSpecial";
 	local defaultValue = 1;
 	local name = L["Settings Special Mount"];
-	local tooltip = false;
+	local tooltip = nil;
 	if key1 or key2 then
 		tooltip = WrapTextInColorCode(L["Settings Special Mount Keybind Reminder"], "00999999");
 	end

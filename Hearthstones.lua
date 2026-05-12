@@ -709,8 +709,11 @@ HearthstoneEventFrame:RegisterEvent("GET_ITEM_INFO_RECEIVED");
 HearthstoneEventFrame:RegisterEvent("VIEWED_TRANSMOG_OUTFIT_CHANGED");
 HearthstoneEventFrame:RegisterEvent("TRANSMOG_DISPLAYED_OUTFIT_CHANGED");
 HearthstoneEventFrame:SetScript("OnEvent", function(self, event, ...)
-	if event == "PLAYER_REGEN_ENABLED" and HearthstonePendingItemID ~= nil then
-		SetHearthstoneSecureButtonItem(HearthstonePendingItemID);
+	if event == "PLAYER_REGEN_ENABLED" then
+		if HearthstonePendingItemID ~= nil then
+			SetHearthstoneSecureButtonItem(HearthstonePendingItemID);
+		end
+		return;
 	end
 
 	if event == "GET_ITEM_INFO_RECEIVED" then

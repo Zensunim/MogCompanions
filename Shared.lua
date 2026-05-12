@@ -50,8 +50,8 @@ function MogCompanions:sortMounts(mountsRaw)
 
 	for i = 1, #mountsRaw do
 
-		name, spellID, icon, isActive, isUsable, sourceType, isFavorite, isFactionSpecific, faction, shouldHideOnChar, isCollected, mountID, isSteadyFlight = C_MountJournal.GetMountInfoByID(mountsRaw[i]);
-		creatureDisplayInfoID, description, source, isSelfMount, mountTypeID, uiModelSceneID, animID, spellVisualKitID, disablePlayerMountPreview = C_MountJournal.GetMountInfoExtraByID(mountsRaw[i]);
+		local name, spellID, icon, isActive, isUsable, sourceType, isFavorite, isFactionSpecific, faction, shouldHideOnChar, isCollected, mountID, isSteadyFlight = C_MountJournal.GetMountInfoByID(mountsRaw[i]);
+		local creatureDisplayInfoID, description, source, isSelfMount, mountTypeID, uiModelSceneID, animID, spellVisualKitID, disablePlayerMountPreview = C_MountJournal.GetMountInfoExtraByID(mountsRaw[i]);
 		
 		local temp = {};
 		temp["name"] = name;
@@ -354,12 +354,15 @@ end
 -- Formats a title ID into a displayable string: "Title PlayerName" or "PlayerName Title".
 -- titleID 0 returns the bare player name (represents the "no title" selection).
 local function CreateDisplayTitle(titleID)
-	local title, _ = GetTitleName(titleID);
-	local displayTitle = "";
-
 	if titleID == 0 then
 		return playerName;
 	end
+
+	local title, _ = GetTitleName(titleID);
+	if title == nil then
+		return playerName;
+	end
+	local displayTitle = "";
 
 	if title:sub(-1) == " " then
 		displayTitle = title..playerName;
@@ -393,11 +396,11 @@ end
 -- Populates MogCompanionsSelectedMount[type] with full info for the given mount ID.
 -- type: "Flying" | "Ground". Called when the player picks a mount in the list UI.
 function MogCompanions:UpdateSelectMountDetails(type, id)
-	name, spellID, icon, isActive, isUsable, sourceType, isFavorite, isFactionSpecific, faction, shouldHideOnChar, isCollected, mountID, isSteadyFlight = C_MountJournal.GetMountInfoByID(id);
-	creatureDisplayInfoID, description, source, isSelfMount, mountTypeID, uiModelSceneID, animID, spellVisualKitID, disablePlayerMountPreview = C_MountJournal.GetMountInfoExtraByID(id);
+	local name, spellID, icon, isActive, isUsable, sourceType, isFavorite, isFactionSpecific, faction, shouldHideOnChar, isCollected, mountID, isSteadyFlight = C_MountJournal.GetMountInfoByID(id);
+	local creatureDisplayInfoID, description, source, isSelfMount, mountTypeID, uiModelSceneID, animID, spellVisualKitID, disablePlayerMountPreview = C_MountJournal.GetMountInfoExtraByID(id);
 			
 	MogCompanionsSelectedMount[type].name = name;
-	MogCompanionsSelectedMount[type].spellID = name;
+	MogCompanionsSelectedMount[type].spellID = spellID;
 	MogCompanionsSelectedMount[type].icon = icon;
 	MogCompanionsSelectedMount[type].id = mountID;
 	MogCompanionsSelectedMount[type].display = creatureDisplayInfoID;
