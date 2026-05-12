@@ -86,6 +86,10 @@ local function EnsureHearthstoneSecureButton()
 		return;
 	end
 
+	if InCombatLockdown and InCombatLockdown() then
+		return;
+	end
+
 	HearthstoneSecureButton = CreateFrame("Button", "MCHearthButton", UIParent, "SecureActionButtonTemplate");
 	HearthstoneSecureButton:SetParent(UIParent);
 	HearthstoneSecureButton:SetSize(1, 1);
@@ -331,6 +335,8 @@ local function MissingHearthstoneKeybindOrMacro()
 	return true;
 end
 
+local CreateHearthstoneMacro; -- forward declaration: CreateHearthstoneSetupReminder references this before its definition
+
 -- Builds the Hearthstone setup-reminder banner with a warning icon, explanatory text,
 -- and buttons to create the macro or open keybindings.
 local function CreateHearthstoneSetupReminder(f)
@@ -383,7 +389,7 @@ end
 -- Creates a "MogComp Hearth" macro (or edits the existing one) and puts it on the cursor
 -- so the player can drag it to an action bar. The macro calls the secure button.
 -- Cannot be created during combat (combat lockdown).
-local function CreateHearthstoneMacro(parent)
+CreateHearthstoneMacro = function(parent)
 	if InCombatLockdown and InCombatLockdown() then
 		print(L["Macro Combat Error"]);
 		return;
@@ -710,8 +716,16 @@ HearthstoneEventFrame:RegisterEvent("VIEWED_TRANSMOG_OUTFIT_CHANGED");
 HearthstoneEventFrame:RegisterEvent("TRANSMOG_DISPLAYED_OUTFIT_CHANGED");
 HearthstoneEventFrame:SetScript("OnEvent", function(self, event, ...)
 	if event == "PLAYER_REGEN_ENABLED" then
+		EnsureHearthstoneSecureButton();
+		EnsureHearthstonePreClick();
+		EnsureHearthstonePostClick();
 		if HearthstonePendingItemID ~= nil then
+			-- Honor a specific toy selection that was deferred because combat started mid-update.
 			SetHearthstoneSecureButtonItem(HearthstonePendingItemID);
+		else
+			-- Re-arm the button after combat so the next press gets a fresh random selection
+			-- when no specific toy is pinned to the active outfit.
+			RefreshHearthstoneSecureButton();
 		end
 		return;
 	end
