@@ -22,6 +22,128 @@ function MogCompanionsSortAlphabetical(a, b)
 	return a.name:lower() < b.name:lower();
 end
 
+local function Clamp(value, minValue, maxValue)
+	if value < minValue then
+		return minValue;
+	elseif value > maxValue then
+		return maxValue;
+	end
+
+	return value;
+end
+
+function MogCompanions:AttachPreviewModelControls(previewFrame, modelFrame, defaults)
+	if previewFrame == nil or modelFrame == nil then
+		return nil;
+	end
+
+	defaults = defaults or {};
+
+	local state = {
+		zoom = defaults.zoom or 1,
+		minZoom = defaults.minZoom or 0.4,
+		maxZoom = defaults.maxZoom or 3.0,
+		facing = defaults.facing or 0,
+		x = defaults.x or 0,
+		y = defaults.y or 0,
+		z = defaults.z or 0,
+		dragButton = nil,
+		lastX = nil,
+		lastY = nil,
+	};
+
+	state.zoom = Clamp(state.zoom, state.minZoom, state.maxZoom);
+
+	local function ApplyView()
+		modelFrame:SetPortraitZoom(0);
+		modelFrame:SetCamDistanceScale(state.zoom);
+		modelFrame:SetFacing(state.facing);
+		modelFrame:SetPosition(state.x, state.y, state.z);
+	end
+
+	local function StopDragging(self)
+		state.dragButton = nil;
+		state.lastX = nil;
+		state.lastY = nil;
+		self:SetScript("OnUpdate", nil);
+	end
+
+	local function ResetView()
+		state.zoom = Clamp(defaults.zoom or 1, state.minZoom, state.maxZoom);
+		state.facing = defaults.facing or 0;
+		state.x = defaults.x or 0;
+		state.y = defaults.y or 0;
+		state.z = defaults.z or 0;
+		ApplyView();
+
+		if defaults.onReset ~= nil then
+			defaults.onReset(modelFrame, state);
+		end
+	end
+
+	modelFrame:EnableMouse(true);
+	modelFrame:EnableMouseWheel(true);
+	modelFrame:SetScript("OnMouseWheel", function(self, delta)
+		state.zoom = Clamp(state.zoom - (delta * 0.12), state.minZoom, state.maxZoom);
+		ApplyView();
+	end);
+
+	modelFrame:SetScript("OnMouseDown", function(self, button)
+		if button ~= "LeftButton" and button ~= "RightButton" then
+			return;
+		end
+
+		state.dragButton = button;
+		state.lastX, state.lastY = GetCursorPosition();
+
+		self:SetScript("OnUpdate", function()
+			local cursorX, cursorY = GetCursorPosition();
+
+			if state.lastX == nil or state.lastY == nil then
+				state.lastX = cursorX;
+				state.lastY = cursorY;
+				return;
+			end
+
+			local scale = UIParent:GetEffectiveScale();
+			local deltaX = (cursorX - state.lastX) / scale;
+			local deltaY = (cursorY - state.lastY) / scale;
+
+			if state.dragButton == "LeftButton" then
+				state.facing = state.facing + (deltaX * 0.01);
+			elseif state.dragButton == "RightButton" then
+				state.x = state.x + (deltaX * 0.0025);
+				state.z = state.z + (deltaY * 0.0025);
+			end
+
+			state.lastX = cursorX;
+			state.lastY = cursorY;
+			ApplyView();
+		end);
+	end);
+
+	modelFrame:SetScript("OnMouseUp", function(self)
+		StopDragging(self);
+	end);
+
+	modelFrame:HookScript("OnHide", function(self)
+		StopDragging(self);
+	end);
+
+	ResetView();
+
+	local attachedControls = {
+		controls = nil,
+		reset = ResetView,
+		apply = ApplyView,
+		state = state,
+	};
+
+	modelFrame.MogCompanionsPreviewControls = attachedControls;
+
+	return attachedControls;
+end
+
 -- Returns true if 'value' exists anywhere in the given array table.
 function MogCompanions:hasValue(table, value)
 	for i, v in ipairs(table) do
@@ -50,8 +172,6 @@ function MogCompanions:GetCollectedMounts()
 end
 
 -- Converts a raw array of mount IDs into a sorted array of mount info tables.
--- Each entry: { name, icon, nameAndIcon, id, model (creatureDisplayInfoID), mountTypeID }.
--- Filters to only collected + usable mounts, then sorts alphabetically.
 function MogCompanions:sortMounts(mountsRaw)
 	local mounts = {};
 

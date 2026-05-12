@@ -19,6 +19,7 @@ local PetClear;
 
 local PetPreview;
 local PetModel;
+local PetPreviewControls;
 
 local PetsSearchBox;
 local PetsDataProvider;
@@ -103,6 +104,17 @@ local function EnsurePetModel()
 		PetModel:SetPortraitZoom(0);
 		PetModel:SetFacing(0.35);
 		PetModel:SetAlpha(0);
+		PetPreviewControls = MogCompanions:AttachPreviewModelControls(PetPreview, PetModel, {
+			zoom = 1,
+			minZoom = 0.4,
+			maxZoom = 3.0,
+			facing = 0.35,
+			x = 0,
+			y = 0,
+			z = 0,
+			buttonOffsetY = -8,
+			controlNamePrefix = "MogCompanionsPetPreview",
+		});
 	end
 
 	return PetModel;
@@ -122,9 +134,15 @@ local function UpdatePetPreview(pet)
 		end
 
 		petModel:SetDisplayInfo(pet.displayID);
+		if PetPreviewControls ~= nil then
+			PetPreviewControls.reset();
+		end
 		petModel:SetAlpha(1);
 	elseif PetModel ~= nil then
 		PetModel:SetDisplayInfo(0);
+		if PetPreviewControls ~= nil then
+			PetPreviewControls.reset();
+		end
 		PetModel:SetAlpha(0);
 	end
 end

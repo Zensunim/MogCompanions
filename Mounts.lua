@@ -27,6 +27,7 @@ local groundMountFrame, groundMountTexture, groundMountBorder, groundMountBorder
 
 local FlyingMountPreview, GroundMountPreview;
 local FlyingMountModel, GroundMountModel;
+local FlyingMountPreviewControls, GroundMountPreviewControls;
 
 local FlyingMountListScrollBox, FlyingMountSelectionBehavior;
 
@@ -860,6 +861,17 @@ function MogCompanions:InitMountTab()
 		end
 		-- FlyingMountModel:SetPosition(-0.2, -0.1, -0.1)
 		FlyingMountModel:SetFacing(-5.5);
+		FlyingMountPreviewControls = MogCompanions:AttachPreviewModelControls(FlyingMountPreview, FlyingMountModel, {
+			zoom = 1,
+			minZoom = 0.4,
+			maxZoom = 3.0,
+			facing = -5.5,
+			x = 0,
+			y = 0,
+			z = 0,
+			buttonOffsetY = -8,
+			controlNamePrefix = "MogCompanionsFlyingMountPreview",
+		});
 
 		local FlyingMountPreviewBorder = FlyingMountPreview:CreateTexture(nil, "OVERLAY");
 		FlyingMountPreviewBorder:SetAtlas("transmog-itemCard-default", true);
@@ -942,8 +954,11 @@ function MogCompanions:InitMountTab()
 			end
 
 			button:SetScript("OnEnter", function()
-				if FlyingMountModel:GetDisplayInfo() ~= data.model and data.model ~= nil then
+				if data.model ~= nil then
 					FlyingMountModel:SetDisplayInfo(data.model);
+					if FlyingMountPreviewControls ~= nil then
+						FlyingMountPreviewControls.reset();
+					end
 				end
 				FlyingMountModel:SetAlpha(1);
 			end)
@@ -953,9 +968,15 @@ function MogCompanions:InitMountTab()
 
 				if SavedFlyingMoundID ~= nil and SavedFlyingMoundID > 0 then
 					FlyingMountModel:SetDisplayInfo(SavedFlyingMoundID);
+					if FlyingMountPreviewControls ~= nil then
+						FlyingMountPreviewControls.reset();
+					end
 					FlyingMountModel:SetAlpha(1);
 				else
 					FlyingMountModel:SetDisplayInfo(0);
+					if FlyingMountPreviewControls ~= nil then
+						FlyingMountPreviewControls.reset();
+					end
 					FlyingMountModel:SetAlpha(0);
 				end
 			end)
@@ -1018,6 +1039,17 @@ function MogCompanions:InitMountTab()
 	   	end
 		GroundMountModel:SetPosition(-0.2, -0.1, -0.1);
 		GroundMountModel:SetFacing(-5.5);
+		GroundMountPreviewControls = MogCompanions:AttachPreviewModelControls(GroundMountPreview, GroundMountModel, {
+			zoom = 1,
+			minZoom = 0.4,
+			maxZoom = 3.0,
+			facing = -5.5,
+			x = -0.2,
+			y = -0.1,
+			z = -0.1,
+			buttonOffsetY = -8,
+			controlNamePrefix = "MogCompanionsGroundMountPreview",
+		});
 
 		local GroundMountPreviewBorder = GroundMountPreview:CreateTexture(nil, "OVERLAY");
 		GroundMountPreviewBorder:SetAtlas("transmog-itemCard-default", true);
@@ -1100,8 +1132,11 @@ function MogCompanions:InitMountTab()
 			end
 
 			button:SetScript("OnEnter", function()
-				if GroundMountModel:GetDisplayInfo() ~= data.model and data.model ~= nil then
+				if data.model ~= nil then
 					GroundMountModel:SetDisplayInfo(data.model);
+					if GroundMountPreviewControls ~= nil then
+						GroundMountPreviewControls.reset();
+					end
 				end
 				GroundMountModel:SetAlpha(1);
 			end)
@@ -1111,9 +1146,15 @@ function MogCompanions:InitMountTab()
 
 				if SavedGroundMoundID ~= nil and SavedGroundMoundID > 0 then
 					GroundMountModel:SetDisplayInfo(SavedGroundMoundID);
+					if GroundMountPreviewControls ~= nil then
+						GroundMountPreviewControls.reset();
+					end
 					GroundMountModel:SetAlpha(1);
 				else
 					GroundMountModel:SetDisplayInfo(0);
+					if GroundMountPreviewControls ~= nil then
+						GroundMountPreviewControls.reset();
+					end
 					GroundMountModel:SetAlpha(0);
 				end
 			end)
