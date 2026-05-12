@@ -26,3 +26,4 @@ No third-party code is knowingly included beyond the work credited above and cod
 
 ### 1.1
 * Added mount cloning support
+* Added modifier customization
