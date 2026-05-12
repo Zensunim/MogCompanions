@@ -145,28 +145,31 @@ function MogCompanions:GetSortedPets()
 end
 
 -- Returns a random owned pet GUID.
--- When excludedPetID is provided, it is omitted from the pool when alternatives exist.
-function MogCompanions:getRandomPet(excludedPetID)
+-- excludedPetID is never added to the pool.
+-- favoritesOnly limits the pool to favorite pets.
+function MogCompanions:getRandomPet(excludedPetID, favoritesOnly)
 	if C_PetJournal == nil or C_PetJournal.GetOwnedPetIDs == nil then
 		return nil;
 	end
 
 	local petsRaw = C_PetJournal.GetOwnedPetIDs();
 	local pets = {};
+	local useTableAPI = C_PetJournal.GetPetInfoTableByPetID ~= nil;
 
 	for i = 1, #petsRaw do
 		local petID = petsRaw[i];
-		if petID ~= nil and petID ~= "" and petID ~= excludedPetID then
-			table.insert(pets, petID);
-		end
-	end
+		local isFavorite = false;
 
-	if #pets == 0 then
-		for i = 1, #petsRaw do
-			local petID = petsRaw[i];
-			if petID ~= nil and petID ~= "" then
-				table.insert(pets, petID);
-			end
+		if useTableAPI then
+			local info = C_PetJournal.GetPetInfoTableByPetID(petID);
+			isFavorite = info ~= nil and info.favorite == true;
+		else
+			local _, _, _, _, _, _, favorite = C_PetJournal.GetPetInfoByPetID(petID);
+			isFavorite = favorite == true;
+		end
+
+		if petID ~= nil and petID ~= "" and petID ~= excludedPetID and (not favoritesOnly or isFavorite) then
+			table.insert(pets, petID);
 		end
 	end
 

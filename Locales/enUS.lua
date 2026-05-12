@@ -43,7 +43,7 @@ L["Drop Pet Macro Tooltip"] = "Drop this pet macro in |nyour action bar";
 L["Drop Hearthstone Macro Tooltip"] = "Drop this Hearthstone macro in |nyour action bar";
 L["Show Flying In Ground Toggle"] = "Show flying mounts in ground mount list";
 L["Slash Help Mount"] = "Summon or dismount using MogCompanions";
-L["Slash Help Pet"] = "Summon the active outfit pet, or a random pet if none is set.";
+L["Slash Help Pet"] = "Summon the active outfit pet, or a random pet if none is set. Pet macro modifiers can also summon random pets or dismiss your current pet.";
 L["Slash Help Options"] = "Open the MogCompanions options panel";
 L["No Hearthstone Toys"] = "No Hearthstone toys are available.";
 L["Pet Command Stub"] = "Pets companion actions are not implemented yet.";
@@ -81,6 +81,13 @@ L["Settings Use Selected Hearthstone"] = "Use Selected Hearthstone";
 L["Settings Use Garrison Hearthstone"] = "Use Garrison Hearthstone";
 L["Settings Use Dalaran Hearthstone"] = "Use Dalaran Hearthstone";
 L["Settings Teleport Home"] = "Teleport Home (Coming Soon)";
+
+-- Pet Macro Modifier Settings
+L["Settings Pet Macro Title"] = "Pet Macro";
+L["Settings Summon Selected Pet"] = "Summon Selected Pet";
+L["Settings Summon Random Pet"] = "Summon Random Pet";
+L["Settings Summon Random Favorite Pet"] = "Summon Random Favorite Pet";
+L["Settings Dismiss Pet"] = "Dismiss Pet";
 
 -- Modifier Key Labels
 L["Settings CTRL"] = "CTRL";

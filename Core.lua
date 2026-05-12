@@ -75,6 +75,71 @@ function MogCompanions:OpenSettings()
 	OpenSettingsToMogCompanions();
 end
 
+-- Returns true if the modifier key configured for the pet macro action is held.
+-- modType: "Random" | "Favorite" | "Dismiss"
+-- Reads MogCompanionsSaved.PetMods: 1=CTRL, 2=SHIFT, 3=ALT.
+-- Falls back to the default pet macro mapping if PetMods is not initialised yet.
+local function GetPetModKey(modType)
+	local mods = {};
+	mods[1] = IsControlKeyDown();
+	mods[2] = IsShiftKeyDown();
+	mods[3] = IsAltKeyDown();
+
+	if MogCompanionsSaved and MogCompanionsSaved.PetMods then
+		if modType == "Random" then
+			return mods[MogCompanionsSaved.PetMods.Random] or false;
+		elseif modType == "Favorite" then
+			return mods[MogCompanionsSaved.PetMods.Favorite] or false;
+		elseif modType == "Dismiss" then
+			return mods[MogCompanionsSaved.PetMods.Dismiss] or false;
+		end
+	else
+		if modType == "Random" then return IsControlKeyDown(); end
+		if modType == "Favorite" then return IsShiftKeyDown(); end
+		if modType == "Dismiss" then return IsAltKeyDown(); end
+	end
+
+	return false;
+end
+
+function MogCompanions:DismissPet()
+	local petJournal = C_PetJournal;
+	if petJournal == nil or petJournal.SummonPetByGUID == nil or petJournal.GetSummonedPetGUID == nil then
+		return;
+	end
+
+	local activePetGUID = petJournal.GetSummonedPetGUID();
+	if activePetGUID ~= nil and activePetGUID ~= "" then
+		petJournal.SummonPetByGUID(activePetGUID);
+	end
+end
+
+function MogCompanions:SummonRandomPet()
+	local petJournal = C_PetJournal;
+	if petJournal == nil or petJournal.SummonPetByGUID == nil or petJournal.GetSummonedPetGUID == nil then
+		return;
+	end
+
+	local activePetGUID = petJournal.GetSummonedPetGUID();
+	local randomPetGUID = MogCompanions:getRandomPet(activePetGUID);
+	if randomPetGUID ~= nil and randomPetGUID ~= "" then
+		petJournal.SummonPetByGUID(randomPetGUID);
+	end
+end
+
+function MogCompanions:SummonRandomFavoritePet()
+	local petJournal = C_PetJournal;
+	if petJournal == nil or petJournal.SummonPetByGUID == nil or petJournal.GetSummonedPetGUID == nil then
+		return;
+	end
+
+	local activePetGUID = petJournal.GetSummonedPetGUID();
+	local randomPetGUID = MogCompanions:getRandomPet(activePetGUID, true);
+	if randomPetGUID ~= nil and randomPetGUID ~= "" then
+		petJournal.SummonPetByGUID(randomPetGUID);
+	end
+end
+
 function MogCompanions:SummonPet()
 	local petJournal = C_PetJournal;
 	if petJournal == nil or petJournal.SummonPetByGUID == nil or petJournal.GetSummonedPetGUID == nil then
@@ -93,8 +158,20 @@ function MogCompanions:SummonPet()
 	end
 
 	local randomPetGUID = MogCompanions:getRandomPet(activePetGUID);
-	if randomPetGUID ~= nil and randomPetGUID ~= "" and randomPetGUID ~= activePetGUID then
+	if randomPetGUID ~= nil and randomPetGUID ~= "" then
 		petJournal.SummonPetByGUID(randomPetGUID);
+	end
+end
+
+function MogCompanions:HandlePetAction()
+	if GetPetModKey("Dismiss") then
+		MogCompanions:DismissPet();
+	elseif GetPetModKey("Favorite") then
+		MogCompanions:SummonRandomFavoritePet();
+	elseif GetPetModKey("Random") then
+		MogCompanions:SummonRandomPet();
+	else
+		MogCompanions:SummonPet();
 	end
 end
 
@@ -107,7 +184,7 @@ SlashCmdList["MOGCOMPANIONS"] = function(msg)
 	elseif command == "mount" then
 		MogCompanionsSummon();
 	elseif command == "pet" then
-		MogCompanions:SummonPet();
+		MogCompanions:HandlePetAction();
 	elseif command == "options" then
 		OpenSettingsToMogCompanions();
 	else
