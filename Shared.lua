@@ -162,7 +162,7 @@ function MogCompanions:getRandomPet(excludedPetID, favoritesOnly)
 
 		if useTableAPI then
 			local info = C_PetJournal.GetPetInfoTableByPetID(petID);
-			isFavorite = info ~= nil and info.favorite == true;
+			isFavorite = info ~= nil and info.isFavorite == true;
 		else
 			local _, _, _, _, _, _, favorite = C_PetJournal.GetPetInfoByPetID(petID);
 			isFavorite = favorite == true;
