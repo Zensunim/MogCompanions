@@ -140,8 +140,9 @@ end
 -- Aquatic/Special: use global default if set (> 1), otherwise random from category.
 -- Alternative: always random from all collected usable mounts.
 function MogCompanionsSummonFlying()
-	if MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetActiveOutfitID()].Flying > 1 then
-		C_MountJournal.SummonByID(MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetActiveOutfitID()].Flying);
+	local outfitData = MogCompanions:GetActiveOutfitTable();
+	if outfitData and outfitData.Flying and outfitData.Flying > 1 then
+		C_MountJournal.SummonByID(outfitData.Flying);
 	else
 		local randomMount = MogCompanions:getRandomMount("flying");
 		if randomMount then C_MountJournal.SummonByID(randomMount.id); end
@@ -149,8 +150,9 @@ function MogCompanionsSummonFlying()
 end
 
 function MogCompanionsSummonGround()
-	if MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetActiveOutfitID()].Ground > 1 then
-		C_MountJournal.SummonByID(MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetActiveOutfitID()].Ground);
+	local outfitData = MogCompanions:GetActiveOutfitTable();
+	if outfitData and outfitData.Ground and outfitData.Ground > 1 then
+		C_MountJournal.SummonByID(outfitData.Ground);
 	else
 		local randomMount = MogCompanions:getRandomMount("ground");
 		if randomMount then C_MountJournal.SummonByID(randomMount.id); end

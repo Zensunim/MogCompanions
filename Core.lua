@@ -27,7 +27,7 @@ local TitleDropdown;
 -- Title = -1: clear the title (show bare player name).
 -- Title > 0: apply that specific title ID.
 function MogCompanions:UpdateTitle()
-	local outfitData = MogCompanionsCharacterSaved and MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetActiveOutfitID()];
+	local outfitData = MogCompanions:GetActiveOutfitTable();
 	if not outfitData then return; end
 
 	local outfitTitle = outfitData.Title;

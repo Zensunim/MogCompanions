@@ -447,3 +447,25 @@ function MogCompanions:CreateEmptyOutfit(id)
 		outfit.Title = 0;
 	end
 end
+
+-- ── Active Outfit Accessors ──────────────────────────────────────────────────
+-- Nil-safe wrapper for C_TransmogOutfitInfo.GetActiveOutfitID().
+-- Returns the active outfit ID, or nil if there is no active outfit or the API
+-- is unavailable.
+function MogCompanions:GetSafeActiveOutfitID()
+	if C_TransmogOutfitInfo and C_TransmogOutfitInfo.GetActiveOutfitID then
+		return C_TransmogOutfitInfo.GetActiveOutfitID();
+	end
+	return nil;
+end
+
+-- Returns the saved-variable table for the currently active outfit, or nil if
+-- there is no active outfit or no saved data exists for it yet.
+-- Does NOT auto-create the outfit entry; use CreateEmptyOutfit if that is needed.
+function MogCompanions:GetActiveOutfitTable()
+	local outfitID = MogCompanions:GetSafeActiveOutfitID();
+	if outfitID == nil or MogCompanionsCharacterSaved == nil then
+		return nil;
+	end
+	return MogCompanionsCharacterSaved["Outfit"..outfitID];
+end
