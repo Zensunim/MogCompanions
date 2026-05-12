@@ -282,10 +282,15 @@ function MogCompanions:OnEvent(event, addOnName)
 			MogCompanionsSaved = {};
 			MogCompanionsSaved['MacroID'] = 0;
 			MogCompanionsSaved.ShowFlyingInGround = true;
+			MogCompanionsSaved.RandomGroundAllowFlying = true;
 		end
 
 		if MogCompanionsSaved.ShowFlyingInGround == nil then
 			MogCompanionsSaved.ShowFlyingInGround = true;
+		end
+
+		if MogCompanionsSaved.RandomGroundAllowFlying == nil then
+			MogCompanionsSaved.RandomGroundAllowFlying = true;
 		end
 
 		loaded = true;

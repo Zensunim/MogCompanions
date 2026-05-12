@@ -165,6 +165,23 @@ function MogCompanions:getSortedAlternativeMounts()
 	return mounts;
 end
 
+-- Builds the pool of ground mounts used by random ground selection.
+-- Ignores the UI search filter and the ShowFlyingInGround display toggle.
+-- Includes flying mounts only when MogCompanionsSaved.RandomGroundAllowFlying is true.
+local function buildRandomGroundPool()
+	local mountsRaw = MogCompanions:sortMounts(MogCompanions:GetCollectedMounts());
+	local mounts = {};
+
+	for i = 1, #mountsRaw do
+		local mount = mountsRaw[i];
+		if mount.mountTypeID == 230 or MogCompanionsSaved.RandomGroundAllowFlying then
+			table.insert(mounts, mount);
+		end
+	end
+
+	return mounts;
+end
+
 -- Returns a random mount table from the specified category string.
 -- type: "flying" | "ground" | "aquatic" | "special" | "alternative"
 -- Returns nil if the category list is empty (safe to call with no mounts collected).
@@ -179,7 +196,7 @@ function MogCompanions:getRandomMount(type)
 	if type == "flying" then
 		mounts = MogCompanions:getSortedFlyingMounts();
 	elseif type == "ground" then
-		mounts = MogCompanions:getSortedGroundMounts();
+		mounts = buildRandomGroundPool();
 	elseif type == "aquatic" then
 		mounts = MogCompanions:getSortedAquaticMounts();
 	elseif type == "special" then

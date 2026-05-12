@@ -111,6 +111,21 @@ local function InitSettings()
    	Settings.CreateDropdown(category, setting, GetOptionsSpecialMount, tooltip);
 	setting:SetValueChangedCallback(OnSettingChanged);
 
+	-- Random ground: allow flying mounts
+
+	layout:AddInitializer(CreateSettingsListSectionHeaderInitializer(L["Settings Random Section Title"], ''));
+
+	local variable = "RandomGroundAllowFlying";
+	local defaultValue = true;
+	local name = L["Settings Random Ground Allow Flying"];
+	local tooltip = L["Settings Random Ground Allow Flying Tooltip"];
+	local variableKey = "RandomGroundAllowFlying";
+	local variableTable = MogCompanionsSaved;
+
+	local setting = Settings.RegisterAddOnSetting(category, variable, variableKey, variableTable, type(defaultValue), name, defaultValue);
+	Settings.CreateCheckbox(category, setting, tooltip);
+	setting:SetValueChangedCallback(OnSettingChanged);
+
 	Settings.RegisterAddOnCategory(category);
 end
 

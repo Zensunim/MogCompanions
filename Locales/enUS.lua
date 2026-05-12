@@ -62,3 +62,8 @@ L["Settings Character Title Tooltip"] = "Will take effect next time you mount.";
 L["Settings Default Selection Label"] = "Default";
 L["Settings Random Selection Label"] = "Random";
 L["Settings No Applicable Mounts"] = "No applicable mounts";
+
+-- Random selection section
+L["Settings Random Section Title"] = "Random Mount Selection";
+L["Settings Random Ground Allow Flying"] = "Allow flying mounts to be used when choosing a random ground mount";
+L["Settings Random Ground Allow Flying Tooltip"] = "Turn this feature off to restrict random ground mounts to use non-flying mounts only.";
