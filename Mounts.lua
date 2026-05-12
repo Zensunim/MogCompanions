@@ -136,27 +136,24 @@ local function getEmptyMountIcon()
 end
 
 -- ── Mount Summon Functions ──────────────────────────────────────────────────────
--- Priority: per-outfit mount → default specific mount → random from category.
--- All four helpers are called from MogCompanionsSummon based on conditions.
+-- Flying/Ground: use per-outfit selection if set (> 1), otherwise random from category.
+-- Aquatic/Special: use global default if set (> 1), otherwise random from category.
+-- Alternative: always random from all collected usable mounts.
 function MogCompanionsSummonFlying()
 	if MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetActiveOutfitID()].Flying > 1 then
 		C_MountJournal.SummonByID(MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetActiveOutfitID()].Flying);
-	elseif MogCompanionsCharacterSaved.Default.Flying <= 1 then
+	else
 		local randomMount = MogCompanions:getRandomMount("flying");
 		if randomMount then C_MountJournal.SummonByID(randomMount.id); end
-	else
-		C_MountJournal.SummonByID(MogCompanionsCharacterSaved.Default.Flying);
 	end
 end
 
 function MogCompanionsSummonGround()
 	if MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetActiveOutfitID()].Ground > 1 then
 		C_MountJournal.SummonByID(MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetActiveOutfitID()].Ground);
-	elseif MogCompanionsCharacterSaved.Default.Ground <= 1 then
+	else
 		local randomMount = MogCompanions:getRandomMount("ground");
 		if randomMount then C_MountJournal.SummonByID(randomMount.id); end
-	else
-		C_MountJournal.SummonByID(MogCompanionsCharacterSaved.Default.Ground);
 	end
 end
 
@@ -179,12 +176,8 @@ function MogCompanionsSummonSpecial()
 end
 
 function MogCompanionsSummonAlternative()
-	if MogCompanionsCharacterSaved.Default.Alternative <= 1 then
-		local randomMount = MogCompanions:getRandomMount("alternative");
-		if randomMount then C_MountJournal.SummonByID(randomMount.id); end
-	else
-		C_MountJournal.SummonByID(MogCompanionsCharacterSaved.Default.Alternative);
-	end
+	local randomMount = MogCompanions:getRandomMount("alternative");
+	if randomMount then C_MountJournal.SummonByID(randomMount.id); end
 end
 
 -- Main mount/dismount entry point. Evaluates current state and modifier keys

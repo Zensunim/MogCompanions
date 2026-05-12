@@ -47,13 +47,6 @@ L["Macro Combat Error"] = "MogCompanions cannot create macros while you are in c
 L["Settings Default Section Title"] = "Default";
 
 -- Rows
-L["Settings Flying Mount"] = "Flying Mount";
-L["Settings Flying Mount Tooltip"] = "Default mount for all flying areas.";
-
-L["Settings Ground Mount"] = "Ground Mount";
-L["Settings Ground Mount Tooltip"] = "Default mount for all nonflying areas.";
-L["Settings Ground Mount Keybind Reminder"] = "Hold [Control] to summon this mount regardless of area.";
-
 L["Settings Aquatic Mount"] = "Aquatic Mount";
 L["Settings Aquatic Mount Tooltip"] = "Aquatic Mount Tooltip";
 L["Settings Aquatic Mount Keybind Reminder"] = "Hold [Control] to summon this mount while swimming.";
@@ -61,10 +54,6 @@ L["Settings Aquatic Mount Keybind Reminder"] = "Hold [Control] to summon this mo
 L["Settings Special Mount"] = "Repair Mount";
 L["Settings Special Mount Tooltip"] = "Aquatic Mount Tooltip";
 L["Settings Special Mount Keybind Reminder"] = "Hold [Shift] to summon this mount.";
-
-L["Settings Alternative Mount"] = "Alternative Mount";
-L["Settings Alternative Mount Tooltip"] = "Whatever you want it to be!";
-L["Settings Alternative Mount Keybind Reminder"] = "Hold [Alt] to summon this mount.";
 
 L["Settings Character Title"] = "Character Title";
 L["Settings Character Title Tooltip"] = "Will take effect next time you mount.";

@@ -409,18 +409,41 @@ end
 
 -- Ensures a saved-variable entry exists for outfit 'id' in MogCompanionsCharacterSaved.
 -- Called defensively any time an outfit ID is encountered that may be new.
--- Sentinel values: Flying/Ground/Hearthstone = 1 means "use default";
---   Title = 0 means "[Default Title]" (do not change the title);
---   Title = -1 means "no title" (clear to bare player name).
--- Safe to call multiple times; only writes when the entry is missing or incomplete.
+-- Sentinel values:
+--   Flying = 1: no per-outfit selection; summon a random flying mount.
+--   Ground = 1: no per-outfit selection; summon a random ground mount.
+--   Hearthstone = 1: no per-outfit selection; use a random hearthstone toy.
+--   Title = 0: do not change the title on mount.
+--   Title = -1: clear the title (bare player name).
+-- Safe to call multiple times; only writes fields that are missing.
 function MogCompanions:CreateEmptyOutfit(id)
-	if MogCompanionsCharacterSaved ~= nil and MogCompanionsCharacterSaved["Outfit"..id] == nil then
+	if id == nil then
+		return;
+	end
+
+	if MogCompanionsCharacterSaved == nil then
+		MogCompanionsCharacterSaved = {};
+	end
+
+	if MogCompanionsCharacterSaved["Outfit"..id] == nil then
 		MogCompanionsCharacterSaved["Outfit"..id] = {};
-		MogCompanionsCharacterSaved["Outfit"..id].Flying = 1;
-		MogCompanionsCharacterSaved["Outfit"..id].Ground = 1;
-		MogCompanionsCharacterSaved["Outfit"..id].Hearthstone = 1;
-		MogCompanionsCharacterSaved["Outfit"..id].Title = 0;
-	elseif MogCompanionsCharacterSaved ~= nil and MogCompanionsCharacterSaved["Outfit"..id].Hearthstone == nil then
-		MogCompanionsCharacterSaved["Outfit"..id].Hearthstone = 1;
+	end
+
+	local outfit = MogCompanionsCharacterSaved["Outfit"..id];
+
+	if outfit.Flying == nil then
+		outfit.Flying = 1;
+	end
+
+	if outfit.Ground == nil then
+		outfit.Ground = 1;
+	end
+
+	if outfit.Hearthstone == nil then
+		outfit.Hearthstone = 1;
+	end
+
+	if outfit.Title == nil then
+		outfit.Title = 0;
 	end
 end

@@ -259,12 +259,18 @@ function MogCompanions:OnEvent(event, addOnName)
 	if event == "PLAYER_ENTERING_WORLD" and not loaded then
 		if MogCompanionsCharacterSaved == nil then
 			MogCompanionsCharacterSaved = {};
+		end
+
+		if MogCompanionsCharacterSaved.Default == nil then
 			MogCompanionsCharacterSaved.Default = {};
-			MogCompanionsCharacterSaved.Default.Flying = 0;
-			MogCompanionsCharacterSaved.Default.Ground = 0;
+		end
+
+		if MogCompanionsCharacterSaved.Default.Aquatic == nil then
 			MogCompanionsCharacterSaved.Default.Aquatic = 0;
+		end
+
+		if MogCompanionsCharacterSaved.Default.Special == nil then
 			MogCompanionsCharacterSaved.Default.Special = 0;
-			MogCompanionsCharacterSaved.Default.Alternative = 0;		
 		end
 
 		for t = 1, #C_TransmogOutfitInfo.GetOutfitsInfo() do
@@ -276,10 +282,6 @@ function MogCompanions:OnEvent(event, addOnName)
 			MogCompanionsSaved = {};
 			MogCompanionsSaved['MacroID'] = 0;
 			MogCompanionsSaved.ShowFlyingInGround = true;
-		end
-
-		if MogCompanionsCharacterSaved.Default.Alternative == nil then
-			MogCompanionsCharacterSaved.Default.Alternative = 0;
 		end
 
 		if MogCompanionsSaved.ShowFlyingInGround == nil then
