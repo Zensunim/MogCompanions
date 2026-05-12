@@ -3,7 +3,7 @@
 ## Notes: Companions for your transmogs
 ## Author: Zensunim of Dragonblight (forked from perrinthesmith's MogCompanions addon)
 ## IconTexture: 6841475
-## Version: 1.1
+## Version: 1.2
 ## DefaultState: Enabled
 ## Category: Transmogrification
 ## SavedVariables: MogCompanionsSaved
@@ -17,5 +17,6 @@ Core.xml
 Shared.lua
 Mounts.lua
 Hearthstones.lua
+Pets.lua
 Settings.lua
 Settings.xml

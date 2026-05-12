@@ -27,3 +27,7 @@ No third-party code is knowingly included beyond the work credited above and cod
 ### 1.1
 * Added mount cloning support
 * Added modifier customization
+* Added pets tab
+
+### 1.2
+* Consolidated the Mounts and Hearthstones tabs into a single Companions tab with Mounts, Hearthstones, and Pets (placeholder) sub-tabs.

@@ -171,7 +171,7 @@ local function EnsureHearthstonePostClick()
 		return;
 	end
 	hearthstonePostClickRegistered = true;
-	HearthstoneSecureButton:SetScript("PostClick", function()
+	HearthstoneSecureButton:SetScript("PostClick", function(self)
 		if InCombatLockdown and InCombatLockdown() then
 			return;
 		end
@@ -184,11 +184,11 @@ local function EnsureHearthstonePostClick()
 end
 
 -- Registers a PreClick handler that arms the secure button before it fires.
--- Reads HearthstoneMods at click-time and routes to the appropriate toy:
---   Garrison modifier held → Garrison Hearthstone (110560) if collected
---   Dalaran modifier held  → Dalaran Hearthstone (140192) if collected
---   Otherwise             → selected outfit toy or random (MogCompanionsPrepareHearthstone)
--- Only arms outside combat; in combat the button retains the last armed toy.
+-- Reads HearthstoneMods at click-time and routes to the appropriate action:
+--   Garrison modifier held     → Garrison Hearthstone (110560) if collected
+--   Dalaran modifier held      → Dalaran Hearthstone (140192) if collected
+--   Otherwise                  → selected outfit toy or random (MogCompanionsPrepareHearthstone)
+-- Only arms outside combat; in combat the button retains the last armed state.
 local function EnsureHearthstonePreClick()
 	if hearthstonePreClickRegistered then
 		return;
@@ -197,7 +197,7 @@ local function EnsureHearthstonePreClick()
 		return;
 	end
 	hearthstonePreClickRegistered = true;
-	HearthstoneSecureButton:SetScript("PreClick", function()
+	HearthstoneSecureButton:SetScript("PreClick", function(self)
 		if InCombatLockdown and InCombatLockdown() then
 			return;
 		end
@@ -442,23 +442,25 @@ end
 
 -- ── Hearthstones Tab UI ─────────────────────────────────────────────────────────
 -- Creates the full Hearthstones tab frame inside WardrobeCollection.TabContent.
--- Idempotent: returns early if HearthstonesPage already exists.
+-- Idempotent: returns early if HearthstonesPage already exists (or reparents it if the
+-- parent has changed). Creates the Hearthstones page parented directly to the given frame.
 -- Contains: search box, gear dropdown, section title, scrollable toy list + scrollbar.
-function MogCompanions:CreateHearthstonesFrame(collection, referenceFrame)
+function MogCompanions:CreateHearthstonesFrame(parent)
+	if parent == nil then
+		return nil;
+	end
+
 	if HearthstonesPage ~= nil then
+		if HearthstonesPage:GetParent() ~= parent then
+			HearthstonesPage:SetParent(parent);
+			HearthstonesPage:ClearAllPoints();
+			HearthstonesPage:SetAllPoints(parent);
+		end
 		return HearthstonesPage;
 	end
 
-	local parent = collection.TabContent;
-
 	HearthstonesPage = CreateFrame("Frame", "MogCompanionsHearthstonesPage", parent);
-
-	if referenceFrame ~= nil then
-		HearthstonesPage:SetAllPoints(referenceFrame);
-	else
-		HearthstonesPage:SetAllPoints(parent);
-	end
-
+	HearthstonesPage:SetAllPoints(parent);
 	HearthstonesPage:Hide();
 
 	-- Search box (matching Mounts tab position)
@@ -503,7 +505,7 @@ function MogCompanions:CreateHearthstonesFrame(collection, referenceFrame)
 	-- List container (full-width, no preview panel)
 	local HearthstoneList = CreateFrame("Frame", "MogCompanionsHearthstoneListFrame", HearthstonesPage);
 	HearthstoneList:SetPoint("TOPLEFT", HearthstonesPage, "TOPLEFT", 24, -113);
-	HearthstoneList:SetPoint("BOTTOMRIGHT", HearthstonesPage, "BOTTOMRIGHT", -8, 18);
+	HearthstoneList:SetPoint("BOTTOMRIGHT", HearthstonesPage, "BOTTOMRIGHT", -8, 42);
 	HearthstoneList:SetFrameStrata("HIGH");
 
 	local HearthstoneListBackground = HearthstoneList:CreateTexture(nil, "OVERLAY");
@@ -706,7 +708,9 @@ local function InitializeHearthstones()
 
 	EnsureOutfitHearthstoneSaved();
 	CreateHearthstoneSlot();
-	MogCompanions:CreateHearthstonesFrame(TransmogFrame.WardrobeCollection, nil);
+	if _G.MogCompanionsCompanionsFrame ~= nil then
+		MogCompanions:CreateHearthstonesFrame(_G.MogCompanionsCompanionsFrame);
+	end
 	EnsureHearthstoneSecureButton();
 	EnsureHearthstonePreClick();
 	EnsureHearthstonePostClick();
@@ -781,8 +785,8 @@ HookTransmogFrame();
 -- Shows the Hearthstones tab page and refreshes the list.
 function MogCompanions:ShowHearthstonesPage()
 	if HearthstonesPage == nil then
-		if TransmogFrame ~= nil and TransmogFrame.WardrobeCollection ~= nil then
-			MogCompanions:CreateHearthstonesFrame(TransmogFrame.WardrobeCollection, nil);
+		if _G.MogCompanionsCompanionsFrame ~= nil then
+			MogCompanions:CreateHearthstonesFrame(_G.MogCompanionsCompanionsFrame);
 		end
 	end
 
@@ -800,9 +804,5 @@ function MogCompanions:HideHearthstonesPage()
 end
 
 function MogCompanions:OpenHearthstonesTab()
-	if TransmogFrame ~= nil and TransmogFrame.WardrobeCollection ~= nil and TransmogFrame.WardrobeCollection.hearthstonesTabID ~= nil then
-		TransmogFrame.WardrobeCollection:SetTab(TransmogFrame.WardrobeCollection.hearthstonesTabID);
-	else
-		MogCompanions:ShowHearthstonesPage();
-	end
+	MogCompanions:OpenCompanionsTab("Hearthstones");
 end

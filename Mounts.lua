@@ -518,7 +518,7 @@ function MogCompanions:InitMountSlots(reset)
 		end)
 
 		flyingMountBorder:SetScript("OnMouseDown", function (self, button)
-			TransmogFrame.WardrobeCollection:SetTab(TransmogFrame.WardrobeCollection.mountsTabID);
+			MogCompanions:OpenCompanionsTab("Mounts");
 		 	PlaySound(SOUNDKIT.UI_TRANSMOG_GEAR_SLOT_CLICK);
 		end)
 
@@ -542,7 +542,7 @@ function MogCompanions:InitMountSlots(reset)
 		end)
 
 		groundMountBorder:SetScript("OnMouseDown", function (self, button)
-			TransmogFrame.WardrobeCollection:SetTab(TransmogFrame.WardrobeCollection.mountsTabID);
+			MogCompanions:OpenCompanionsTab("Mounts");
 			PlaySound(SOUNDKIT.UI_TRANSMOG_GEAR_SLOT_CLICK);
 		end)
 
@@ -675,7 +675,7 @@ local function CreateMacroButton(Parent)
 	end
 
 	if not macroId then
-		macroId = CreateMacro("MogComp Mount", 1769015, "/mcomp mount", nil);
+		macroId = CreateMacro("MogComp Mount", 6841475, "/mcomp mount", nil);
 	end
 
 	MogCompanionsSaved["MacroID"] = macroId;
@@ -763,15 +763,21 @@ end
 -- SetSelectedFlyingMount and SetSelectedGroundMount are defined here as closures
 -- over the local scroll-box and data-provider references.
 function MogCompanions:InitMountTab()
-	if not TransmogFrame.WardrobeCollection.mountsTabID then
+	local collection = TransmogFrame and TransmogFrame.WardrobeCollection;
+	if collection == nil or collection.TabContent == nil or collection.AddNamedTab == nil then
+		return;
+	end
+
+	if not collection.companionsTabID then
 
 		function TransmogFrame.WardrobeCollection:UpdateTabs()
-			self.TabHeaders:SetTabShown(self.itemsTabID, true);
-			self.TabHeaders:SetTabShown(self.setsTabID, true);
-			self.TabHeaders:SetTabShown(self.custmSetsTabID, true);
-			self.TabHeaders:SetTabShown(self.situationsTabID, true);
-			self.TabHeaders:SetTabShown(self.mountsTabID, true);
-			self.TabHeaders:SetTabShown(self.hearthstonesTabID, true);
+			if self.TabHeaders then
+				if self.itemsTabID then self.TabHeaders:SetTabShown(self.itemsTabID, true); end
+				if self.setsTabID then self.TabHeaders:SetTabShown(self.setsTabID, true); end
+				if self.custmSetsTabID then self.TabHeaders:SetTabShown(self.custmSetsTabID, true); end
+				if self.situationsTabID then self.TabHeaders:SetTabShown(self.situationsTabID, true); end
+				if self.companionsTabID then self.TabHeaders:SetTabShown(self.companionsTabID, true); end
+			end
 		end
 
 		-- Layout scale factor (6/7 ≈ 0.857) that maps the 360-unit preview design coords to the wardrobe tab's actual rendered dimensions.
@@ -791,7 +797,12 @@ function MogCompanions:InitMountTab()
 		default.icon = 1769016;
 		default.model = 0;		
 
-		local f = CreateFrame("Frame", "MountsFrame", TransmogFrame.WardrobeCollection.TabContent);
+		local CompanionsFrame = CreateFrame("Frame", "MogCompanionsCompanionsFrame", collection.TabContent);
+		CompanionsFrame:SetAllPoints(true);
+		CompanionsFrame:SetFrameStrata("HIGH");
+		CompanionsFrame:Hide();
+
+		local f = CreateFrame("Frame", "MountsFrame", CompanionsFrame);
 		f:SetAllPoints(true);
 		f:SetFrameStrata("HIGH");
 		f:Hide();
@@ -1219,22 +1230,106 @@ function MogCompanions:InitMountTab()
 
 		--		
 
-		local HearthstonesFrame = nil;
-
 		if MogCompanions.CreateHearthstonesFrame ~= nil then
-			HearthstonesFrame = MogCompanions:CreateHearthstonesFrame(TransmogFrame.WardrobeCollection, MountsFrame);
+			MogCompanions:CreateHearthstonesFrame(CompanionsFrame);
 		end
 
-		TransmogFrame.WardrobeCollection.mountsTabID = TransmogFrame.WardrobeCollection:AddNamedTab(L["Mount Tab Title"], MountsFrame);
-
-		if HearthstonesFrame ~= nil then
-			TransmogFrame.WardrobeCollection.hearthstonesTabID = TransmogFrame.WardrobeCollection:AddNamedTab(L["Hearthstone Tab Title"], HearthstonesFrame);
+		if MogCompanions.CreatePetsFrame ~= nil then
+			MogCompanions:CreatePetsFrame(CompanionsFrame);
 		end
 
-		TransmogFrame.WardrobeCollection:UpdateTabs();
+		-- Companions sub-tab buttons (Mounts, Hearthstones, Pets) at bottom of container.
+		-- numTabs and Tabs are assigned manually; PanelTemplates_SetNumTabs is NOT used
+		-- because it calls AnchorTabs internally, which would fight our manual anchors.
+
+		local mountsTab = CreateFrame("Button", "MogCompanionsCompanionsTab1", CompanionsFrame, "PanelTabButtonTemplate", 1);
+		mountsTab:SetID(1);
+		mountsTab:SetText(L["Mount Tab Title"]);
+		PanelTemplates_TabResize(mountsTab, 0);
+		mountsTab:SetPoint("BOTTOMLEFT", CompanionsFrame, "BOTTOMLEFT", 16, 2);
+		mountsTab:SetScript("OnClick", function(self)
+			MogCompanions:OpenCompanionsSubTab(self:GetID());
+		end);
+
+		local hearthstonesTab = CreateFrame("Button", "MogCompanionsCompanionsTab2", CompanionsFrame, "PanelTabButtonTemplate", 2);
+		hearthstonesTab:SetID(2);
+		hearthstonesTab:SetText(L["Hearthstone Tab Title"]);
+		PanelTemplates_TabResize(hearthstonesTab, 0);
+		hearthstonesTab:SetPoint("LEFT", mountsTab, "RIGHT", 3, 0);
+		hearthstonesTab:SetScript("OnClick", function(self)
+			MogCompanions:OpenCompanionsSubTab(self:GetID());
+		end);
+
+		local petsTab = CreateFrame("Button", "MogCompanionsCompanionsTab3", CompanionsFrame, "PanelTabButtonTemplate", 3);
+		petsTab:SetID(3);
+		petsTab:SetText(L["Pets Tab Title"]);
+		PanelTemplates_TabResize(petsTab, 0);
+		petsTab:SetPoint("LEFT", hearthstonesTab, "RIGHT", 3, 0);
+		petsTab:SetScript("OnClick", function(self)
+			MogCompanions:OpenCompanionsSubTab(self:GetID());
+		end);
+
+		CompanionsFrame.numTabs = 3;
+		CompanionsFrame.Tabs = { mountsTab, hearthstonesTab, petsTab };
+
+		collection.companionsTabID = collection:AddNamedTab(L["Companions Tab Title"], CompanionsFrame);
+		collection:UpdateTabs();
+
+		MogCompanions:OpenCompanionsSubTab(1);
 	end
 
 	ToggleReminder();
+end
+
+-- Shows a specific Companions sub-tab (1=Mounts, 2=Hearthstones, 3=Pets) and updates
+-- the PanelTab selection state. PanelTemplates_SetTab calls PanelTemplates_UpdateTabs
+-- internally; do not call it again here.
+function MogCompanions:OpenCompanionsSubTab(tabIndex)
+	local companionsFrame = _G.MogCompanionsCompanionsFrame;
+	if companionsFrame == nil then return; end
+
+	if tabIndex ~= 1 and tabIndex ~= 2 and tabIndex ~= 3 then
+		tabIndex = 1;
+	end
+
+	if _G.MountsFrame then
+		_G.MountsFrame:SetShown(tabIndex == 1);
+	end
+	if _G.MogCompanionsHearthstonesPage then
+		_G.MogCompanionsHearthstonesPage:SetShown(tabIndex == 2);
+	end
+	if _G.MogCompanionsPetsFrame then
+		_G.MogCompanionsPetsFrame:SetShown(tabIndex == 3);
+	end
+
+	PanelTemplates_SetTab(companionsFrame, tabIndex);
+end
+
+-- Opens the Companions top-level tab and navigates to the given sub-tab by name
+-- ("Mounts", "Hearthstones", or "Pets"). Builds the tab UI via InitMountTab if it
+-- has not been built yet. Safe to call before the wardrobe has been opened.
+function MogCompanions:OpenCompanionsTab(subTabName)
+	if TransmogFrame == nil or TransmogFrame.WardrobeCollection == nil then return; end
+	local collection = TransmogFrame.WardrobeCollection;
+
+	if collection.companionsTabID == nil then
+		MogCompanions:InitMountTab();
+	end
+
+	if collection.companionsTabID == nil then return; end
+
+	if collection.SetTab then
+		collection:SetTab(collection.companionsTabID);
+	end
+
+	local subTabIndex = 1;
+	if subTabName == "Hearthstones" then
+		subTabIndex = 2;
+	elseif subTabName == "Pets" then
+		subTabIndex = 3;
+	end
+
+	MogCompanions:OpenCompanionsSubTab(subTabIndex);
 end
 
 -- Resets the flying mount list selection and scrolls back to the top.

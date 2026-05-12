@@ -21,10 +21,12 @@ L["Item Slot Ground Mount Clear Tooltip"] = "Clear Ground Mount";
 L["Item Slot Hearthstone Clear Tooltip"] = "Clear Hearthstone";
 
 -- Tab
+L["Companions Tab Title"] = "Companions";
 L["Mount Tab Title"] = "Mounts";
 L["Mount Tab Flying Section Title"] = "Flying";
 L["Mount Tab Ground Section Title"] = "Ground";
 L["Hearthstone Tab Title"] = "Hearthstones";
+L["Pets Tab Title"] = "Pets";
 
 -- Settings buttons
 L["Open Settings"] = "Open Options";
