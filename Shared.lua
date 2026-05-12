@@ -2,7 +2,7 @@
 -- Shared helpers consumed by Core.lua, Mounts.lua, Hearthstones.lua, and Settings.lua.
 -- Contains: mount collection queries, sorting/filtering, random selection,
 -- hearthstone toy helpers, title helpers, and saved-variable outfit initialization.
--- Mount category logic (flying/ground/aquatic/special/alternative) is centralized here.
+-- Mount category logic (flying/ground/aquatic/repair/random) is centralized here.
 local _, addon = ...;
 local ns = select(2,...);
 local MogCompanions = ns.MogCompanions;
@@ -136,14 +136,14 @@ end
 -- Returns collected repair/vendor/utility mounts matched by hardcoded mount ID.
 -- IDs: 460 (Grand Expedition Yak), 280 (Traveler's Tundra Mammoth), 284, 273, 274, 1039, 2237.
 -- Update this list when Blizzard adds new vendor mounts.
-function MogCompanions:getSortedSpecialMounts()
+function MogCompanions:getSortedRepairMounts()
 	local mountsRaw = MogCompanions:sortMounts(MogCompanions:GetCollectedMounts());
 	local mounts = {};
-	local specialMountIDs = {460, 280, 284, 273, 274, 1039, 2237};
+	local repairMountIDs = {460, 280, 284, 273, 274, 1039, 2237};
 
 	for i = 1, #mountsRaw do
 		local mount = mountsRaw[i];
-		if MogCompanions:hasValue(specialMountIDs, mount.id) then
+		if MogCompanions:hasValue(repairMountIDs, mount.id) then
 			table.insert(mounts, mount);
 		end
 	end
@@ -152,8 +152,8 @@ function MogCompanions:getSortedSpecialMounts()
 end
 
 -- Returns all collected mounts (no category filter, no search filter).
--- Used for the Alt-key alternative mount slot — the player can assign anything here.
-function MogCompanions:getSortedAlternativeMounts()
+-- Used for the random mount slot — the player can assign anything here.
+function MogCompanions:getSortedRandomMounts()
 	local mountsRaw = MogCompanions:sortMounts(MogCompanions:GetCollectedMounts());
 	local mounts = {};
 
@@ -183,7 +183,7 @@ local function buildRandomGroundPool()
 end
 
 -- Returns a random mount table from the specified category string.
--- type: "flying" | "ground" | "aquatic" | "special" | "alternative"
+-- type: "flying" | "ground" | "aquatic" | "repair" | "random"
 -- Returns nil if the category list is empty (safe to call with no mounts collected).
 -- The UI search filter (MountSearchString) is bypassed here so that the random pool
 -- is always the full category, not whatever the player last typed in the search box.
@@ -199,10 +199,10 @@ function MogCompanions:getRandomMount(type)
 		mounts = buildRandomGroundPool();
 	elseif type == "aquatic" then
 		mounts = MogCompanions:getSortedAquaticMounts();
-	elseif type == "special" then
-		mounts = MogCompanions:getSortedSpecialMounts();
-	elseif type == "alternative" then
-		mounts = MogCompanions:getSortedAlternativeMounts();		
+	elseif type == "repair" then
+		mounts = MogCompanions:getSortedRepairMounts();
+	elseif type == "random" then
+		mounts = MogCompanions:getSortedRandomMounts();
 	else
 		mounts = MogCompanions:getSortedFlyingMounts();
 	end

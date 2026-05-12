@@ -4,10 +4,10 @@
 -- Summon priority (MogCompanionsSummon):
 --   1. Exit vehicle (CanExitVehicle)
 --   2. Dismount if already mounted
---   3. Control + swimming → aquatic mount
---   4. Shift → special/repair mount
---   5. Alt → alternative mount
---   6. Flyable area, no Control → flying mount
+--   3. [Ground modifier] + swimming → aquatic mount
+--   4. [Repair modifier] → repair/vendor mount
+--   5. [Random modifier] → random mount
+--   6. Flyable area, no [Ground modifier] → flying mount
 --   7. Fallback → ground mount
 --
 -- UI sections:
@@ -135,8 +135,8 @@ end
 
 -- ── Mount Summon Functions ──────────────────────────────────────────────────────
 -- Flying/Ground: use per-outfit selection if set (> 1), otherwise random from category.
--- Aquatic/Special: use global default if set (> 1), otherwise random from category.
--- Alternative: always random from all collected usable mounts.
+-- Aquatic/Repair: use global default if set (> 1), otherwise random from category.
+-- Random: always random from all collected usable mounts.
 function MogCompanionsSummonFlying()
 	local outfitData = MogCompanions:GetActiveOutfitTable();
 	if outfitData and outfitData.Flying and outfitData.Flying > 1 then
@@ -166,16 +166,16 @@ function MogCompanionsSummonAquatic()
 	end
 end
 
-function MogCompanionsSummonSpecial()
-	if MogCompanionsCharacterSaved.Default.Special <= 1 then
-		local randomMount = MogCompanions:getRandomMount("special");
+function MogCompanionsSummonRepair()
+	if MogCompanionsCharacterSaved.Default.Repair <= 1 then
+		local randomMount = MogCompanions:getRandomMount("repair");
 		if randomMount then C_MountJournal.SummonByID(randomMount.id); end
 	else
-		C_MountJournal.SummonByID(MogCompanionsCharacterSaved.Default.Special);
+		C_MountJournal.SummonByID(MogCompanionsCharacterSaved.Default.Repair);
 	end
 end
 
-function MogCompanionsSummonAlternative()
+function MogCompanionsSummonRandom()
 	local randomMount;
 	if IsFlyableArea() then
 		randomMount = MogCompanions:getRandomMount("flying");
@@ -233,53 +233,64 @@ local function tryCloneTargetedMount()
 	return nil;
 end
 
+-- Returns true if the modifier key configured for modType is currently held.
+-- modType: "Ground" | "Repair" | "Random"
+-- Reads MogCompanionsSaved.MountMods: 1=CTRL, 2=SHIFT, 3=ALT.
+-- Falls back to legacy hardcoded keys if MountMods is not yet initialised.
+local function GetMountModKey(modType)
+	local mods = {};
+	mods[1] = IsControlKeyDown();
+	mods[2] = IsShiftKeyDown();
+	mods[3] = IsAltKeyDown();
+
+	if MogCompanionsSaved and MogCompanionsSaved.MountMods then
+		if modType == "Repair" then
+			return mods[MogCompanionsSaved.MountMods.Repair] or false;
+		elseif modType == "Ground" then
+			return mods[MogCompanionsSaved.MountMods.Ground] or false;
+		elseif modType == "Random" then
+			return mods[MogCompanionsSaved.MountMods.Random] or false;
+		end
+	else
+		-- Fallback: legacy hardcoded behaviour (CTRL=Ground, SHIFT=Repair, ALT=Random)
+		if modType == "Repair" then return IsShiftKeyDown(); end
+		if modType == "Ground" then return IsControlKeyDown(); end
+		if modType == "Random" then return IsAltKeyDown(); end
+	end
+
+	return false;
+end
+
 -- Main mount/dismount entry point. Evaluates current state and modifier keys
 -- to determine which category to summon, then calls the appropriate helper.
 -- Also applies the per-outfit title after summoning via MogCompanions:UpdateTitle().
 function MogCompanionsSummon()
 	if CanExitVehicle() then
-
 		VehicleExit();
-
 	elseif IsMounted() then
-
-		-- Dismount
 		Dismount();
-
-	elseif IsSwimming() and IsControlKeyDown() then
-
-		-- Aquatic mount
+	elseif IsSwimming() and GetMountModKey("Ground") then
+		-- Aquatic mount: Ground modifier + swimming
 		MogCompanionsSummonAquatic();
-
-	elseif IsShiftKeyDown() then
-
+	elseif GetMountModKey("Repair") then
 		-- Repair bear, yak, or long boi
-		MogCompanionsSummonSpecial();
-
-	elseif IsAltKeyDown() then
-
-		-- Alternative mount, whatever the player wants it to be
-		MogCompanionsSummonAlternative();
-
+		MogCompanionsSummonRepair();
+	elseif GetMountModKey("Random") then
+		-- Random mount from all collected usable mounts
+		MogCompanionsSummonRandom();
 	else
-
 		-- Flyable or ground. Try cloning the targeted player's mount first;
 		-- a successful clone ignores the "allow flying in ground" setting entirely.
 		local cloneID = tryCloneTargetedMount();
 		if cloneID then
 			C_MountJournal.SummonByID(cloneID);
-		elseif IsFlyableArea() and not IsControlKeyDown() then
-
+		elseif IsFlyableArea() and not GetMountModKey("Ground") then
 			-- Flyable
 			MogCompanionsSummonFlying();
-
 		else
-
-			-- Ground or when control key is pressed
+			-- Ground or when Ground modifier is pressed
 			MogCompanionsSummonGround();
-
 		end
-
 	end
 
 	MogCompanions:UpdateTitle();
