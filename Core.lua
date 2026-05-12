@@ -238,8 +238,8 @@ function MogCompanions:OnEvent(event, addOnName)
 			MogCompanionsCharacterSaved.Default.Aquatic = 0;
 		end
 
-		if MogCompanionsCharacterSaved.Default.Special == nil then
-			MogCompanionsCharacterSaved.Default.Special = 0;
+		if MogCompanionsCharacterSaved.Default.Repair == nil then
+			MogCompanionsCharacterSaved.Default.Repair = 0;
 		end
 
 		for t = 1, #C_TransmogOutfitInfo.GetOutfitsInfo() do
@@ -260,6 +260,10 @@ function MogCompanions:OnEvent(event, addOnName)
 
 		if MogCompanionsSaved.RandomGroundAllowFlying == nil then
 			MogCompanionsSaved.RandomGroundAllowFlying = true;
+		end
+
+		if MogCompanionsSaved.CloneTargetedMount == nil then
+			MogCompanionsSaved.CloneTargetedMount = false;
 		end
 
 		loaded = true;

@@ -57,7 +57,7 @@ This is a maintained fork of MogCompanions with compatibility updates and new fu
 
 ## Lua style and namespacing rules
 - Prefer `local` variables and functions unless a global is required by XML, bindings, slash commands, macros, or saved-variable compatibility.
-- Existing required globals include `MogCompanionsLocales`, `MogCompanionsSelectedMount`, `MogCompanionsBindingClicked`, `MogCompanionsSummon`, `MogCompanionsSummonFlying`, `MogCompanionsSummonGround`, `MogCompanionsSummonAquatic`, `MogCompanionsSummonSpecial`, `MogCompanionsSummonAlternative`, `MissingKeybindOrMacro`, `CreateSetupReminder`, `ClearSelectedFlyingMount`, `ClearSelectedGroundMount`, and `UpdateSelectedMountRow`.
+- Existing required globals include `MogCompanionsLocales`, `MogCompanionsSelectedMount`, `MogCompanionsBindingClicked`, `MogCompanionsSummon`, `MogCompanionsSummonFlying`, `MogCompanionsSummonGround`, `MogCompanionsSummonAquatic`, `MogCompanionsSummonRepair`, `MogCompanionsSummonRandom`, `MissingKeybindOrMacro`, `CreateSetupReminder`, `ClearSelectedFlyingMount`, `ClearSelectedGroundMount`, and `UpdateSelectedMountRow`.
 - Prefer methods on `MogCompanions` for shared addon behavior, for example `function MogCompanions:CreateEmptyOutfit(id)`.
 - Keep the existing namespace pattern:
   - `local addonName, addon = ...`
@@ -78,10 +78,10 @@ This is a maintained fork of MogCompanions with compatibility updates and new fu
 - Preserve current summon priority unless explicitly changed:
   - exit vehicle first
   - dismount if already mounted
-  - control while swimming summons aquatic
-  - shift summons special mount
-  - alt summons alternative mount
-  - flyable area without control summons flying
+  - [Ground modifier] while swimming summons aquatic mount
+  - [Repair modifier] summons repair/vendor mount (saved-variable key is `MountMods.Repair`)
+  - [Random modifier] summons a random flying or ground mount (saved-variable key is `MountMods.Random`)
+  - flyable area without [Ground modifier] summons flying
   - otherwise summons ground
 - Do not change modifier-key behavior without updating settings text, tooltips, keybind reminders, README notes, and validation notes.
 - Do not assume a mount list has at least one result. Random selection must handle empty lists safely when adding or changing logic.

@@ -3,7 +3,7 @@
 ## Notes: Companions for your transmogs
 ## Author: Zensunim of Dragonblight (forked from perrinthesmith's MogCompanions addon)
 ## IconTexture: 6841475
-## Version: 1.0
+## Version: 1.1
 ## DefaultState: Enabled
 ## Category: Transmogrification
 ## SavedVariables: MogCompanionsSaved

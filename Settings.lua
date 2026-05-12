@@ -1,9 +1,9 @@
 -- Settings.lua
 -- Registers all MogCompanions user options with the Retail Settings API.
 -- Adds a "MogCompanions" category to the game's Settings panel with:
---   • Default mounts (aquatic, special/repair)
+--   • Default mounts (aquatic, repair/vendor)
 -- Flying and ground mounts are chosen per-outfit in the wardrobe UI; no global default.
--- Alternative mount always selects a random mount from all collected usable mounts.
+-- The Random mount summons a random mount from all collected usable mounts.
 -- All user-facing strings come from Locales/enUS.lua via MogCompanionsLocales.
 -- MogCompanionsSettingsCategoryID is a global used by Core.lua to open the panel.
 local _, addon = ...;
@@ -41,9 +41,9 @@ local function GetOptionsAquaticMount()
 	return container:GetData();
 end
 
-local function GetOptionsSpecialMount()
+local function GetOptionsRepairMount()
 	local container = Settings.CreateControlTextContainer();
-	local mounts = MogCompanions:getSortedSpecialMounts();
+	local mounts = MogCompanions:getSortedRepairMounts();
 
 	if #mounts > 0 then
 
@@ -69,12 +69,65 @@ local function OnSettingChanged()
 	-- No side-effects needed; the Settings API variable binding handles persistence.
 end
 
+-- ── Modifier Key Helpers ─────────────────────────────────────────────────────
+-- Returns the display label (e.g. "CTRL") for a modifier index (1=CTRL,2=SHIFT,3=ALT).
+local function modKeyToLabel(key)
+	local labels = { L["Settings CTRL"], L["Settings SHIFT"], L["Settings ALT"] };
+	return labels[key] or "?";
+end
+
+-- Returns a lookup table (value→true) for the given array.
+local function arrayToMap(array)
+	local map = {};
+	for _, item in ipairs(array) do
+		map[item] = true;
+	end
+	return map;
+end
+
 -- Registers all MogCompanions settings and creates the Settings panel layout.
 -- Called once from PLAYER_ENTERING_WORLD after saved variables are loaded.
 local function InitSettings()
 	local category, layout = Settings.RegisterVerticalLayoutCategory("MogCompanions");
 
 	MogCompanionsSettingsCategoryID = category:GetID();
+
+	-- ── Saved-variable migrations (nested tables not handled by Settings API) ──
+
+	if MogCompanionsSaved.MountMods == nil then
+		MogCompanionsSaved.MountMods = {};
+	end
+	if MogCompanionsSaved.MountMods.FlyingOrGround == nil then
+		MogCompanionsSaved.MountMods.FlyingOrGround = 1;  -- display-only (always Click)
+	end
+	if MogCompanionsSaved.MountMods.Ground == nil then
+		MogCompanionsSaved.MountMods.Ground = 1;       -- CTRL forces ground
+	end
+	if MogCompanionsSaved.MountMods.Repair == nil then
+		MogCompanionsSaved.MountMods.Repair = 2;      -- SHIFT summons repair mount
+	end
+	if MogCompanionsSaved.MountMods.Random == nil then
+		MogCompanionsSaved.MountMods.Random = 3;  -- ALT summons random mount
+	end
+
+	if MogCompanionsSaved.HearthstoneMods == nil then
+		MogCompanionsSaved.HearthstoneMods = {};
+	end
+	if MogCompanionsSaved.HearthstoneMods.Selected == nil then
+		MogCompanionsSaved.HearthstoneMods.Selected = 1;       -- display-only (always Click)
+	end
+	if MogCompanionsSaved.HearthstoneMods.Garrison == nil then
+		MogCompanionsSaved.HearthstoneMods.Garrison = 1;      -- CTRL
+	end
+	if MogCompanionsSaved.HearthstoneMods.Dalaran == nil then
+		MogCompanionsSaved.HearthstoneMods.Dalaran = 2;       -- SHIFT
+	end
+	if MogCompanionsSaved.HearthstoneMods.TeleportHome == nil then
+		MogCompanionsSaved.HearthstoneMods.TeleportHome = 3;  -- ALT (reserved)
+	end
+
+	-- ────────────────────────────────────────────────────────────────────────────
+
 	layout:AddInitializer(CreateSettingsListSectionHeaderInitializer(L["Settings Default Section Title"], ''));
 
 	local key1, key2 = GetBindingKey("Mount/Dismount");
@@ -86,7 +139,9 @@ local function InitSettings()
 	local name = L["Settings Aquatic Mount"];
 	local tooltip = nil;
 	if key1 or key2 then
-		tooltip = WrapTextInColorCode(L["Settings Aquatic Mount Keybind Reminder"], "00999999");
+		local reminder = L["Settings Aquatic Mount Keybind Reminder"];
+		reminder = reminder:gsub("%[KEY]", "[" .. modKeyToLabel(MogCompanionsSaved.MountMods.Ground) .. "]");
+		tooltip = WrapTextInColorCode(reminder, "00999999");
 	end
 	local variableKey = "Aquatic";
 	local variableTable = MogCompanionsCharacterSaved.Default;
@@ -95,20 +150,22 @@ local function InitSettings()
 	Settings.CreateDropdown(category, setting, GetOptionsAquaticMount, tooltip);
 	setting:SetValueChangedCallback(OnSettingChanged);
 
-	-- Default special mount
+	-- Default repair mount
 
-	local variable = "DefaultSpecial";
+	local variable = "DefaultRepair";
 	local defaultValue = 0;
-	local name = L["Settings Special Mount"];
+	local name = L["Settings Repair Mount"];
 	local tooltip = nil;
 	if key1 or key2 then
-		tooltip = WrapTextInColorCode(L["Settings Special Mount Keybind Reminder"], "00999999");
+		local reminder = L["Settings Repair Mount Keybind Reminder"];
+		reminder = reminder:gsub("%[KEY]", "[" .. modKeyToLabel(MogCompanionsSaved.MountMods.Repair) .. "]");
+		tooltip = WrapTextInColorCode(reminder, "00999999");
 	end
-	local variableKey = "Special";
+	local variableKey = "Repair";
 	local variableTable = MogCompanionsCharacterSaved.Default;
 
 	local setting = Settings.RegisterAddOnSetting(category, variable, variableKey, variableTable, type(defaultValue), name, defaultValue);
-   	Settings.CreateDropdown(category, setting, GetOptionsSpecialMount, tooltip);
+   	Settings.CreateDropdown(category, setting, GetOptionsRepairMount, tooltip);
 	setting:SetValueChangedCallback(OnSettingChanged);
 
 	-- Random ground: allow flying mounts
@@ -125,6 +182,201 @@ local function InitSettings()
 	local setting = Settings.RegisterAddOnSetting(category, variable, variableKey, variableTable, type(defaultValue), name, defaultValue);
 	Settings.CreateCheckbox(category, setting, tooltip);
 	setting:SetValueChangedCallback(OnSettingChanged);
+
+	-- Clone targeted mount
+
+	local variable = "CloneTargetedMount";
+	local defaultValue = false;
+	local name = L["Settings Clone Targeted Mount"];
+	local tooltip = L["Settings Clone Targeted Mount Tooltip"];
+	local variableKey = "CloneTargetedMount";
+	local variableTable = MogCompanionsSaved;
+
+	local setting = Settings.RegisterAddOnSetting(category, variable, variableKey, variableTable, type(defaultValue), name, defaultValue);
+	Settings.CreateCheckbox(category, setting, tooltip);
+	setting:SetValueChangedCallback(OnSettingChanged);
+
+	-- ── Mount Macro Modifier Keys ────────────────────────────────────────────────
+
+	layout:AddInitializer(CreateSettingsListSectionHeaderInitializer(L["Settings Mount Macro Title"], ''));
+
+	local function GetOptionsMountMods()
+		local container = Settings.CreateControlTextContainer();
+		container:Add(1, L["Settings CTRL Key"]);
+		container:Add(2, L["Settings SHIFT Key"]);
+		container:Add(3, L["Settings ALT Key"]);
+		return container:GetData();
+	end
+
+	local function GetOptionsMountModsClick()
+		local container = Settings.CreateControlTextContainer();
+		container:Add(1, L["Settings Click"]);
+		return container:GetData();
+	end
+
+	local MountModDropdowns = {};
+
+	-- Mutual-exclusion callback: when one dropdown changes, push the old value
+	-- to whichever other dropdown currently holds the same value.
+	local function OnMountModSettingChanged(setting, value)
+		local otherValues = {};
+		for i = 1, #MountModDropdowns do
+			if setting ~= MountModDropdowns[i] then
+				otherValues[i] = MountModDropdowns[i]:GetValue();
+			else
+				otherValues[i] = false;
+			end
+		end
+
+		local valMap = arrayToMap(otherValues);
+		local missing = 0;
+		for i = 1, 3 do
+			if not valMap[i] then
+				missing = i;
+			end
+		end
+
+		for i = 1, #otherValues do
+			if otherValues[i] ~= false and otherValues[i] == value then
+				MountModDropdowns[i]:SetValue(missing);
+			end
+		end
+	end
+
+	local variable = "MountMacroModFlyingOrGround";
+	local defaultValue = 1;
+	local name = L["Settings Summon Flying Mount"];
+	local variableKey = "FlyingOrGround";
+	local variableTable = MogCompanionsSaved.MountMods;
+
+	local setting = Settings.RegisterAddOnSetting(category, variable, variableKey, variableTable, type(defaultValue), name, defaultValue);
+	local initializer = Settings.CreateDropdown(category, setting, GetOptionsMountModsClick, false);
+	setting:SetValueChangedCallback(OnMountModSettingChanged);
+	-- Disable: Flying is always the "no modifier" case; not configurable.
+	local function DisableDropdown(frame)
+		frame.Control.Dropdown:SetEnabled(false);
+	end
+	hooksecurefunc(initializer, "InitFrame", function(self, frame) DisableDropdown(frame); end);
+
+	local variable = "MountMacroModGround";
+	local defaultValue = 1;
+	local name = L["Settings Summon Ground Mount"];
+	local variableKey = "Ground";
+	local variableTable = MogCompanionsSaved.MountMods;
+
+	local setting = Settings.RegisterAddOnSetting(category, variable, variableKey, variableTable, type(defaultValue), name, defaultValue);
+	Settings.CreateDropdown(category, setting, GetOptionsMountMods, false);
+	setting:SetValueChangedCallback(OnMountModSettingChanged);
+	tinsert(MountModDropdowns, setting);
+
+	local variable = "MountMacroModRepair";
+	local defaultValue = 2;
+	local name = L["Settings Summon Repair Mount"];
+	local variableKey = "Repair";
+	local variableTable = MogCompanionsSaved.MountMods;
+
+	local setting = Settings.RegisterAddOnSetting(category, variable, variableKey, variableTable, type(defaultValue), name, defaultValue);
+	Settings.CreateDropdown(category, setting, GetOptionsMountMods, false);
+	setting:SetValueChangedCallback(OnMountModSettingChanged);
+	tinsert(MountModDropdowns, setting);
+
+	local variable = "MountMacroModRandom";
+	local defaultValue = 3;
+	local name = L["Settings Summon Random Mount"];
+	local variableKey = "Random";
+	local variableTable = MogCompanionsSaved.MountMods;
+
+	local setting = Settings.RegisterAddOnSetting(category, variable, variableKey, variableTable, type(defaultValue), name, defaultValue);
+	Settings.CreateDropdown(category, setting, GetOptionsMountMods, false);
+	setting:SetValueChangedCallback(OnMountModSettingChanged);
+	tinsert(MountModDropdowns, setting);
+
+	-- ── Hearthstone Macro Modifier Keys ──────────────────────────────────────────
+
+	local HearthstoneModDropdowns = {};
+
+	-- Same mutual-exclusion logic as mount mods.
+	local function OnHearthstoneModSettingChanged(setting, value)
+		local otherValues = {};
+		for i = 1, #HearthstoneModDropdowns do
+			if setting ~= HearthstoneModDropdowns[i] then
+				otherValues[i] = HearthstoneModDropdowns[i]:GetValue();
+			else
+				otherValues[i] = false;
+			end
+		end
+
+		local valMap = arrayToMap(otherValues);
+		local missing = 0;
+		for i = 1, 3 do
+			if not valMap[i] then
+				missing = i;
+			end
+		end
+
+		for i = 1, #otherValues do
+			if otherValues[i] ~= false and otherValues[i] == value then
+				HearthstoneModDropdowns[i]:SetValue(missing);
+			end
+		end
+	end
+
+	local function GetOptionsHearthstoneMods()
+		local container = Settings.CreateControlTextContainer();
+		container:Add(1, L["Settings CTRL Key"]);
+		container:Add(2, L["Settings SHIFT Key"]);
+		container:Add(3, L["Settings ALT Key"]);
+		return container:GetData();
+	end
+
+	layout:AddInitializer(CreateSettingsListSectionHeaderInitializer(L["Settings Hearthstone Macro Title"], ''));
+
+	local variable = "HearthstoneModSelected";
+	local defaultValue = 1;
+	local name = L["Settings Use Selected Hearthstone"];
+	local variableKey = "Selected";
+	local variableTable = MogCompanionsSaved.HearthstoneMods;
+
+	local setting = Settings.RegisterAddOnSetting(category, variable, variableKey, variableTable, type(defaultValue), name, defaultValue);
+	local initializer = Settings.CreateDropdown(category, setting, GetOptionsMountModsClick, false);
+	setting:SetValueChangedCallback(OnHearthstoneModSettingChanged);
+	-- Disable: "Click (no modifier)" is always for the selected hearthstone.
+	hooksecurefunc(initializer, "InitFrame", function(self, frame) DisableDropdown(frame); end);
+
+	local variable = "HearthstoneModGarrison";
+	local defaultValue = 1;
+	local name = L["Settings Use Garrison Hearthstone"];
+	local variableKey = "Garrison";
+	local variableTable = MogCompanionsSaved.HearthstoneMods;
+
+	local setting = Settings.RegisterAddOnSetting(category, variable, variableKey, variableTable, type(defaultValue), name, defaultValue);
+	Settings.CreateDropdown(category, setting, GetOptionsHearthstoneMods, false);
+	setting:SetValueChangedCallback(OnHearthstoneModSettingChanged);
+	tinsert(HearthstoneModDropdowns, setting);
+
+	local variable = "HearthstoneModDalaran";
+	local defaultValue = 2;
+	local name = L["Settings Use Dalaran Hearthstone"];
+	local variableKey = "Dalaran";
+	local variableTable = MogCompanionsSaved.HearthstoneMods;
+
+	local setting = Settings.RegisterAddOnSetting(category, variable, variableKey, variableTable, type(defaultValue), name, defaultValue);
+	Settings.CreateDropdown(category, setting, GetOptionsHearthstoneMods, false);
+	setting:SetValueChangedCallback(OnHearthstoneModSettingChanged);
+	tinsert(HearthstoneModDropdowns, setting);
+
+	local variable = "HearthstoneModTeleportHome";
+	local defaultValue = 3;
+	local name = L["Settings Teleport Home"];
+	local variableKey = "TeleportHome";
+	local variableTable = MogCompanionsSaved.HearthstoneMods;
+
+	local setting = Settings.RegisterAddOnSetting(category, variable, variableKey, variableTable, type(defaultValue), name, defaultValue);
+	Settings.CreateDropdown(category, setting, GetOptionsHearthstoneMods, false);
+	setting:SetValueChangedCallback(OnHearthstoneModSettingChanged);
+	tinsert(HearthstoneModDropdowns, setting);
+
+	-- ────────────────────────────────────────────────────────────────────────────
 
 	Settings.RegisterAddOnCategory(category);
 end

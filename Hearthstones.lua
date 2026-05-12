@@ -184,6 +184,10 @@ local function EnsureHearthstonePostClick()
 end
 
 -- Registers a PreClick handler that arms the secure button before it fires.
+-- Reads HearthstoneMods at click-time and routes to the appropriate toy:
+--   Garrison modifier held → Garrison Hearthstone (110560) if collected
+--   Dalaran modifier held  → Dalaran Hearthstone (140192) if collected
+--   Otherwise             → selected outfit toy or random (MogCompanionsPrepareHearthstone)
 -- Only arms outside combat; in combat the button retains the last armed toy.
 local function EnsureHearthstonePreClick()
 	if hearthstonePreClickRegistered then
@@ -194,9 +198,22 @@ local function EnsureHearthstonePreClick()
 	end
 	hearthstonePreClickRegistered = true;
 	HearthstoneSecureButton:SetScript("PreClick", function()
-		if not (InCombatLockdown and InCombatLockdown()) then
-			MogCompanionsPrepareHearthstone();
+		if InCombatLockdown and InCombatLockdown() then
+			return;
 		end
+		local mods = MogCompanionsSaved and MogCompanionsSaved.HearthstoneMods;
+		if mods then
+			local modKeys = { IsControlKeyDown(), IsShiftKeyDown(), IsAltKeyDown() };
+			if mods.Garrison and modKeys[mods.Garrison] and PlayerHasToy(110560) then
+				SetHearthstoneSecureButtonItem(110560);
+				return;
+			end
+			if mods.Dalaran and modKeys[mods.Dalaran] and PlayerHasToy(140192) then
+				SetHearthstoneSecureButtonItem(140192);
+				return;
+			end
+		end
+		MogCompanionsPrepareHearthstone();
 	end);
 end
 
@@ -387,7 +404,8 @@ local function ToggleHearthstoneReminder()
 end
 
 -- Creates a "MogComp Hearth" macro (or edits the existing one) and puts it on the cursor
--- so the player can drag it to an action bar. The macro calls the secure button.
+-- so the player can drag it to an action bar.
+-- The macro body is always "/click MCHearthButton"; modifier routing is handled in PreClick.
 -- Cannot be created during combat (combat lockdown).
 CreateHearthstoneMacro = function(parent)
 	if InCombatLockdown and InCombatLockdown() then

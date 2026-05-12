@@ -49,17 +49,42 @@ L["Settings Default Section Title"] = "Default";
 -- Rows
 L["Settings Aquatic Mount"] = "Aquatic Mount";
 L["Settings Aquatic Mount Tooltip"] = "Choose which aquatic mount to use when you hold Control while swimming. When set to Random, a random aquatic mount from your collection is used each time.";
-L["Settings Aquatic Mount Keybind Reminder"] = "Hold [Control] to summon this mount while swimming.";
+L["Settings Aquatic Mount Keybind Reminder"] = "Hold [KEY] to summon this mount while swimming. (Uses the \"Force Ground\" modifier key.)";
 
-L["Settings Special Mount"] = "Repair Mount";
-L["Settings Special Mount Tooltip"] = "Choose which vendor or repair mount to use when you hold Shift. When set to Random, a random vendor mount from your collection is used each time.";
-L["Settings Special Mount Keybind Reminder"] = "Hold [Shift] to summon this mount.";
+L["Settings Repair Mount"] = "Repair Mount";
+L["Settings Repair Mount Tooltip"] = "Choose which vendor or repair mount to use when you hold Shift. When set to Random, a random vendor mount from your collection is used each time.";
+L["Settings Repair Mount Keybind Reminder"] = "Hold [KEY] to summon this mount.";
 
 -- Dropdown options
 L["Settings Random Selection Label"] = "Random";
 L["Settings No Applicable Mounts"] = "No applicable mounts";
 
+-- Mount Macro Modifier Settings
+L["Settings Mount Macro Title"] = "Mount Macro";
+L["Settings Summon Flying Mount"] = "Summon Flying Mount";
+L["Settings Summon Ground Mount"] = "Force Ground Mount";
+L["Settings Summon Repair Mount"] = "Summon Repair Mount";
+L["Settings Summon Random Mount"] = "Summon Random Mount";
+
+-- Hearthstone Macro Modifier Settings
+L["Settings Hearthstone Macro Title"] = "Hearthstone Macro";
+L["Settings Use Selected Hearthstone"] = "Use Selected Hearthstone";
+L["Settings Use Garrison Hearthstone"] = "Use Garrison Hearthstone";
+L["Settings Use Dalaran Hearthstone"] = "Use Dalaran Hearthstone";
+L["Settings Teleport Home"] = "Teleport Home (Coming Soon)";
+
+-- Modifier Key Labels
+L["Settings CTRL"] = "CTRL";
+L["Settings SHIFT"] = "SHIFT";
+L["Settings ALT"] = "ALT";
+L["Settings CTRL Key"] = "CTRL key";
+L["Settings SHIFT Key"] = "SHIFT key";
+L["Settings ALT Key"] = "ALT key";
+L["Settings Click"] = "Click";
+
 -- Random selection section
 L["Settings Random Section Title"] = "Random Mount Selection";
-L["Settings Random Ground Allow Flying"] = "Allow flying mounts to be used when choosing a random ground mount";
+L["Settings Random Ground Allow Flying"] = "Allow 'flying' ground mounts";
 L["Settings Random Ground Allow Flying Tooltip"] = "Turn this feature off to restrict random ground mounts to use non-flying mounts only.";
+L["Settings Clone Targeted Mount"] = "Clone targeted mount";
+L["Settings Clone Targeted Mount Tooltip"] = "When summoning a random mount, target a mounted player to summon the same mount, if you own it.";
