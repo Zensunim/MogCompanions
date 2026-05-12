@@ -32,7 +32,7 @@ L["Open Keybinds"] = "Open Keybinds";
 L["Create Macro"] = "Create Macro";
 L["Setup Reminder"] = "Set up a MogCompanions keybind and/or macro";
 L["Hearthstone Setup Reminder"] = "Set up a MogCompanions Hearthstone macro";
-L["Drop Macro Tooltip"] = "Drop this macro in |nyour action bar";
+L["Drop Macro Tooltip"] = "Drop this Mount macro in |nyour action bar";
 L["Drop Hearthstone Macro Tooltip"] = "Drop this Hearthstone macro in |nyour action bar";
 L["Show Flying In Ground Toggle"] = "Show flying mounts in ground mount list";
 L["Slash Help Mount"] = "Summon or dismount using MogCompanions";
@@ -47,29 +47,19 @@ L["Macro Combat Error"] = "MogCompanions cannot create macros while you are in c
 L["Settings Default Section Title"] = "Default";
 
 -- Rows
-L["Settings Flying Mount"] = "Flying Mount";
-L["Settings Flying Mount Tooltip"] = "Default mount for all flying areas.";
-
-L["Settings Ground Mount"] = "Ground Mount";
-L["Settings Ground Mount Tooltip"] = "Default mount for all nonflying areas.";
-L["Settings Ground Mount Keybind Reminder"] = "Hold [Control] to summon this mount regardless of area.";
-
 L["Settings Aquatic Mount"] = "Aquatic Mount";
-L["Settings Aquatic Mount Tooltip"] = "Aquatic Mount Tooltip";
+L["Settings Aquatic Mount Tooltip"] = "Choose which aquatic mount to use when you hold Control while swimming. When set to Random, a random aquatic mount from your collection is used each time.";
 L["Settings Aquatic Mount Keybind Reminder"] = "Hold [Control] to summon this mount while swimming.";
 
 L["Settings Special Mount"] = "Repair Mount";
-L["Settings Special Mount Tooltip"] = "Aquatic Mount Tooltip";
+L["Settings Special Mount Tooltip"] = "Choose which vendor or repair mount to use when you hold Shift. When set to Random, a random vendor mount from your collection is used each time.";
 L["Settings Special Mount Keybind Reminder"] = "Hold [Shift] to summon this mount.";
 
-L["Settings Alternative Mount"] = "Alternative Mount";
-L["Settings Alternative Mount Tooltip"] = "Whatever you want it to be!";
-L["Settings Alternative Mount Keybind Reminder"] = "Hold [Alt] to summon this mount.";
-
-L["Settings Character Title"] = "Character Title";
-L["Settings Character Title Tooltip"] = "Will take effect next time you mount.";
-
 -- Dropdown options
-L["Settings Default Selection Label"] = "Default";
 L["Settings Random Selection Label"] = "Random";
 L["Settings No Applicable Mounts"] = "No applicable mounts";
+
+-- Random selection section
+L["Settings Random Section Title"] = "Random Mount Selection";
+L["Settings Random Ground Allow Flying"] = "Allow flying mounts to be used when choosing a random ground mount";
+L["Settings Random Ground Allow Flying Tooltip"] = "Turn this feature off to restrict random ground mounts to use non-flying mounts only.";

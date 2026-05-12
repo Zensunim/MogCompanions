@@ -39,8 +39,6 @@ local SetSelectedFlyingMount, SetSelectedGroundMount;
 local SetupReminderFrame;
 local MountListSearchBox, FilterDropdown;
 
-local CheckboxShowFlyingInGroundList;
-
 MogCompanions.MountSearchString = "";
 
 MogCompanionsSelectedMount = {}
@@ -136,27 +134,26 @@ local function getEmptyMountIcon()
 end
 
 -- ── Mount Summon Functions ──────────────────────────────────────────────────────
--- Priority: per-outfit mount → default specific mount → random from category.
--- All four helpers are called from MogCompanionsSummon based on conditions.
+-- Flying/Ground: use per-outfit selection if set (> 1), otherwise random from category.
+-- Aquatic/Special: use global default if set (> 1), otherwise random from category.
+-- Alternative: always random from all collected usable mounts.
 function MogCompanionsSummonFlying()
-	if MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetActiveOutfitID()].Flying > 1 then
-		C_MountJournal.SummonByID(MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetActiveOutfitID()].Flying);
-	elseif MogCompanionsCharacterSaved.Default.Flying <= 1 then
+	local outfitData = MogCompanions:GetActiveOutfitTable();
+	if outfitData and outfitData.Flying and outfitData.Flying > 1 then
+		C_MountJournal.SummonByID(outfitData.Flying);
+	else
 		local randomMount = MogCompanions:getRandomMount("flying");
 		if randomMount then C_MountJournal.SummonByID(randomMount.id); end
-	else
-		C_MountJournal.SummonByID(MogCompanionsCharacterSaved.Default.Flying);
 	end
 end
 
 function MogCompanionsSummonGround()
-	if MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetActiveOutfitID()].Ground > 1 then
-		C_MountJournal.SummonByID(MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetActiveOutfitID()].Ground);
-	elseif MogCompanionsCharacterSaved.Default.Ground <= 1 then
+	local outfitData = MogCompanions:GetActiveOutfitTable();
+	if outfitData and outfitData.Ground and outfitData.Ground > 1 then
+		C_MountJournal.SummonByID(outfitData.Ground);
+	else
 		local randomMount = MogCompanions:getRandomMount("ground");
 		if randomMount then C_MountJournal.SummonByID(randomMount.id); end
-	else
-		C_MountJournal.SummonByID(MogCompanionsCharacterSaved.Default.Ground);
 	end
 end
 
@@ -179,12 +176,8 @@ function MogCompanionsSummonSpecial()
 end
 
 function MogCompanionsSummonAlternative()
-	if MogCompanionsCharacterSaved.Default.Alternative <= 1 then
-		local randomMount = MogCompanions:getRandomMount("alternative");
-		if randomMount then C_MountJournal.SummonByID(randomMount.id); end
-	else
-		C_MountJournal.SummonByID(MogCompanionsCharacterSaved.Default.Alternative);
-	end
+	local randomMount = MogCompanions:getRandomMount("alternative");
+	if randomMount then C_MountJournal.SummonByID(randomMount.id); end
 end
 
 -- Main mount/dismount entry point. Evaluates current state and modifier keys
@@ -265,8 +258,6 @@ function MogCompanions:InitMountSlots(reset)
 		local borderSize = 59;
 		local borderOffset = 7;
 
-		local appearanceSlotInfo, illusionSlotInfo = C_TransmogOutfitInfo.GetAllSlotLocationInfo();
-
 		flyingMountBorder = CreateFrame("Frame", "FlyingMountBorder", flyingMountFrame);
 		flyingMountBorder:SetFrameStrata("HIGH");
 		flyingMountBorder:SetSize(borderSize, borderSize);
@@ -316,7 +307,7 @@ function MogCompanions:InitMountSlots(reset)
 			FlyingMountModel:SetDisplayInfo(0);
 			FlyingMountModel:SetAlpha(1);
 			FlyingMountClear:Hide();
-			ClearSelectedFlyingMount(); 				
+			ClearSelectedFlyingMount();
 		end)				
 
 		-- Ground Mount Frame
@@ -381,13 +372,12 @@ function MogCompanions:InitMountSlots(reset)
 			GroundMountModel:SetDisplayInfo(0);
 			GroundMountModel:SetAlpha(0);
 			GroundMountClear:Hide();
-			ClearSelectedGroundMount();			
+			ClearSelectedGroundMount();
 		end)	
 
 	end
 
-	local name, spellID, icon, isActive, isUsable, sourceType, isFavorite, isFactionSpecific, faction, shouldHideOnChar, isCollected, mountID, isSteadyFlight = C_MountJournal.GetMountInfoByID(MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Flying);
-	local creatureDisplayInfoID, description, source, isSelfMount, mountTypeID, uiModelSceneID, animID, spellVisualKitID, disablePlayerMountPreview = C_MountJournal.GetMountInfoExtraByID(MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Flying);
+	local _, _, icon = C_MountJournal.GetMountInfoByID(MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Flying);
 
 	MogCompanions:UpdateSelectMountDetails("Flying", MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Flying);
 
@@ -411,8 +401,7 @@ function MogCompanions:InitMountSlots(reset)
 
 	-- Ground mount slot icon
 
-	local name, spellID, icon, isActive, isUsable, sourceType, isFavorite, isFactionSpecific, faction, shouldHideOnChar, isCollected, mountID, isSteadyFlight = C_MountJournal.GetMountInfoByID(MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Ground);
-	local creatureDisplayInfoID, description, source, isSelfMount, mountTypeID, uiModelSceneID, animID, spellVisualKitID, disablePlayerMountPreview = C_MountJournal.GetMountInfoExtraByID(MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Ground);
+	local _, _, icon = C_MountJournal.GetMountInfoByID(MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Ground);
 
 	MogCompanions:UpdateSelectMountDetails("Ground", MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Ground);
 
@@ -558,10 +547,6 @@ function MissingKeybindOrMacro()
 end
 
 -- ── Mount Tab UI Helpers ────────────────────────────────────────────────────────
-local function ToggleGroundMountIncludeFlying()
-	-- CheckboxShowFlyingInGroundList:IsSelected()
-end
-
 local function FilterIsChecked(filter)
 	return MogCompanionsSaved.ShowFlyingInGround;
 end
@@ -582,7 +567,7 @@ local function FilterSetChecked(filter)
 	for i = 1, #mounts do
 		local mount = mounts[i];
 		scrollToCount = scrollToCount + 1;
-		if mount.id == MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetActiveOutfitID()].Ground then
+		if mount.id == MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Ground then
 			scrollToIndex = scrollToCount;
 		end
 		GroundMountDataProvider:Insert(mount);
@@ -745,7 +730,7 @@ function MogCompanions:InitMountTab()
 		FilterDropdown:SetWidth(104);		
 		FilterDropdown.resizeToText = false;
 		FilterDropdown:SetupMenu(function(dropdown, rootDescription)
-			CheckboxShowFlyingInGroundList = rootDescription:CreateCheckbox(L["Show Flying In Ground Toggle"], FilterIsChecked, FilterSetChecked);
+				rootDescription:CreateCheckbox(L["Show Flying In Ground Toggle"], FilterIsChecked, FilterSetChecked);
 		end)
 
 		---		
@@ -787,8 +772,8 @@ function MogCompanions:InitMountTab()
 
 		-- Load display info for the flying and ground model previews
 
-		local flyingModelID, _, _, _, _, _, _, _, _ = C_MountJournal.GetMountInfoExtraByID(MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetActiveOutfitID()].Flying);
-		local groundModelID, _, _, _, _, _, _, _, _ = C_MountJournal.GetMountInfoExtraByID(MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetActiveOutfitID()].Ground);
+		local flyingModelID, _, _, _, _, _, _, _, _ = C_MountJournal.GetMountInfoExtraByID(MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Flying);
+		local groundModelID, _, _, _, _, _, _, _, _ = C_MountJournal.GetMountInfoExtraByID(MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Ground);
 
 		-- Flying mount model preview frame and list
 
@@ -853,8 +838,7 @@ function MogCompanions:InitMountTab()
 		FlyingMountSelectionBehavior:RegisterCallback(SelectionBehaviorMixin.Event.OnSelectionChanged, OnFlyingMountSelectionChanged, self);
 
 		function SetSelectedFlyingMount(value)
-			local name, spellID, icon, isActive, isUsable, sourceType, isFavorite, isFactionSpecific, faction, shouldHideOnChar, isCollected, mountID, isSteadyFlight = C_MountJournal.GetMountInfoByID(value);
-			local creatureDisplayInfoID, description, source, isSelfMount, mountTypeID, uiModelSceneID, animID, spellVisualKitID, disablePlayerMountPreview = C_MountJournal.GetMountInfoExtraByID(value);
+			local _, _, icon = C_MountJournal.GetMountInfoByID(value);
 
 			MogCompanions:UpdateSelectMountDetails("Flying", value);
 
@@ -883,7 +867,7 @@ function MogCompanions:InitMountTab()
 		local function FlyingMountListInitializer(button, data)
 			local isSelected = FlyingMountSelectionBehavior:IsElementDataSelected(data);
 
-			if data.id == MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetActiveOutfitID()].Flying then
+			if data.id == MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Flying then
 				isSelected = true;
 			end
 
@@ -933,7 +917,7 @@ function MogCompanions:InitMountTab()
 		for i = 1, #mounts do
 			local mount = mounts[i];
 			scrollToCount = scrollToCount + 1;
-			if mount.id == MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetActiveOutfitID()].Flying then
+			if mount.id == MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Flying then
 				scrollToIndex = scrollToCount;
 			end
 			FlyingMountDataProvider:Insert(mount);
@@ -1012,8 +996,7 @@ function MogCompanions:InitMountTab()
 		GroundMountSelectionBehavior:RegisterCallback(SelectionBehaviorMixin.Event.OnSelectionChanged, OnGroundMountSelectionChanged, self);
 
 		function SetSelectedGroundMount(value)
-			local name, spellID, icon, isActive, isUsable, sourceType, isFavorite, isFactionSpecific, faction, shouldHideOnChar, isCollected, mountID, isSteadyFlight = C_MountJournal.GetMountInfoByID(value);
-			local creatureDisplayInfoID, description, source, isSelfMount, mountTypeID, uiModelSceneID, animID, spellVisualKitID, disablePlayerMountPreview = C_MountJournal.GetMountInfoExtraByID(value);
+			local _, _, icon = C_MountJournal.GetMountInfoByID(value);
 
 			MogCompanions:UpdateSelectMountDetails("Ground", value);
 
@@ -1042,7 +1025,7 @@ function MogCompanions:InitMountTab()
 		local function GroundMountListInitializer(button, data)
 			local isSelected = GroundMountSelectionBehavior:IsElementDataSelected(data);
 
-			if data.id == MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetActiveOutfitID()].Ground then
+			if data.id == MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Ground then
 				isSelected = true;
 			end
 
@@ -1092,7 +1075,7 @@ function MogCompanions:InitMountTab()
 		for i = 1, #mounts do
 			local mount = mounts[i];
 			scrollToCount = scrollToCount + 1;
-			if mount.id == MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetActiveOutfitID()].Ground then
+			if mount.id == MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Ground then
 				scrollToIndex = scrollToCount;
 			end
 			GroundMountDataProvider:Insert(mount);
@@ -1123,7 +1106,7 @@ function MogCompanions:InitMountTab()
 			for i = 1, #mounts do
 				local mount = mounts[i];
 				scrollToCount = scrollToCount + 1;
-				if mount.id == MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetActiveOutfitID()].Flying then
+				if mount.id == MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Flying then
 					scrollToIndex = scrollToCount;
 				end	
 				FlyingMountDataProvider:Insert(mount);
@@ -1147,7 +1130,7 @@ function MogCompanions:InitMountTab()
 			for i = 1, #mounts do
 				local mount = mounts[i];
 				scrollToCount = scrollToCount + 1;
-				if mount.id == MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetActiveOutfitID()].Ground then
+				if mount.id == MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Ground then
 					scrollToIndex = scrollToCount;
 				end
 				GroundMountDataProvider:Insert(mount);

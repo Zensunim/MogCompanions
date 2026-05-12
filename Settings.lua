@@ -1,7 +1,9 @@
 -- Settings.lua
 -- Registers all MogCompanions user options with the Retail Settings API.
 -- Adds a "MogCompanions" category to the game's Settings panel with:
---   • Default mounts (flying, ground, aquatic, special/repair, alternative)
+--   • Default mounts (aquatic, special/repair)
+-- Flying and ground mounts are chosen per-outfit in the wardrobe UI; no global default.
+-- Alternative mount always selects a random mount from all collected usable mounts.
 -- All user-facing strings come from Locales/enUS.lua via MogCompanionsLocales.
 -- MogCompanionsSettingsCategoryID is a global used by Core.lua to open the panel.
 local _, addon = ...;
@@ -16,38 +18,7 @@ MogCompanionsSettingsCategoryID = 0;
 
 -- ── Default Mount Dropdown Data Providers ───────────────────────────────────
 -- Each GetOptionsXxx function returns a Settings control data container used by
--- Settings.CreateDropdown. Entry 0 = "Random" for default mounts;
--- entry 1 = "Default" for per-outfit overrides.
-local function GetOptionsFlyingMount()
-	local container = Settings.CreateControlTextContainer();
-
-	container:Add(0, "|T134400:18|t "..L["Settings Random Selection Label"]);
-
-	local mounts = MogCompanions:getSortedFlyingMounts()
-
-	for i = 1, #mounts do
-		local mount = mounts[i];
-		container:Add(mount.id, mount.nameAndIcon);
-	end
-
-	return container:GetData();
-end
-
-local function GetOptionsGroundMount()
-	local container = Settings.CreateControlTextContainer();
-
-	container:Add(0, "|T134400:18|t "..L["Settings Random Selection Label"]);
-
-	local mounts = MogCompanions:getSortedGroundMounts();
-
-	for i = 1, #mounts do
-		local mount = mounts[i];
-		container:Add(mount.id, mount.nameAndIcon);
-	end
-
-	return container:GetData();
-end
-
+-- Settings.CreateDropdown. Entry 0 = "Random".
 local function GetOptionsAquaticMount()
 	local container = Settings.CreateControlTextContainer();
 	local mounts = MogCompanions:getSortedAquaticMounts();
@@ -92,28 +63,6 @@ local function GetOptionsSpecialMount()
 	return container:GetData();
 end
 
-local function GetOptionsAlternativeMount()
-	local container = Settings.CreateControlTextContainer();
-	local mounts = MogCompanions:getSortedAlternativeMounts();
-
-	if #mounts > 0 then
-
-		container:Add(0, "|T134400:18|t "..L["Settings Random Selection Label"]);
-
-		for i = 1, #mounts do
-			local mount = mounts[i];
-			container:Add(mount.id, mount.nameAndIcon);
-		end
-
-	else 
-
-		container:Add(0, L["Settings No Applicable Mounts"]);
-
-	end
-
-	return container:GetData();
-end
-
 -- Stub; actual persistence is handled by the Settings API variable binding.
 -- Extend this function if side-effects are needed when any setting changes.
 local function OnSettingChanged()
@@ -127,45 +76,13 @@ local function InitSettings()
 
 	MogCompanionsSettingsCategoryID = category:GetID();
 	layout:AddInitializer(CreateSettingsListSectionHeaderInitializer(L["Settings Default Section Title"], ''));
-   
+
 	local key1, key2 = GetBindingKey("Mount/Dismount");
-
-	-- Default flying mount
-
-	local variable = "DefaultFlying";
-	local defaultValue = 1;
-	local name = L["Settings Flying Mount"];
-	local tooltip = L["Settings Flying Mount Tooltip"];
-	local variableKey = "Flying";
-	local variableTable = MogCompanionsCharacterSaved.Default;
-
-	local setting = Settings.RegisterAddOnSetting(category, variable, variableKey, variableTable, type(defaultValue), name, defaultValue);
-	Settings.CreateDropdown(category, setting, GetOptionsFlyingMount, tooltip);
-	setting:SetValueChangedCallback(OnSettingChanged);
-
-	-- Default ground mount
-
-	local variable = "DefaultGround";
-	local defaultValue = 1;
-	local name = L["Settings Ground Mount"];
-	local tooltip = false;
-	if key1 or key2 then
-		tooltip = L["Settings Ground Mount Tooltip"].."\n\n"..WrapTextInColorCode(L["Settings Ground Mount Keybind Reminder"], "00999999");
-	else
-		tooltip = L["Settings Ground Mount Tooltip"];
-	end
-
-	local variableKey = "Ground";
-	local variableTable = MogCompanionsCharacterSaved.Default;
-
-	local setting = Settings.RegisterAddOnSetting(category, variable, variableKey, variableTable, type(defaultValue), name, defaultValue);
-	Settings.CreateDropdown(category, setting, GetOptionsGroundMount, tooltip);
-	setting:SetValueChangedCallback(OnSettingChanged);
 
 	-- Default aquatic mount
 
 	local variable = "DefaultAquatic";
-	local defaultValue = 1;
+	local defaultValue = 0;
 	local name = L["Settings Aquatic Mount"];
 	local tooltip = nil;
 	if key1 or key2 then
@@ -181,7 +98,7 @@ local function InitSettings()
 	-- Default special mount
 
 	local variable = "DefaultSpecial";
-	local defaultValue = 1;
+	local defaultValue = 0;
 	local name = L["Settings Special Mount"];
 	local tooltip = nil;
 	if key1 or key2 then
@@ -194,22 +111,19 @@ local function InitSettings()
    	Settings.CreateDropdown(category, setting, GetOptionsSpecialMount, tooltip);
 	setting:SetValueChangedCallback(OnSettingChanged);
 
-	-- Default alternative mount
+	-- Random ground: allow flying mounts
 
-	local variable = "DefaultAlternative";
-	local defaultValue = 1;
-	local name = L["Settings Alternative Mount"];
-	local tooltip = L["Settings Alternative Mount Tooltip"];
-	if key1 or key2 then
-		tooltip = L["Settings Alternative Mount Tooltip"].."\n\n"..WrapTextInColorCode(L["Settings Alternative Mount Keybind Reminder"], "00999999");
-	else
-		tooltip = L["Settings Alternative Mount Tooltip"];
-	end
-	local variableKey = "Alternative";
-	local variableTable = MogCompanionsCharacterSaved.Default;
+	layout:AddInitializer(CreateSettingsListSectionHeaderInitializer(L["Settings Random Section Title"], ''));
+
+	local variable = "RandomGroundAllowFlying";
+	local defaultValue = true;
+	local name = L["Settings Random Ground Allow Flying"];
+	local tooltip = L["Settings Random Ground Allow Flying Tooltip"];
+	local variableKey = "RandomGroundAllowFlying";
+	local variableTable = MogCompanionsSaved;
 
 	local setting = Settings.RegisterAddOnSetting(category, variable, variableKey, variableTable, type(defaultValue), name, defaultValue);
-   	Settings.CreateDropdown(category, setting, GetOptionsAlternativeMount, tooltip);
+	Settings.CreateCheckbox(category, setting, tooltip);
 	setting:SetValueChangedCallback(OnSettingChanged);
 
 	Settings.RegisterAddOnCategory(category);

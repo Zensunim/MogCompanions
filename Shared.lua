@@ -165,6 +165,23 @@ function MogCompanions:getSortedAlternativeMounts()
 	return mounts;
 end
 
+-- Builds the pool of ground mounts used by random ground selection.
+-- Ignores the UI search filter and the ShowFlyingInGround display toggle.
+-- Includes flying mounts only when MogCompanionsSaved.RandomGroundAllowFlying is true.
+local function buildRandomGroundPool()
+	local mountsRaw = MogCompanions:sortMounts(MogCompanions:GetCollectedMounts());
+	local mounts = {};
+
+	for i = 1, #mountsRaw do
+		local mount = mountsRaw[i];
+		if mount.mountTypeID == 230 or MogCompanionsSaved.RandomGroundAllowFlying then
+			table.insert(mounts, mount);
+		end
+	end
+
+	return mounts;
+end
+
 -- Returns a random mount table from the specified category string.
 -- type: "flying" | "ground" | "aquatic" | "special" | "alternative"
 -- Returns nil if the category list is empty (safe to call with no mounts collected).
@@ -179,7 +196,7 @@ function MogCompanions:getRandomMount(type)
 	if type == "flying" then
 		mounts = MogCompanions:getSortedFlyingMounts();
 	elseif type == "ground" then
-		mounts = MogCompanions:getSortedGroundMounts();
+		mounts = buildRandomGroundPool();
 	elseif type == "aquatic" then
 		mounts = MogCompanions:getSortedAquaticMounts();
 	elseif type == "special" then
@@ -351,10 +368,16 @@ function MogCompanions:getRandomHearthstoneToy()
 end
 
 -- ── Title Helpers ────────────────────────────────────────────────────────────
--- Formats a title ID into a displayable string: "Title PlayerName" or "PlayerName Title".
--- titleID 0 returns the bare player name (represents the "no title" selection).
-local function CreateDisplayTitle(titleID)
-	if titleID == 0 then
+-- Formats a title ID into a displayable string for dropdowns and labels.
+-- nil or 0: "[Don't Change Title]" — sentinel meaning do not change the title on mount.
+-- -1: bare player name — sentinel meaning clear the title.
+-- positive: formatted title string, e.g. "PlayerName the Explorer".
+function MogCompanions:CreateDisplayTitle(titleID)
+	if titleID == nil or titleID == 0 then
+		return MogCompanionsLocales["Default Title"];
+	end
+
+	if titleID == -1 then
 		return playerName;
 	end
 
@@ -383,7 +406,7 @@ function MogCompanions:getSortedTitles()
 		if IsTitleKnown(i) then
 			titlesRaw[count] = {};
 			titlesRaw[count].id = i;
-			titlesRaw[count].name = CreateDisplayTitle(i);
+			titlesRaw[count].name = MogCompanions:CreateDisplayTitle(i);
 			count = count + 1;				
 		end
 	end
@@ -409,18 +432,63 @@ end
 
 -- Ensures a saved-variable entry exists for outfit 'id' in MogCompanionsCharacterSaved.
 -- Called defensively any time an outfit ID is encountered that may be new.
--- Sentinel values: Flying/Ground/Hearthstone = 1 means "use default";
---   Title = 0 means "[Default Title]" (do not change the title);
---   Title = -1 means "no title" (clear to bare player name).
--- Safe to call multiple times; only writes when the entry is missing or incomplete.
+-- Sentinel values:
+--   Flying = 1: no per-outfit selection; summon a random flying mount.
+--   Ground = 1: no per-outfit selection; summon a random ground mount.
+--   Hearthstone = 1: no per-outfit selection; use a random hearthstone toy.
+--   Title = 0: do not change the title on mount.
+--   Title = -1: clear the title (bare player name).
+-- Safe to call multiple times; only writes fields that are missing.
 function MogCompanions:CreateEmptyOutfit(id)
-	if MogCompanionsCharacterSaved ~= nil and MogCompanionsCharacterSaved["Outfit"..id] == nil then
-		MogCompanionsCharacterSaved["Outfit"..id] = {};
-		MogCompanionsCharacterSaved["Outfit"..id].Flying = 1;
-		MogCompanionsCharacterSaved["Outfit"..id].Ground = 1;
-		MogCompanionsCharacterSaved["Outfit"..id].Hearthstone = 1;
-		MogCompanionsCharacterSaved["Outfit"..id].Title = 0;
-	elseif MogCompanionsCharacterSaved ~= nil and MogCompanionsCharacterSaved["Outfit"..id].Hearthstone == nil then
-		MogCompanionsCharacterSaved["Outfit"..id].Hearthstone = 1;
+	if id == nil then
+		return;
 	end
+
+	if MogCompanionsCharacterSaved == nil then
+		MogCompanionsCharacterSaved = {};
+	end
+
+	if MogCompanionsCharacterSaved["Outfit"..id] == nil then
+		MogCompanionsCharacterSaved["Outfit"..id] = {};
+	end
+
+	local outfit = MogCompanionsCharacterSaved["Outfit"..id];
+
+	if outfit.Flying == nil then
+		outfit.Flying = 1;
+	end
+
+	if outfit.Ground == nil then
+		outfit.Ground = 1;
+	end
+
+	if outfit.Hearthstone == nil then
+		outfit.Hearthstone = 1;
+	end
+
+	if outfit.Title == nil then
+		outfit.Title = 0;
+	end
+end
+
+-- ── Active Outfit Accessors ──────────────────────────────────────────────────
+-- Nil-safe wrapper for C_TransmogOutfitInfo.GetActiveOutfitID().
+-- Returns the active outfit ID, or nil if there is no active outfit or the API
+-- is unavailable.
+function MogCompanions:GetSafeActiveOutfitID()
+	if C_TransmogOutfitInfo and C_TransmogOutfitInfo.GetActiveOutfitID then
+		return C_TransmogOutfitInfo.GetActiveOutfitID();
+	end
+	return nil;
+end
+
+-- Returns the saved-variable table for the currently active outfit, or nil if
+-- there is no active outfit or no saved data exists for it yet.
+-- Does NOT auto-create the outfit entry; use CreateEmptyOutfit if that is needed.
+function MogCompanions:GetActiveOutfitTable()
+	local outfitID = MogCompanions:GetSafeActiveOutfitID();
+	if outfitID == nil or MogCompanionsCharacterSaved == nil then
+		return nil;
+	end
+	return MogCompanionsCharacterSaved["Outfit"..outfitID];
 end

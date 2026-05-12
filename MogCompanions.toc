@@ -2,7 +2,7 @@
 ## Title: Mog Companions
 ## Notes: Companions for your transmogs
 ## Author: Zensunim of Dragonblight (forked from perrinthesmith's MogCompanions addon)
-## IconTexture: 1769015
+## IconTexture: 6841475
 ## Version: 1.0
 ## DefaultState: Enabled
 ## Category: Transmogrification
