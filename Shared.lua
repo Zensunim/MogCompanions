@@ -144,6 +144,39 @@ function MogCompanions:GetSortedPets()
 	return pets;
 end
 
+-- Returns a random owned pet GUID.
+-- When excludedPetID is provided, it is omitted from the pool when alternatives exist.
+function MogCompanions:getRandomPet(excludedPetID)
+	if C_PetJournal == nil or C_PetJournal.GetOwnedPetIDs == nil then
+		return nil;
+	end
+
+	local petsRaw = C_PetJournal.GetOwnedPetIDs();
+	local pets = {};
+
+	for i = 1, #petsRaw do
+		local petID = petsRaw[i];
+		if petID ~= nil and petID ~= "" and petID ~= excludedPetID then
+			table.insert(pets, petID);
+		end
+	end
+
+	if #pets == 0 then
+		for i = 1, #petsRaw do
+			local petID = petsRaw[i];
+			if petID ~= nil and petID ~= "" then
+				table.insert(pets, petID);
+			end
+		end
+	end
+
+	if #pets == 0 then
+		return nil;
+	end
+
+	return pets[math.random(1, #pets)];
+end
+
 -- Returns true if the mount name contains MogCompanions.MountSearchString (case-insensitive),
 -- or if the search filter is empty or nil. Used to filter the visible mount list rows.
 function MogCompanions:listSearchString(name)

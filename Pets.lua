@@ -323,11 +323,20 @@ function MogCompanions:CreatePetMacro(parent)
 		end
 	end
 
-	local macroBody = "#showtooltip\n/mcomp pet";
+	local macroIcon = 656575;
+	local showTooltipLine = "#showtooltip";
+	local outfitData = MogCompanions:GetActiveOutfitTable();
+	local selectedPet = outfitData and GetPetDataByGUID(outfitData.Pet);
+	if selectedPet ~= nil then
+		macroIcon = selectedPet.icon or macroIcon;
+		showTooltipLine = showTooltipLine .. " " .. selectedPet.name;
+	end
+
+	local macroBody = showTooltipLine.."\n/mcomp pet";
 	if not macroId then
-		macroId = CreateMacro("MComp Pets", 656575, macroBody, nil);
+		macroId = CreateMacro("MComp Pets", macroIcon, macroBody, nil);
 	else
-		EditMacro(macroId, "MComp Pets", 656575, macroBody, nil);
+		EditMacro(macroId, "MComp Pets", macroIcon, macroBody, nil);
 	end
 
 	if parent ~= nil then

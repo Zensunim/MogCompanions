@@ -76,7 +76,26 @@ function MogCompanions:OpenSettings()
 end
 
 function MogCompanions:SummonPet()
-	print(L["Pet Command Stub"]);
+	local petJournal = C_PetJournal;
+	if petJournal == nil or petJournal.SummonPetByGUID == nil or petJournal.GetSummonedPetGUID == nil then
+		return;
+	end
+
+	local activePetGUID = petJournal.GetSummonedPetGUID();
+	local outfitData = MogCompanions:GetActiveOutfitTable();
+	local selectedPetGUID = outfitData and outfitData.Pet;
+
+	if selectedPetGUID ~= nil and selectedPetGUID ~= "" then
+		if activePetGUID ~= selectedPetGUID then
+			petJournal.SummonPetByGUID(selectedPetGUID);
+		end
+		return;
+	end
+
+	local randomPetGUID = MogCompanions:getRandomPet(activePetGUID);
+	if randomPetGUID ~= nil and randomPetGUID ~= "" and randomPetGUID ~= activePetGUID then
+		petJournal.SummonPetByGUID(randomPetGUID);
+	end
 end
 
 SLASH_MOGCOMPANIONS1 = "/mcomp";
