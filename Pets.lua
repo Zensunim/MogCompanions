@@ -491,7 +491,7 @@ local function InitializePets()
 	UpdatePetSlot();
 
 	if PetsFrame ~= nil and PetsFrame:IsShown() then
-		UpdatePetPreview(nil);
+		UpdatePetPreview(GetSelectedPet(GetViewedOutfitID()));
 		RefreshPetList(true);
 	end
 end
@@ -582,7 +582,7 @@ function MogCompanions:ShowPetsPage()
 		PetsFrame:Show();
 	end
 
-	UpdatePetPreview(nil);
+	UpdatePetPreview(GetSelectedPet(GetViewedOutfitID()));
 	RefreshPetList(true);
 end
 
