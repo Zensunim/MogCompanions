@@ -648,9 +648,9 @@ local function FilterSetChecked(filter)
 	GroundMountListScrollBox:ScrollToElementDataIndex(scrollToIndex);
 end
 
-local function CreateShortcuts(f)
+local function CreateShortcuts(f, topOffset)
 	ShortcutSettings = MogCompanions:CreateCompanionsShortcutMenu(f, "ShortcutSettings");
-	ShortcutSettings:SetPoint("TOPRIGHT", f, "TOPRIGHT", -26, -50);
+	ShortcutSettings:SetPoint("TOPRIGHT", f, "TOPRIGHT", -26, -50 + (topOffset or 0));
 end
 
 local function GetConfiguredMountMacroConditionLabel(mountID)
@@ -790,7 +790,7 @@ function MogCompanions:InitMountTab()
 
 		-- Mount tab controls: gear dropdown, filter dropdown, and search box
 
-		CreateShortcuts(f);
+		CreateShortcuts(f, topOffset);
 
 		FilterDropdown = CreateFrame("DropdownButton", nil, f, "WowStyle1FilterDropdownTemplate");
 		FilterDropdown:SetPoint("TOPRIGHT", f, "TOPRIGHT", -60, -50 + topOffset);

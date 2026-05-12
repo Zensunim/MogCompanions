@@ -390,9 +390,16 @@ function MogCompanions:CreateHearthstonesFrame(parent)
 	HearthstonesPage:SetAllPoints(parent);
 	HearthstonesPage:Hide();
 
-	-- Search box (matching Mounts tab position)
+	local topOffset = 26;
+	local listRightInset = 28;
+
+	-- Gear dropdown (matching Mounts tab ShortcutSettings)
+	HearthstoneShortcuts = MogCompanions:CreateCompanionsShortcutMenu(HearthstonesPage, "MogCompanionsHearthstoneShortcuts");
+	HearthstoneShortcuts:SetPoint("TOPRIGHT", HearthstonesPage, "TOPRIGHT", -26, -50 + topOffset);
+
+	-- Search box aligned directly beside the gear shortcut button.
 	HearthstonesSearchBox = CreateFrame("EditBox", "MogCompanionsHearthstoneSearchBox", HearthstonesPage, "TransmogSearchBoxTemplate");
-	HearthstonesSearchBox:SetPoint("TOPRIGHT", HearthstonesPage, "TOPRIGHT", -174, -50);
+	HearthstonesSearchBox:SetPoint("TOPRIGHT", HearthstoneShortcuts, "TOPLEFT", -8, 0);
 	local iconPos, iconParent, iconParentPos, iconX, iconY = HearthstonesSearchBox.searchIcon:GetPoint();
 	HearthstonesSearchBox.searchIcon:SetPoint(iconPos, iconParent, iconParentPos, iconX, iconY + 1);
 	HearthstonesSearchBox:SetScript("OnTextChanged", function(self)
@@ -403,14 +410,10 @@ function MogCompanions:CreateHearthstonesFrame(parent)
 		RefreshHearthstoneList();
 	end)
 
-	-- Gear dropdown (matching Mounts tab ShortcutSettings)
-	HearthstoneShortcuts = MogCompanions:CreateCompanionsShortcutMenu(HearthstonesPage, "MogCompanionsHearthstoneShortcuts");
-	HearthstoneShortcuts:SetPoint("TOPRIGHT", HearthstonesPage, "TOPRIGHT", -26, -50);
-
 	-- Section title (matching Mounts FlyingSlotTitle style)
 	local HearthstoneSlotTitle = HearthstonesPage:CreateFontString(nil, "OVERLAY", "GameFontHighlightHuge");
 	HearthstoneSlotTitle:SetJustifyH("LEFT");
-	HearthstoneSlotTitle:SetPoint("TOPLEFT", HearthstonesPage, "TOPLEFT", 24, -76);
+	HearthstoneSlotTitle:SetPoint("TOPLEFT", HearthstonesPage, "TOPLEFT", 24, -76 + topOffset);
 	HearthstoneSlotTitle:SetText(L["Hearthstone Tab Title"]);
 
 	local HearthstoneSlotTitleDivider = HearthstonesPage:CreateTexture();
@@ -420,8 +423,8 @@ function MogCompanions:CreateHearthstonesFrame(parent)
 
 	-- List container (full-width, no preview panel)
 	local HearthstoneList = CreateFrame("Frame", "MogCompanionsHearthstoneListFrame", HearthstonesPage);
-	HearthstoneList:SetPoint("TOPLEFT", HearthstonesPage, "TOPLEFT", 24, -113);
-	HearthstoneList:SetPoint("BOTTOMRIGHT", HearthstonesPage, "BOTTOMRIGHT", -8, 42);
+	HearthstoneList:SetPoint("TOPLEFT", HearthstonesPage, "TOPLEFT", 24, -113 + topOffset);
+	HearthstoneList:SetPoint("BOTTOMRIGHT", HearthstonesPage, "BOTTOMRIGHT", -listRightInset, 42);
 	HearthstoneList:SetFrameStrata("HIGH");
 
 	local HearthstoneListBackground = HearthstoneList:CreateTexture(nil, "OVERLAY");

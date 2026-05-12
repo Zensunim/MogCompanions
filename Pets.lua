@@ -56,21 +56,24 @@ function MogCompanions:CreatePetsFrame(parent)
 	PetsFrame:SetAllPoints(parent);
 	PetsFrame:Hide();
 
-	-- Search box (matching Mounts and Hearthstones tab position)
+	local topOffset = 26;
+	local listRightInset = 28;
+
+	local PetsShortcuts = MogCompanions:CreateCompanionsShortcutMenu(PetsFrame, "MogCompanionsPetsShortcuts");
+	PetsShortcuts:SetPoint("TOPRIGHT", PetsFrame, "TOPRIGHT", -26, -50 + topOffset);
+
+	-- Search box aligned directly beside the gear shortcut button.
 	local PetsSearchBox = CreateFrame("EditBox", "MogCompanionsPetsSearchBox", PetsFrame, "TransmogSearchBoxTemplate");
-	PetsSearchBox:SetPoint("TOPRIGHT", PetsFrame, "TOPRIGHT", -174, -50);
+	PetsSearchBox:SetPoint("TOPRIGHT", PetsShortcuts, "TOPLEFT", -8, 0);
 	if PetsSearchBox.searchIcon ~= nil then
 		local iconPos, iconParent, iconParentPos, iconX, iconY = PetsSearchBox.searchIcon:GetPoint();
 		PetsSearchBox.searchIcon:SetPoint(iconPos, iconParent, iconParentPos, iconX, iconY + 1);
 	end
 
-	local PetsShortcuts = MogCompanions:CreateCompanionsShortcutMenu(PetsFrame, "MogCompanionsPetsShortcuts");
-	PetsShortcuts:SetPoint("TOPRIGHT", PetsFrame, "TOPRIGHT", -26, -50);
-
 	-- Section title (matching Hearthstones tab style)
 	local PetsSlotTitle = PetsFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightHuge");
 	PetsSlotTitle:SetJustifyH("LEFT");
-	PetsSlotTitle:SetPoint("TOPLEFT", PetsFrame, "TOPLEFT", 24, -76);
+	PetsSlotTitle:SetPoint("TOPLEFT", PetsFrame, "TOPLEFT", 24, -76 + topOffset);
 	PetsSlotTitle:SetText(L["Pets Tab Title"]);
 
 	local PetsSlotTitleDivider = PetsFrame:CreateTexture();
@@ -80,8 +83,8 @@ function MogCompanions:CreatePetsFrame(parent)
 
 	-- List container (full-width, no preview panel; 42 px bottom margin for sub-tab bar)
 	local PetsList = CreateFrame("Frame", "MogCompanionsPetsListFrame", PetsFrame);
-	PetsList:SetPoint("TOPLEFT", PetsFrame, "TOPLEFT", 24, -113);
-	PetsList:SetPoint("BOTTOMRIGHT", PetsFrame, "BOTTOMRIGHT", -8, 42);
+	PetsList:SetPoint("TOPLEFT", PetsFrame, "TOPLEFT", 24, -113 + topOffset);
+	PetsList:SetPoint("BOTTOMRIGHT", PetsFrame, "BOTTOMRIGHT", -listRightInset, 42);
 	PetsList:SetFrameStrata("HIGH");
 
 	local PetsListBackground = PetsList:CreateTexture(nil, "OVERLAY");
