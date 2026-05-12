@@ -16,6 +16,23 @@ MogCompanions.TransmogSlotOffsets = {
 
 local playerName = UnitName("player");
 
+local aquaticMountTypeIDs = {231, 232, 254, 407, 436};
+local repairMountIDs = {460, 280, 284, 273, 274, 1039, 2237};
+
+local function addUniquePoolValue(pool, value)
+	if value == nil or value == "" then
+		return;
+	end
+
+	for i = 1, #pool do
+		if pool[i] == value then
+			return;
+		end
+	end
+
+	table.insert(pool, value);
+end
+
 -- Sorts a table of objects with a .name field alphabetically (case-insensitive).
 -- Used as the comparator for table.sort throughout the addon.
 function MogCompanionsSortAlphabetical(a, b)
@@ -356,11 +373,10 @@ end
 function MogCompanions:getSortedAquaticMounts()
 	local mountsRaw = MogCompanions:sortMounts(MogCompanions:GetCollectedMounts());
 	local mounts = {};
-	local aquaticTypeIDs = {231, 232, 254, 407, 436};
 
 	for i = 1, #mountsRaw do
 		local mount = mountsRaw[i];
-		if MogCompanions:hasValue(aquaticTypeIDs, mount.mountTypeID) then
+		if MogCompanions:hasValue(aquaticMountTypeIDs, mount.mountTypeID) then
 			table.insert(mounts, mount);
 		end
 	end
@@ -374,7 +390,6 @@ end
 function MogCompanions:getSortedRepairMounts()
 	local mountsRaw = MogCompanions:sortMounts(MogCompanions:GetCollectedMounts());
 	local mounts = {};
-	local repairMountIDs = {460, 280, 284, 273, 274, 1039, 2237};
 
 	for i = 1, #mountsRaw do
 		local mount = mountsRaw[i];
@@ -415,6 +430,139 @@ local function buildRandomGroundPool()
 	end
 
 	return mounts;
+end
+
+-- Returns true when the mount is still collected, usable, visible on this character,
+-- and valid for the requested summon category.
+-- Ground validation follows summon/random rules rather than the ground-list display filter.
+function MogCompanions:IsMountUsableForCategory(mountID, category)
+	if mountID == nil or mountID <= 1 then
+		return false;
+	end
+
+	local name, spellID, icon, isActive, isUsable, sourceType, isFavorite, isFactionSpecific, faction, shouldHideOnChar, isCollected = C_MountJournal.GetMountInfoByID(mountID);
+	if not isCollected or shouldHideOnChar or not isUsable then
+		return false;
+	end
+
+	local creatureDisplayInfoID, description, source, isSelfMount, mountTypeID = C_MountJournal.GetMountInfoExtraByID(mountID);
+
+	if category == "flying" then
+		return MogCompanions:hasValue(C_MountJournal.GetCollectedDragonridingMounts(), mountID);
+	elseif category == "ground" then
+		return mountTypeID == 230 or MogCompanionsSaved.RandomGroundAllowFlying;
+	elseif category == "aquatic" then
+		return MogCompanions:hasValue(aquaticMountTypeIDs, mountTypeID);
+	elseif category == "repair" then
+		return MogCompanions:hasValue(repairMountIDs, mountID);
+	elseif category == "random" then
+		return true;
+	end
+
+	return false;
+end
+
+-- Returns the saved selection pool table for the given outfit/pool key.
+-- Missing pools are created lazily so the saved table remains authoritative.
+function MogCompanions:GetOutfitSelectionPool(outfit, poolKey)
+	if outfit == nil or poolKey == nil then
+		return nil;
+	end
+
+	if type(outfit[poolKey]) ~= "table" then
+		outfit[poolKey] = {};
+		return outfit[poolKey];
+	end
+
+	local cleanedPool = {};
+	for i = 1, #outfit[poolKey] do
+		addUniquePoolValue(cleanedPool, outfit[poolKey][i]);
+	end
+
+	if #cleanedPool ~= #outfit[poolKey] then
+		outfit[poolKey] = cleanedPool;
+	end
+
+	return outfit[poolKey];
+end
+
+function MogCompanions:IsInSelectionPool(outfit, poolKey, id)
+	local pool = MogCompanions:GetOutfitSelectionPool(outfit, poolKey);
+	if pool == nil or id == nil then
+		return false;
+	end
+
+	return MogCompanions:hasValue(pool, id);
+end
+
+-- Toggles a single value in the saved selection pool.
+-- Returns true when the value is present after the toggle, false when removed/no-op.
+function MogCompanions:ToggleSelectionPoolValue(outfit, poolKey, id)
+	local pool = MogCompanions:GetOutfitSelectionPool(outfit, poolKey);
+	if pool == nil or id == nil or id == "" then
+		return false;
+	end
+
+	for i = 1, #pool do
+		if pool[i] == id then
+			table.remove(pool, i);
+			return false;
+		end
+	end
+
+	table.insert(pool, id);
+	return true;
+end
+
+function MogCompanions:ClearSelectionPool(outfit, poolKey)
+	local pool = MogCompanions:GetOutfitSelectionPool(outfit, poolKey);
+	if pool == nil then
+		return;
+	end
+
+	for i = #pool, 1, -1 do
+		table.remove(pool, i);
+	end
+end
+
+function MogCompanions:GetRandomFromSelectionPool(outfit, poolKey)
+	local pool = MogCompanions:GetOutfitSelectionPool(outfit, poolKey);
+	if pool == nil or #pool == 0 then
+		return nil;
+	end
+
+	return pool[math.random(1, #pool)];
+end
+
+function MogCompanions:GetSelectionPoolCount(outfit, poolKey)
+	local pool = MogCompanions:GetOutfitSelectionPool(outfit, poolKey);
+	if pool == nil then
+		return 0;
+	end
+
+	return #pool;
+end
+
+-- Returns sorted mount info tables for all still-valid selections in the saved pool.
+function MogCompanions:GetValidMountPoolInfos(outfit, poolKey, category)
+	local pool = MogCompanions:GetOutfitSelectionPool(outfit, poolKey);
+	if pool == nil or category == nil then
+		return {};
+	end
+
+	local validMountIDs = {};
+	for i = 1, #pool do
+		local mountID = pool[i];
+		if type(mountID) == "number" and MogCompanions:IsMountUsableForCategory(mountID, category) then
+			addUniquePoolValue(validMountIDs, mountID);
+		end
+	end
+
+	if #validMountIDs == 0 then
+		return {};
+	end
+
+	return MogCompanions:sortMounts(validMountIDs);
 end
 
 -- Returns a random mount table from the specified category string.
@@ -696,6 +844,20 @@ function MogCompanions:CreateEmptyOutfit(id)
 
 	if outfit.Ground == nil then
 		outfit.Ground = 1;
+	end
+
+	if outfit.FlyingMounts == nil then
+		outfit.FlyingMounts = {};
+		if outfit.Flying ~= nil and outfit.Flying > 1 then
+			addUniquePoolValue(outfit.FlyingMounts, outfit.Flying);
+		end
+	end
+
+	if outfit.GroundMounts == nil then
+		outfit.GroundMounts = {};
+		if outfit.Ground ~= nil and outfit.Ground > 1 then
+			addUniquePoolValue(outfit.GroundMounts, outfit.Ground);
+		end
 	end
 
 	if outfit.Hearthstone == nil then

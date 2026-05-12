@@ -21,6 +21,9 @@ L["Item Slot Flying Mount Clear Tooltip"] = "Clear Flying Mount";
 L["Item Slot Ground Mount Clear Tooltip"] = "Clear Ground Mount";
 L["Item Slot Hearthstone Clear Tooltip"] = "Clear Hearthstone";
 L["Item Slot Pet Clear Tooltip"] = "Clear Pet";
+L["Selected Count Format"] = "(%d selected)";
+L["Random From Selected Mounts"] = "Random from %d selected mounts";
+L["More Selected Mounts"] = "+%d more";
 
 -- Tab
 L["Companions Tab Title"] = "Companions";

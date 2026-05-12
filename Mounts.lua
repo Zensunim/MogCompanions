@@ -29,12 +29,14 @@ local FlyingMountPreview, GroundMountPreview;
 local FlyingMountModel, GroundMountModel;
 local FlyingMountPreviewControls, GroundMountPreviewControls;
 
-local FlyingMountListScrollBox, FlyingMountSelectionBehavior;
+local FlyingMountListScrollView, FlyingMountListScrollBox, FlyingMountListScrollBar, FlyingMountDataProvider;
 
-local GroundMountListScrollView, GroundMountListScrollBox, GroundMountListScrollBar, GroundMountSelectionBehavior;
+local GroundMountListScrollView, GroundMountListScrollBox, GroundMountListScrollBar, GroundMountDataProvider;
 
 local FlyingMountClear, GroundMountClear;
 local SetSelectedFlyingMount, SetSelectedGroundMount;
+local RefreshFlyingMountList, RefreshGroundMountList, RefreshMountSlots;
+local FlyingSlotTitle, GroundSlotTitle;
 
 local MountListSearchBox, FilterDropdown, ShortcutSettings;
 
@@ -132,14 +134,182 @@ local function getEmptyMountIcon()
 	return emptyFlyingMountIcon, emptyGroundMountIcon;
 end
 
+local function GetViewedOutfitID()
+	if C_TransmogOutfitInfo == nil or C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID == nil then
+		return nil;
+	end
+
+	return C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID();
+end
+
+local function GetViewedOutfitData()
+	local outfitID = GetViewedOutfitID();
+	if outfitID == nil then
+		return nil;
+	end
+
+	MogCompanions:CreateEmptyOutfit(outfitID);
+
+	if MogCompanionsCharacterSaved == nil then
+		return nil;
+	end
+
+	return MogCompanionsCharacterSaved["Outfit"..outfitID];
+end
+
+local function ClearSelectedMountDetails(type)
+	MogCompanionsSelectedMount[type].name = nil;
+	MogCompanionsSelectedMount[type].spellID = nil;
+	MogCompanionsSelectedMount[type].icon = nil;
+	MogCompanionsSelectedMount[type].id = nil;
+	MogCompanionsSelectedMount[type].display = nil;
+	MogCompanionsSelectedMount[type].type = nil;
+end
+
+local function SyncLegacyMountSelection(outfit, legacyKey, poolKey, category)
+	if outfit == nil then
+		return 1;
+	end
+
+	local pool = MogCompanions:GetOutfitSelectionPool(outfit, poolKey);
+	if pool ~= nil then
+		for i = 1, #pool do
+			local mountID = pool[i];
+			if type(mountID) == "number" and MogCompanions:IsMountUsableForCategory(mountID, category) then
+				outfit[legacyKey] = mountID;
+				return mountID;
+			end
+		end
+	end
+
+	outfit[legacyKey] = 1;
+	return 1;
+end
+
+local function GetValidMountSelectionCount(outfit, poolKey, category)
+	return #MogCompanions:GetValidMountPoolInfos(outfit, poolKey, category);
+end
+
+local function SetMountSectionTitle(titleFontString, baseText, count)
+	if titleFontString == nil then
+		return;
+	end
+
+	if count > 0 then
+		titleFontString:SetText(baseText.." "..string.format(L["Selected Count Format"], count));
+	else
+		titleFontString:SetText(baseText);
+	end
+end
+
+local function UpdateMountPreviewModel(modelFrame, previewControls, mountID)
+	if modelFrame == nil then
+		return;
+	end
+
+	local displayID = nil;
+	if mountID ~= nil and mountID > 1 then
+		displayID = C_MountJournal.GetMountInfoExtraByID(mountID);
+	end
+
+	if displayID ~= nil and displayID > 0 then
+		modelFrame:SetDisplayInfo(displayID);
+		if previewControls ~= nil then
+			previewControls.reset();
+		end
+		modelFrame:SetAlpha(1);
+	else
+		modelFrame:SetDisplayInfo(0);
+		if previewControls ~= nil then
+			previewControls.reset();
+		end
+		modelFrame:SetAlpha(0);
+	end
+end
+
+local function GetMountTooltipLines(outfit, poolKey, category)
+	local mounts = MogCompanions:GetValidMountPoolInfos(outfit, poolKey, category);
+	local tooltipLines = {};
+
+	if #mounts > 0 then
+		table.insert(tooltipLines, string.format(L["Random From Selected Mounts"], #mounts));
+
+		for i = 1, math.min(3, #mounts) do
+			table.insert(tooltipLines, mounts[i].nameAndIcon or mounts[i].name);
+		end
+
+		if #mounts > 3 then
+			table.insert(tooltipLines, string.format(L["More Selected Mounts"], #mounts - 3));
+		end
+	end
+
+	return tooltipLines, #mounts;
+end
+
+local function UpdateMountSlot(type, legacyKey, poolKey, category, texture, frame, borderTexture, borderHighlightTexture, previewModel, previewControls, emptyIcon)
+	if texture == nil or frame == nil or borderTexture == nil or borderHighlightTexture == nil then
+		return;
+	end
+
+	local outfit = GetViewedOutfitData();
+	if outfit == nil then
+		return;
+	end
+
+	local mountID = SyncLegacyMountSelection(outfit, legacyKey, poolKey, category);
+	if mountID > 1 then
+		local name, spellID, icon = C_MountJournal.GetMountInfoByID(mountID);
+		if icon ~= nil then
+			texture:SetTexture(icon);
+			texture:SetDesaturated(false);
+			texture:SetVertexColor(1, 1, 1);
+			borderTexture:SetAtlas("transmog-gearSlot-transmogrified");
+			borderHighlightTexture:SetAtlas("transmog-gearSlot-transmogrified");
+			MogCompanions:UpdateSelectMountDetails(type, mountID);
+		else
+			mountID = 1;
+		end
+	end
+
+	if mountID <= 1 then
+		texture:SetTexture(emptyIcon);
+		texture:SetDesaturated(true);
+		texture:SetVertexColor(0.63, 0.63, 0.63);
+		borderTexture:SetAtlas("transmog-gearSlot-default");
+		borderHighlightTexture:SetAtlas("transmog-gearSlot-default");
+		ClearSelectedMountDetails(type);
+	end
+
+	texture:SetAllPoints(frame);
+	frame.texture = texture;
+	UpdateMountPreviewModel(previewModel, previewControls, mountID);
+end
+
+RefreshMountSlots = function()
+	local outfit = GetViewedOutfitData();
+	if outfit == nil then
+		return;
+	end
+
+	local flyingIcon, groundIcon = getEmptyMountIcon();
+	UpdateMountSlot("Flying", "Flying", "FlyingMounts", "flying", flyingMountTexture, flyingMountFrame, flyingMountBorderTexture, flyingMountBorderHighlightTexture, FlyingMountModel, FlyingMountPreviewControls, flyingIcon);
+	UpdateMountSlot("Ground", "Ground", "GroundMounts", "ground", groundMountTexture, groundMountFrame, groundMountBorderTexture, groundMountBorderHighlightTexture, GroundMountModel, GroundMountPreviewControls, groundIcon);
+
+	SetMountSectionTitle(FlyingSlotTitle, L["Mount Tab Flying Section Title"], GetValidMountSelectionCount(outfit, "FlyingMounts", "flying"));
+	SetMountSectionTitle(GroundSlotTitle, L["Mount Tab Ground Section Title"], GetValidMountSelectionCount(outfit, "GroundMounts", "ground"));
+end
+
 -- ── Mount Summon Functions ──────────────────────────────────────────────────────
--- Flying/Ground: use per-outfit selection if set (> 1), otherwise random from category.
+-- Flying/Ground: use a random valid per-outfit pool selection when available,
+-- otherwise fall back to the existing random category behavior.
 -- Aquatic/Repair: use global default if set (> 1), otherwise random from category.
 -- Random: always random from all collected usable mounts.
 function MogCompanionsSummonFlying()
 	local outfitData = MogCompanions:GetActiveOutfitTable();
-	if outfitData and outfitData.Flying and outfitData.Flying > 1 then
-		C_MountJournal.SummonByID(outfitData.Flying);
+	local validMounts = MogCompanions:GetValidMountPoolInfos(outfitData, "FlyingMounts", "flying");
+	if #validMounts > 0 then
+		local selectedMount = validMounts[math.random(1, #validMounts)];
+		C_MountJournal.SummonByID(selectedMount.id);
 	else
 		local randomMount = MogCompanions:getRandomMount("flying");
 		if randomMount then C_MountJournal.SummonByID(randomMount.id); end
@@ -148,8 +318,10 @@ end
 
 function MogCompanionsSummonGround()
 	local outfitData = MogCompanions:GetActiveOutfitTable();
-	if outfitData and outfitData.Ground and outfitData.Ground > 1 then
-		C_MountJournal.SummonByID(outfitData.Ground);
+	local validMounts = MogCompanions:GetValidMountPoolInfos(outfitData, "GroundMounts", "ground");
+	if #validMounts > 0 then
+		local selectedMount = validMounts[math.random(1, #validMounts)];
+		C_MountJournal.SummonByID(selectedMount.id);
 	else
 		local randomMount = MogCompanions:getRandomMount("ground");
 		if randomMount then C_MountJournal.SummonByID(randomMount.id); end
@@ -375,11 +547,17 @@ function MogCompanions:InitMountSlots(reset)
 		end)
 
 		FlyingMountClear:SetScript("OnClick", function()
-			SetSelectedFlyingMount(1);
-			FlyingMountModel:SetDisplayInfo(0);
-			FlyingMountModel:SetAlpha(1);
+			local outfit = GetViewedOutfitData();
+			if outfit ~= nil then
+				MogCompanions:ClearSelectionPool(outfit, "FlyingMounts");
+				SyncLegacyMountSelection(outfit, "Flying", "FlyingMounts", "flying");
+				RefreshMountSlots();
+				if RefreshFlyingMountList ~= nil then
+					RefreshFlyingMountList(false);
+				end
+				PlaySound(SOUNDKIT.UI_TRANSMOG_ITEM_CLICK);
+			end
 			FlyingMountClear:Hide();
-			ClearSelectedFlyingMount();
 		end)				
 
 		-- Ground Mount Frame
@@ -440,71 +618,37 @@ function MogCompanions:InitMountSlots(reset)
 		end)
 
 		GroundMountClear:SetScript("OnClick", function()
-			SetSelectedGroundMount(1);
-			GroundMountModel:SetDisplayInfo(0);
-			GroundMountModel:SetAlpha(0);
+			local outfit = GetViewedOutfitData();
+			if outfit ~= nil then
+				MogCompanions:ClearSelectionPool(outfit, "GroundMounts");
+				SyncLegacyMountSelection(outfit, "Ground", "GroundMounts", "ground");
+				RefreshMountSlots();
+				if RefreshGroundMountList ~= nil then
+					RefreshGroundMountList(false);
+				end
+				PlaySound(SOUNDKIT.UI_TRANSMOG_ITEM_CLICK);
+			end
 			GroundMountClear:Hide();
-			ClearSelectedGroundMount();
 		end)	
 
 	end
 
-	local _, _, icon = C_MountJournal.GetMountInfoByID(MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Flying);
-
-	MogCompanions:UpdateSelectMountDetails("Flying", MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Flying);
-
-	if MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Flying == 1 then
-		local flyingIcon, _ = getEmptyMountIcon();
-		flyingMountTexture:SetTexture(flyingIcon);
-		flyingMountTexture:SetDesaturated(true);
-		flyingMountTexture:SetVertexColor(0.63,0.63,0.63);
-		flyingMountBorderTexture:SetAtlas("transmog-gearSlot-default");
-		flyingMountBorderHighlightTexture:SetAtlas("transmog-gearSlot-default");
-	else
-		flyingMountTexture:SetTexture(icon);
-		flyingMountTexture:SetDesaturated(false);
-		flyingMountTexture:SetVertexColor(1,1,1);
-		flyingMountBorderTexture:SetAtlas("transmog-gearSlot-transmogrified");
-		flyingMountBorderHighlightTexture:SetAtlas("transmog-gearSlot-transmogrified");
-	end
-	
-	flyingMountTexture:SetAllPoints(flyingMountFrame);
-	flyingMountFrame.texture = flyingMountTexture;
-
-	-- Ground mount slot icon
-
-	local _, _, icon = C_MountJournal.GetMountInfoByID(MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Ground);
-
-	MogCompanions:UpdateSelectMountDetails("Ground", MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Ground);
-
-	if MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Ground == 1 then
-		local _, groundIcon = getEmptyMountIcon();
-		groundMountTexture:SetTexture(groundIcon);
-		groundMountTexture:SetDesaturated(true);
-		groundMountTexture:SetVertexColor(0.63,0.63,0.63);
-		groundMountBorderTexture:SetAtlas("transmog-gearSlot-default");
-		groundMountBorderHighlightTexture:SetAtlas("transmog-gearSlot-default");
-	else
-		groundMountTexture:SetTexture(icon);
-		groundMountTexture:SetDesaturated(false);
-		groundMountTexture:SetVertexColor(1,1,1);
-		groundMountBorderTexture:SetAtlas("transmog-gearSlot-transmogrified");
-		groundMountBorderHighlightTexture:SetAtlas("transmog-gearSlot-transmogrified");
-	end
-
-	groundMountTexture:SetAllPoints(groundMountFrame);
-	groundMountFrame.texture = groundMountTexture;
+	RefreshMountSlots();
 
 	if reset then
 
 		flyingMountBorder:HookScript("OnEnter", function()
 			GameTooltip:SetOwner(flyingMountBorder, "ANCHOR_RIGHT");
-			if MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Flying > 1 then
-				GameTooltip:AddLine(MogCompanionsSelectedMount.Flying.name);
-				GameTooltip:AddLine("|cFFFFFFFF"..L["Item Slot Flying Mount Title"].."|r");
-				FlyingMountClear:Show();				
-			else
-				GameTooltip:SetText(L["Item Slot Flying Mount Title"]);
+			GameTooltip:SetText(L["Item Slot Flying Mount Title"]);
+
+			local outfit = GetViewedOutfitData();
+			local tooltipLines, count = GetMountTooltipLines(outfit, "FlyingMounts", "flying");
+			for i = 1, #tooltipLines do
+				GameTooltip:AddLine(tooltipLines[i], 1, 1, 1);
+			end
+
+			if count > 0 then
+				FlyingMountClear:Show();
 			end
 			GameTooltip:Show();
 			flyingMountBorderHighlight:Show();
@@ -523,12 +667,16 @@ function MogCompanions:InitMountSlots(reset)
 
 		groundMountBorder:HookScript("OnEnter", function()
 			GameTooltip:SetOwner(groundMountBorder, "ANCHOR_RIGHT")
-			if MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Ground > 1 then
-				GameTooltip:AddLine(MogCompanionsSelectedMount.Ground.name);
-				GameTooltip:AddLine("|cFFFFFFFF"..L["Item Slot Ground Mount Title"].."|r");
+			GameTooltip:SetText(L["Item Slot Ground Mount Title"]);
+
+			local outfit = GetViewedOutfitData();
+			local tooltipLines, count = GetMountTooltipLines(outfit, "GroundMounts", "ground");
+			for i = 1, #tooltipLines do
+				GameTooltip:AddLine(tooltipLines[i], 1, 1, 1);
+			end
+
+			if count > 0 then
 				GroundMountClear:Show();
-			else
-				GameTooltip:AddLine(L["Item Slot Ground Mount Title"]);
 			end
 			GameTooltip:Show();
 			groundMountBorderHighlight:Show();
@@ -629,24 +777,10 @@ local function FilterSetChecked(filter)
 	else
 		MogCompanionsSaved.ShowFlyingInGround = true;
 	end
-	local mounts = MogCompanions:getSortedGroundMounts();
 
-	local scrollToCount = 0;
-	local scrollToIndex = 0;
-
-	local GroundMountDataProvider = CreateDataProvider();
-
-	for i = 1, #mounts do
-		local mount = mounts[i];
-		scrollToCount = scrollToCount + 1;
-		if mount.id == MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Ground then
-			scrollToIndex = scrollToCount;
-		end
-		GroundMountDataProvider:Insert(mount);
+	if RefreshGroundMountList ~= nil then
+		RefreshGroundMountList(true);
 	end
-	
-	GroundMountListScrollView:SetDataProvider(GroundMountDataProvider);
-	GroundMountListScrollBox:ScrollToElementDataIndex(scrollToIndex);
 end
 
 local function CreateShortcuts(f, topOffset)
@@ -811,7 +945,7 @@ function MogCompanions:InitMountTab()
 
 		-- Flying and ground section title labels
 
-		local FlyingSlotTitle = f:CreateFontString(nil, "OVERLAY", "GameFontHighlightHuge");
+		FlyingSlotTitle = f:CreateFontString(nil, "OVERLAY", "GameFontHighlightHuge");
 		FlyingSlotTitle:SetJustifyH("LEFT");
 		FlyingSlotTitle:SetPoint("TOPLEFT", 24, -76 + topOffset);
 		FlyingSlotTitle:SetText(L["Mount Tab Flying Section Title"]);
@@ -821,7 +955,7 @@ function MogCompanions:InitMountTab()
 		FlyingSlotTitleDivider:SetAlpha(0.1);
 		FlyingSlotTitleDivider:SetPoint("TOPLEFT", FlyingSlotTitle, "BOTTOMLEFT", 0, -2);
 
-		local GroundSlotTitle = f:CreateFontString(nil, "OVERLAY", "GameFontHighlightHuge");
+		GroundSlotTitle = f:CreateFontString(nil, "OVERLAY", "GameFontHighlightHuge");
 		GroundSlotTitle:SetJustifyH("LEFT");
 		GroundSlotTitle:SetPoint("TOPLEFT", 24, -444 + topOffset);
 		GroundSlotTitle:SetText(L["Mount Tab Ground Section Title"]);
@@ -833,8 +967,16 @@ function MogCompanions:InitMountTab()
 
 		-- Load display info for the flying and ground model previews
 
-		local flyingModelID, _, _, _, _, _, _, _, _ = C_MountJournal.GetMountInfoExtraByID(MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Flying);
-		local groundModelID, _, _, _, _, _, _, _, _ = C_MountJournal.GetMountInfoExtraByID(MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Ground);
+		local outfit = GetViewedOutfitData();
+		local flyingModelID = nil;
+		local groundModelID = nil;
+
+		if outfit ~= nil then
+			local flyingMountID = SyncLegacyMountSelection(outfit, "Flying", "FlyingMounts", "flying");
+			local groundMountID = SyncLegacyMountSelection(outfit, "Ground", "GroundMounts", "ground");
+			flyingModelID = C_MountJournal.GetMountInfoExtraByID(flyingMountID);
+			groundModelID = C_MountJournal.GetMountInfoExtraByID(groundMountID);
+		end
 
 		-- Flying mount model preview frame and list
 
@@ -898,54 +1040,44 @@ function MogCompanions:InitMountTab()
 		FlyingMountListScrollBox:SetSize(z - 40, zz - 4);
 		FlyingMountListScrollBox:SetPoint("TOPLEFT", FlyingMountList, "TOPLEFT", 12, -2);
 
-		local FlyingMountListScrollBar = CreateFrame("EventFrame", nil, FlyingMountList, "MinimalScrollBar");
+		FlyingMountListScrollBar = CreateFrame("EventFrame", nil, FlyingMountList, "MinimalScrollBar");
 		FlyingMountListScrollBar:SetPoint("TOPLEFT", FlyingMountListScrollBox, "TOPRIGHT", 10, -6);
 		FlyingMountListScrollBar:SetPoint("BOTTOMLEFT", FlyingMountListScrollBox, "BOTTOMRIGHT", 10, 6);
 
 		FlyingMountListScrollBar:SetHideIfUnscrollable(true);
-		local FlyingMountDataProvider = CreateDataProvider();
-		local FlyingMountListScrollView = CreateScrollBoxListLinearView();
-		FlyingMountSelectionBehavior = ScrollUtil.AddSelectionBehavior(FlyingMountListScrollBox, SelectionBehaviorFlags.Intrusive);
-
-		FlyingMountSelectionBehavior:RegisterCallback(SelectionBehaviorMixin.Event.OnSelectionChanged, OnFlyingMountSelectionChanged, self);
+		FlyingMountDataProvider = CreateDataProvider();
+		FlyingMountListScrollView = CreateScrollBoxListLinearView();
 
 		function SetSelectedFlyingMount(value)
-			local _, _, icon = C_MountJournal.GetMountInfoByID(value);
-
-			MogCompanions:UpdateSelectMountDetails("Flying", value);
-
-			if value == 1 then
-				local flyingIcon, _ = getEmptyMountIcon();
-				flyingMountTexture:SetTexture(flyingIcon);
-				flyingMountTexture:SetDesaturated(true);
-				flyingMountTexture:SetVertexColor(0.63,0.63,0.63);
-				flyingMountBorderTexture:SetAtlas("transmog-gearSlot-default");
-				flyingMountBorderHighlightTexture:SetAtlas("transmog-gearSlot-default");
-			else
-				flyingMountTexture:SetTexture(icon);
-				flyingMountTexture:SetDesaturated(false);
-				flyingMountTexture:SetVertexColor(1,1,1);
-				flyingMountBorderTexture:SetAtlas("transmog-gearSlot-transmogrified");
-				flyingMountBorderHighlightTexture:SetAtlas("transmog-gearSlot-transmogrified");
+			local outfit = GetViewedOutfitData();
+			if outfit == nil then
+				return;
 			end
 
-			flyingMountFrame.texture = flyingMountTexture;
+			if value == nil or value <= 1 then
+				MogCompanions:ClearSelectionPool(outfit, "FlyingMounts");
+			else
+				MogCompanions:ToggleSelectionPoolValue(outfit, "FlyingMounts", value);
+			end
 
-			MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Flying = value;
+			SyncLegacyMountSelection(outfit, "Flying", "FlyingMounts", "flying");
+			RefreshMountSlots();
+			if RefreshFlyingMountList ~= nil then
+				RefreshFlyingMountList(false);
+			end
 			PlaySound(SOUNDKIT.UI_TRANSMOG_ITEM_CLICK);
-
 		end	
 
 		local function FlyingMountListInitializer(button, data)
-			local isSelected = FlyingMountSelectionBehavior:IsElementDataSelected(data);
-
-			if data.id == MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Flying then
-				isSelected = true;
-			end
+			local outfit = GetViewedOutfitData();
+			local isSelected = outfit ~= nil and MogCompanions:IsInSelectionPool(outfit, "FlyingMounts", data.id);
 
 			button.Name:SetText("|T"..data.icon..":18|t "..data.name);
 			button:SetHighlightTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight");
 			button.MountID = data.id;
+			if button.CheckboxCheck ~= nil then
+				button.CheckboxCheck:SetShown(isSelected);
+			end
 
 			if isSelected then
 				button:LockHighlight();
@@ -964,51 +1096,42 @@ function MogCompanions:InitMountTab()
 			end)
 
 			button:SetScript("OnLeave", function()
-				local SavedFlyingMoundID, _, _, _, _, _, _, _, _ = C_MountJournal.GetMountInfoExtraByID(MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Flying);
-
-				if SavedFlyingMoundID ~= nil and SavedFlyingMoundID > 0 then
-					FlyingMountModel:SetDisplayInfo(SavedFlyingMoundID);
-					if FlyingMountPreviewControls ~= nil then
-						FlyingMountPreviewControls.reset();
-					end
-					FlyingMountModel:SetAlpha(1);
-				else
-					FlyingMountModel:SetDisplayInfo(0);
-					if FlyingMountPreviewControls ~= nil then
-						FlyingMountPreviewControls.reset();
-					end
-					FlyingMountModel:SetAlpha(0);
-				end
+				local viewedOutfit = GetViewedOutfitData();
+				local mountID = SyncLegacyMountSelection(viewedOutfit, "Flying", "FlyingMounts", "flying");
+				UpdateMountPreviewModel(FlyingMountModel, FlyingMountPreviewControls, mountID);
 			end)
 			button:SetScript("OnClick", function()
-				FlyingMountSelectionBehavior:Select(button);
 				SetSelectedFlyingMount(data.id);
-				FlyingMountModel:SetAlpha(1);	
 			end)
 
 		end
 
-		FlyingMountListScrollView:SetElementInitializer("MogCompanionsListButtonTemplate", FlyingMountListInitializer);
-
-		local mounts = MogCompanions:getSortedFlyingMounts();
-
-		local scrollToCount = 0;
-		local scrollToIndex = 0;
-
-		for i = 1, #mounts do
-			local mount = mounts[i];
-			scrollToCount = scrollToCount + 1;
-			if mount.id == MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Flying then
-				scrollToIndex = scrollToCount;
-			end
-			FlyingMountDataProvider:Insert(mount);
-		end
-		
+		FlyingMountListScrollView:SetElementInitializer("MogCompanionsMultiSelectListButtonTemplate", FlyingMountListInitializer);
 		FlyingMountListScrollView:SetElementExtent(22);
 		ScrollUtil.InitScrollBoxListWithScrollBar(FlyingMountListScrollBox, FlyingMountListScrollBar, FlyingMountListScrollView);
-		FlyingMountListScrollView:SetDataProvider(FlyingMountDataProvider);
 
-		FlyingMountListScrollBox:ScrollToElementDataIndex(scrollToIndex);
+		RefreshFlyingMountList = function(scrollToSelection)
+			if FlyingMountListScrollView == nil then
+				return;
+			end
+
+			local mounts = MogCompanions:getSortedFlyingMounts();
+			local viewedOutfit = GetViewedOutfitData();
+
+			FlyingMountDataProvider = CreateDataProvider(mounts);
+			FlyingMountListScrollView:SetDataProvider(FlyingMountDataProvider);
+
+			if scrollToSelection and viewedOutfit ~= nil and FlyingMountListScrollBox ~= nil then
+				for i = 1, #mounts do
+					if MogCompanions:IsInSelectionPool(viewedOutfit, "FlyingMounts", mounts[i].id) then
+						FlyingMountListScrollBox:ScrollToElementDataIndex(i);
+						break;
+					end
+				end
+			end
+		end
+
+		RefreshFlyingMountList(true);
 
 		-- Flying mount list background overlay; ground mount section follows
 
@@ -1076,54 +1199,44 @@ function MogCompanions:InitMountTab()
 		GroundMountListScrollBox:SetSize(z - 40, zz - 4);
 		GroundMountListScrollBox:SetPoint("TOPLEFT", GroundMountList, "TOPLEFT", 12, -2);
 
-		local GroundMountListScrollBar = CreateFrame("EventFrame", nil, GroundMountList, "MinimalScrollBar");
+		GroundMountListScrollBar = CreateFrame("EventFrame", nil, GroundMountList, "MinimalScrollBar");
 		GroundMountListScrollBar:SetPoint("TOPLEFT", GroundMountListScrollBox, "TOPRIGHT", 10, -6);
 		GroundMountListScrollBar:SetPoint("BOTTOMLEFT", GroundMountListScrollBox, "BOTTOMRIGHT", 10, 6);
 
 		GroundMountListScrollBar:SetHideIfUnscrollable(true);
-		local GroundMountDataProvider = CreateDataProvider();
+		GroundMountDataProvider = CreateDataProvider();
 		GroundMountListScrollView = CreateScrollBoxListLinearView();
-		GroundMountSelectionBehavior = ScrollUtil.AddSelectionBehavior(GroundMountListScrollBox, SelectionBehaviorFlags.Intrusive);
-
-		GroundMountSelectionBehavior:RegisterCallback(SelectionBehaviorMixin.Event.OnSelectionChanged, OnGroundMountSelectionChanged, self);
 
 		function SetSelectedGroundMount(value)
-			local _, _, icon = C_MountJournal.GetMountInfoByID(value);
-
-			MogCompanions:UpdateSelectMountDetails("Ground", value);
-
-			if value == 1 then
-				local _, groundIcon = getEmptyMountIcon();
-				groundMountTexture:SetTexture(groundIcon);
-				groundMountTexture:SetDesaturated(true);
-				groundMountTexture:SetVertexColor(0.63,0.63,0.63);
-				groundMountBorderTexture:SetAtlas("transmog-gearSlot-default");
-				groundMountBorderHighlightTexture:SetAtlas("transmog-gearSlot-default");
-			else
-				groundMountTexture:SetTexture(icon);
-				groundMountTexture:SetDesaturated(false);
-				groundMountTexture:SetVertexColor(1,1,1);
-				groundMountBorderTexture:SetAtlas("transmog-gearSlot-transmogrified");
-				groundMountBorderHighlightTexture:SetAtlas("transmog-gearSlot-transmogrified");
+			local outfit = GetViewedOutfitData();
+			if outfit == nil then
+				return;
 			end
 
-			groundMountFrame.texture = groundMountTexture;
+			if value == nil or value <= 1 then
+				MogCompanions:ClearSelectionPool(outfit, "GroundMounts");
+			else
+				MogCompanions:ToggleSelectionPoolValue(outfit, "GroundMounts", value);
+			end
 
-			MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Ground = value;
+			SyncLegacyMountSelection(outfit, "Ground", "GroundMounts", "ground");
+			RefreshMountSlots();
+			if RefreshGroundMountList ~= nil then
+				RefreshGroundMountList(false);
+			end
 			PlaySound(SOUNDKIT.UI_TRANSMOG_ITEM_CLICK);
-
 		end	
 
 		local function GroundMountListInitializer(button, data)
-			local isSelected = GroundMountSelectionBehavior:IsElementDataSelected(data);
-
-			if data.id == MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Ground then
-				isSelected = true;
-			end
+			local outfit = GetViewedOutfitData();
+			local isSelected = outfit ~= nil and MogCompanions:IsInSelectionPool(outfit, "GroundMounts", data.id);
 
 			button.Name:SetText("|T"..data.icon..":18|t "..data.name);
 			button:SetHighlightTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight");
 			button.MountID = data.id;
+			if button.CheckboxCheck ~= nil then
+				button.CheckboxCheck:SetShown(isSelected);
+			end
 
 			if isSelected then
 				button:LockHighlight();
@@ -1142,51 +1255,42 @@ function MogCompanions:InitMountTab()
 			end)
 
 			button:SetScript("OnLeave", function()
-				local SavedGroundMoundID, _, _, _, _, _, _, _, _ = C_MountJournal.GetMountInfoExtraByID(MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Ground);
-
-				if SavedGroundMoundID ~= nil and SavedGroundMoundID > 0 then
-					GroundMountModel:SetDisplayInfo(SavedGroundMoundID);
-					if GroundMountPreviewControls ~= nil then
-						GroundMountPreviewControls.reset();
-					end
-					GroundMountModel:SetAlpha(1);
-				else
-					GroundMountModel:SetDisplayInfo(0);
-					if GroundMountPreviewControls ~= nil then
-						GroundMountPreviewControls.reset();
-					end
-					GroundMountModel:SetAlpha(0);
-				end
+				local viewedOutfit = GetViewedOutfitData();
+				local mountID = SyncLegacyMountSelection(viewedOutfit, "Ground", "GroundMounts", "ground");
+				UpdateMountPreviewModel(GroundMountModel, GroundMountPreviewControls, mountID);
 			end)
 			button:SetScript("OnClick", function()
-				GroundMountSelectionBehavior:Select(button);
 				SetSelectedGroundMount(data.id);
-				GroundMountModel:SetAlpha(1);
 			end)
 
 		end
 
-		GroundMountListScrollView:SetElementInitializer("MogCompanionsListButtonTemplate", GroundMountListInitializer);
-
-		local mounts = MogCompanions:getSortedGroundMounts();
-
-		local scrollToCount = 0;
-		local scrollToIndex = 0;
-
-		for i = 1, #mounts do
-			local mount = mounts[i];
-			scrollToCount = scrollToCount + 1;
-			if mount.id == MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Ground then
-				scrollToIndex = scrollToCount;
-			end
-			GroundMountDataProvider:Insert(mount);
-		end
-		
+		GroundMountListScrollView:SetElementInitializer("MogCompanionsMultiSelectListButtonTemplate", GroundMountListInitializer);
 		GroundMountListScrollView:SetElementExtent(22);
 		ScrollUtil.InitScrollBoxListWithScrollBar(GroundMountListScrollBox, GroundMountListScrollBar, GroundMountListScrollView);
-		GroundMountListScrollView:SetDataProvider(GroundMountDataProvider);
 
-		GroundMountListScrollBox:ScrollToElementDataIndex(scrollToIndex);
+		RefreshGroundMountList = function(scrollToSelection)
+			if GroundMountListScrollView == nil then
+				return;
+			end
+
+			local mounts = MogCompanions:getSortedGroundMounts();
+			local viewedOutfit = GetViewedOutfitData();
+
+			GroundMountDataProvider = CreateDataProvider(mounts);
+			GroundMountListScrollView:SetDataProvider(GroundMountDataProvider);
+
+			if scrollToSelection and viewedOutfit ~= nil and GroundMountListScrollBox ~= nil then
+				for i = 1, #mounts do
+					if MogCompanions:IsInSelectionPool(viewedOutfit, "GroundMounts", mounts[i].id) then
+						GroundMountListScrollBox:ScrollToElementDataIndex(i);
+						break;
+					end
+				end
+			end
+		end
+
+		RefreshGroundMountList(true);
 
 		-- Search box OnTextChanged: re-filter both flying and ground mount lists
 
@@ -1197,53 +1301,17 @@ function MogCompanions:InitMountTab()
 
 			MogCompanions.MountSearchString = MountListSearchBox:GetText();
 
-			local mounts = MogCompanions:getSortedFlyingMounts();
-
-			local scrollToCount = 0;
-			local scrollToIndex = 0;
-
-			FlyingMountDataProvider = CreateDataProvider();
-
-			for i = 1, #mounts do
-				local mount = mounts[i];
-				scrollToCount = scrollToCount + 1;
-				if mount.id == MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Flying then
-					scrollToIndex = scrollToCount;
-				end	
-				FlyingMountDataProvider:Insert(mount);
+			if RefreshFlyingMountList ~= nil then
+				RefreshFlyingMountList(true);
 			end
-			
-			FlyingMountListScrollView:SetElementExtent(22);
-			ScrollUtil.InitScrollBoxListWithScrollBar(FlyingMountListScrollBox, FlyingMountListScrollBar, FlyingMountListScrollView);
-			FlyingMountListScrollView:SetDataProvider(FlyingMountDataProvider);
 
-			FlyingMountListScrollBox:ScrollToElementDataIndex(scrollToIndex);
-
-			-- Refresh ground mount list with updated search filter
-
-			local mounts = MogCompanions:getSortedGroundMounts();
-
-			local scrollToCount = 0;
-			local scrollToIndex = 0;
-
-			GroundMountDataProvider = CreateDataProvider();
-
-			for i = 1, #mounts do
-				local mount = mounts[i];
-				scrollToCount = scrollToCount + 1;
-				if mount.id == MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Ground then
-					scrollToIndex = scrollToCount;
-				end
-				GroundMountDataProvider:Insert(mount);
+			if RefreshGroundMountList ~= nil then
+				RefreshGroundMountList(true);
 			end
-			
-			GroundMountListScrollView:SetElementExtent(22);
-			ScrollUtil.InitScrollBoxListWithScrollBar(GroundMountListScrollBox, GroundMountListScrollBar, GroundMountListScrollView);
-			GroundMountListScrollView:SetDataProvider(GroundMountDataProvider);
-
-			GroundMountListScrollBox:ScrollToElementDataIndex(scrollToIndex);
 
 		end)
+
+		RefreshMountSlots();
 
 		--		
 
@@ -1355,31 +1423,35 @@ end
 -- Resets the flying mount list selection and scrolls back to the top.
 -- Called after the player clears the flying mount slot.
 function ClearSelectedFlyingMount()
-	FlyingMountModel:SetAlpha(0);
-
-	local children = {FlyingMountListScrollBox.ScrollTarget:GetChildren()};
-
-	for i, child in ipairs(children) do
-		child.isSelected = false;
-		child:UnlockHighlight();
+	local outfit = GetViewedOutfitData();
+	if outfit == nil then
+		return;
 	end
 
-	FlyingMountListScrollBox:ScrollToElementDataIndex(1);
+	MogCompanions:ClearSelectionPool(outfit, "FlyingMounts");
+	SyncLegacyMountSelection(outfit, "Flying", "FlyingMounts", "flying");
+	RefreshMountSlots();
+
+	if RefreshFlyingMountList ~= nil then
+		RefreshFlyingMountList(false);
+	end
 end
 
 -- Resets the ground mount list selection and scrolls back to the top.
 -- Called after the player clears the ground mount slot.
 function ClearSelectedGroundMount()
-	GroundMountModel:SetAlpha(0);
-
-	local children = {GroundMountListScrollBox.ScrollTarget:GetChildren()};
-
-	for i, child in ipairs(children) do
-		child.isSelected = false;
-		child:UnlockHighlight();
+	local outfit = GetViewedOutfitData();
+	if outfit == nil then
+		return;
 	end
 
-	GroundMountListScrollBox:ScrollToElementDataIndex(1);
+	MogCompanions:ClearSelectionPool(outfit, "GroundMounts");
+	SyncLegacyMountSelection(outfit, "Ground", "GroundMounts", "ground");
+	RefreshMountSlots();
+
+	if RefreshGroundMountList ~= nil then
+		RefreshGroundMountList(false);
+	end
 end
 
 -- Re-selects and scrolls to the currently saved flying and ground mounts in both lists.
@@ -1390,65 +1462,13 @@ function UpdateSelectedMountRow()
         or TransmogFrame.WardrobeCollection == nil
         or not TransmogFrame:IsShown()
         or FlyingMountListScrollBox == nil
-        or FlyingMountSelectionBehavior == nil
         or GroundMountListScrollBox == nil
-        or GroundMountSelectionBehavior == nil then
+        or RefreshFlyingMountList == nil
+        or RefreshGroundMountList == nil then
         return;
     end
 
-	if FlyingMountListScrollBox then
-		ClearSelectedFlyingMount();
-		local mounts = MogCompanions:getSortedFlyingMounts();
-
-		for i = 1, #mounts do
-			local mount = mounts[i];
-			if mount.id == MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Flying then
-				FlyingMountListScrollBox:ScrollToElementDataIndex(i);
-				local children = {FlyingMountListScrollBox.ScrollTarget:GetChildren()};
-				for j, child in ipairs(children) do
-					if child.MountID == mount.id then
-						if child.GetElementData ~= nil and child:GetElementData() ~= nil then
-							FlyingMountSelectionBehavior:Select(child);
-						end
-						if mount.model ~= nil then
-							FlyingMountModel:SetDisplayInfo(mount.model);
-							FlyingMountModel:SetAlpha(1);
-						end
-					else
-						child.isSelected = false;
-						child:UnlockHighlight();
-			   		end
-				end				
-			end
-		end
-
-	end
-
-	if GroundMountListScrollBox then
-		ClearSelectedGroundMount();
-		local mounts = MogCompanions:getSortedGroundMounts();
-
-		for i = 1, #mounts do
-			local mount = mounts[i];
-			if mount.id == MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Ground then
-				GroundMountListScrollBox:ScrollToElementDataIndex(i);
-				local children = {GroundMountListScrollBox.ScrollTarget:GetChildren()};
-				for j, child in ipairs(children) do
-					if child.MountID == mount.id then
-						if child.GetElementData ~= nil and child:GetElementData() ~= nil then
-							GroundMountSelectionBehavior:Select(child);
-						end
-						if mount.model ~= nil then
-							GroundMountModel:SetDisplayInfo(mount.model);
-							GroundMountModel:SetAlpha(1);
-						end
-					else
-						child.isSelected = false;
-						child:UnlockHighlight();						
-			   		end
-				end				
-			end
-		end
-
-	end
+	RefreshMountSlots();
+	RefreshFlyingMountList(true);
+	RefreshGroundMountList(true);
 end
