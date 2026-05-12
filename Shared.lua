@@ -72,6 +72,70 @@ function MogCompanions:sortMounts(mountsRaw)
 	return mounts;
 end
 
+local sortedPetsCache = nil;
+
+function MogCompanions:InvalidateSortedPetsCache()
+	sortedPetsCache = nil;
+end
+
+-- Returns collected battle pets as sorted display entries for the pets UI.
+-- Each entry: { id, name, icon }.
+-- Builds the cache synchronously on first call using the fastest available API.
+-- Duplicate display names are collapsed to the first owned pet with that name.
+function MogCompanions:GetSortedPets()
+	if sortedPetsCache == nil then
+		if C_PetJournal == nil or C_PetJournal.GetOwnedPetIDs == nil then
+			return {};
+		end
+
+		sortedPetsCache = {};
+		local uniqueNames = {};
+		local petsRaw = C_PetJournal.GetOwnedPetIDs();
+		local useTableAPI = C_PetJournal.GetPetInfoTableByPetID ~= nil;
+
+		for i = 1, #petsRaw do
+			local petID = petsRaw[i];
+			local displayName, icon;
+
+			if useTableAPI then
+				local info = C_PetJournal.GetPetInfoTableByPetID(petID);
+				if info ~= nil then
+					displayName = (info.customName ~= nil and info.customName ~= "") and info.customName or info.name;
+					icon = info.icon;
+				end
+			else
+				local _, customName, _, _, _, _, _, name, petIcon = C_PetJournal.GetPetInfoByPetID(petID);
+				displayName = (customName ~= nil and customName ~= "") and customName or name;
+				icon = petIcon;
+			end
+
+			if displayName ~= nil and displayName ~= "" and icon ~= nil and not uniqueNames[displayName] then
+				uniqueNames[displayName] = true;
+				table.insert(sortedPetsCache, { id = petID, name = displayName, icon = icon });
+			end
+		end
+
+		table.sort(sortedPetsCache, MogCompanionsSortAlphabetical);
+	end
+
+	local searchString = MogCompanions.PetSearchString;
+
+	if searchString == nil or searchString == "" then
+		return sortedPetsCache;
+	end
+
+	local pets = {};
+	local lowered = searchString:lower();
+
+	for i = 1, #sortedPetsCache do
+		if string.find(sortedPetsCache[i].name:lower(), lowered, 1, true) ~= nil then
+			table.insert(pets, sortedPetsCache[i]);
+		end
+	end
+
+	return pets;
+end
+
 -- Returns true if the mount name contains MogCompanions.MountSearchString (case-insensitive),
 -- or if the search filter is empty or nil. Used to filter the visible mount list rows.
 function MogCompanions:listSearchString(name)
@@ -436,6 +500,7 @@ end
 --   Flying = 1: no per-outfit selection; summon a random flying mount.
 --   Ground = 1: no per-outfit selection; summon a random ground mount.
 --   Hearthstone = 1: no per-outfit selection; use a random hearthstone toy.
+--   Pet = "": no per-outfit pet selection.
 --   Title = 0: do not change the title on mount.
 --   Title = -1: clear the title (bare player name).
 -- Safe to call multiple times; only writes fields that are missing.
@@ -464,6 +529,10 @@ function MogCompanions:CreateEmptyOutfit(id)
 
 	if outfit.Hearthstone == nil then
 		outfit.Hearthstone = 1;
+	end
+
+	if outfit.Pet == nil then
+		outfit.Pet = "";
 	end
 
 	if outfit.Title == nil then

@@ -16,9 +16,11 @@ L["Default Title"] = "[Don't Change Title]";
 L["Item Slot Flying Mount Title"] = "Flying Mount";
 L["Item Slot Ground Mount Title"] = "Ground Mount";
 L["Item Slot Hearthstone Title"] = "Hearthstone";
+L["Item Slot Pet Title"] = "Pet";
 L["Item Slot Flying Mount Clear Tooltip"] = "Clear Flying Mount";
 L["Item Slot Ground Mount Clear Tooltip"] = "Clear Ground Mount";
 L["Item Slot Hearthstone Clear Tooltip"] = "Clear Hearthstone";
+L["Item Slot Pet Clear Tooltip"] = "Clear Pet";
 
 -- Tab
 L["Companions Tab Title"] = "Companions";
@@ -27,6 +29,7 @@ L["Mount Tab Flying Section Title"] = "Flying";
 L["Mount Tab Ground Section Title"] = "Ground";
 L["Hearthstone Tab Title"] = "Hearthstones";
 L["Pets Tab Title"] = "Pets";
+L["Pets Tab Section Title"] = "Pet";
 
 -- Settings buttons
 L["Open Settings"] = "Open Options";

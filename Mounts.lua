@@ -1210,10 +1210,6 @@ function MogCompanions:InitMountTab()
 			MogCompanions:CreateHearthstonesFrame(CompanionsFrame);
 		end
 
-		if MogCompanions.CreatePetsFrame ~= nil then
-			MogCompanions:CreatePetsFrame(CompanionsFrame);
-		end
-
 		-- Companions sub-tab buttons (Mounts, Hearthstones, Pets) at bottom of container.
 		-- numTabs and Tabs are assigned manually; PanelTemplates_SetNumTabs is NOT used
 		-- because it calls AnchorTabs internally, which would fight our manual anchors.
@@ -1273,8 +1269,16 @@ function MogCompanions:OpenCompanionsSubTab(tabIndex)
 	if _G.MogCompanionsHearthstonesPage then
 		_G.MogCompanionsHearthstonesPage:SetShown(tabIndex == 2);
 	end
-	if _G.MogCompanionsPetsFrame then
-		_G.MogCompanionsPetsFrame:SetShown(tabIndex == 3);
+	if tabIndex == 3 then
+		if MogCompanions.ShowPetsPage ~= nil then
+			MogCompanions:ShowPetsPage();
+		elseif _G.MogCompanionsPetsFrame then
+			_G.MogCompanionsPetsFrame:Show();
+		end
+	elseif MogCompanions.HidePetsPage ~= nil then
+		MogCompanions:HidePetsPage();
+	elseif _G.MogCompanionsPetsFrame then
+		_G.MogCompanionsPetsFrame:Hide();
 	end
 
 	PanelTemplates_SetTab(companionsFrame, tabIndex);
