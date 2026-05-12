@@ -577,7 +577,7 @@ local function FilterSetChecked(filter)
 	for i = 1, #mounts do
 		local mount = mounts[i];
 		scrollToCount = scrollToCount + 1;
-		if mount.id == MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetActiveOutfitID()].Ground then
+		if mount.id == MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Ground then
 			scrollToIndex = scrollToCount;
 		end
 		GroundMountDataProvider:Insert(mount);
@@ -782,8 +782,8 @@ function MogCompanions:InitMountTab()
 
 		-- Load display info for the flying and ground model previews
 
-		local flyingModelID, _, _, _, _, _, _, _, _ = C_MountJournal.GetMountInfoExtraByID(MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetActiveOutfitID()].Flying);
-		local groundModelID, _, _, _, _, _, _, _, _ = C_MountJournal.GetMountInfoExtraByID(MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetActiveOutfitID()].Ground);
+		local flyingModelID, _, _, _, _, _, _, _, _ = C_MountJournal.GetMountInfoExtraByID(MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Flying);
+		local groundModelID, _, _, _, _, _, _, _, _ = C_MountJournal.GetMountInfoExtraByID(MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Ground);
 
 		-- Flying mount model preview frame and list
 
@@ -878,7 +878,7 @@ function MogCompanions:InitMountTab()
 		local function FlyingMountListInitializer(button, data)
 			local isSelected = FlyingMountSelectionBehavior:IsElementDataSelected(data);
 
-			if data.id == MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetActiveOutfitID()].Flying then
+			if data.id == MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Flying then
 				isSelected = true;
 			end
 
@@ -928,7 +928,7 @@ function MogCompanions:InitMountTab()
 		for i = 1, #mounts do
 			local mount = mounts[i];
 			scrollToCount = scrollToCount + 1;
-			if mount.id == MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetActiveOutfitID()].Flying then
+			if mount.id == MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Flying then
 				scrollToIndex = scrollToCount;
 			end
 			FlyingMountDataProvider:Insert(mount);
@@ -1037,7 +1037,7 @@ function MogCompanions:InitMountTab()
 		local function GroundMountListInitializer(button, data)
 			local isSelected = GroundMountSelectionBehavior:IsElementDataSelected(data);
 
-			if data.id == MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetActiveOutfitID()].Ground then
+			if data.id == MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Ground then
 				isSelected = true;
 			end
 
@@ -1087,7 +1087,7 @@ function MogCompanions:InitMountTab()
 		for i = 1, #mounts do
 			local mount = mounts[i];
 			scrollToCount = scrollToCount + 1;
-			if mount.id == MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetActiveOutfitID()].Ground then
+			if mount.id == MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Ground then
 				scrollToIndex = scrollToCount;
 			end
 			GroundMountDataProvider:Insert(mount);
@@ -1118,7 +1118,7 @@ function MogCompanions:InitMountTab()
 			for i = 1, #mounts do
 				local mount = mounts[i];
 				scrollToCount = scrollToCount + 1;
-				if mount.id == MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetActiveOutfitID()].Flying then
+				if mount.id == MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Flying then
 					scrollToIndex = scrollToCount;
 				end	
 				FlyingMountDataProvider:Insert(mount);
@@ -1142,7 +1142,7 @@ function MogCompanions:InitMountTab()
 			for i = 1, #mounts do
 				local mount = mounts[i];
 				scrollToCount = scrollToCount + 1;
-				if mount.id == MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetActiveOutfitID()].Ground then
+				if mount.id == MogCompanionsCharacterSaved["Outfit"..C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()].Ground then
 					scrollToIndex = scrollToCount;
 				end
 				GroundMountDataProvider:Insert(mount);
