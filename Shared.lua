@@ -100,12 +100,20 @@ function MogCompanions:GetSortedPets()
 			if useTableAPI then
 				local info = C_PetJournal.GetPetInfoTableByPetID(petID);
 				if info ~= nil then
-					displayName = (info.customName ~= nil and info.customName ~= "") and info.customName or info.name;
+					if info.customName ~= nil and info.customName ~= "" then
+						displayName = info.customName .. " (" .. info.name .. ")";
+					else
+						displayName = info.name;
+					end
 					icon = info.icon;
 				end
 			else
 				local _, customName, _, _, _, _, _, name, petIcon = C_PetJournal.GetPetInfoByPetID(petID);
-				displayName = (customName ~= nil and customName ~= "") and customName or name;
+				if customName ~= nil and customName ~= "" then
+					displayName = customName .. " (" .. name .. ")";
+				else
+					displayName = name;
+				end
 				icon = petIcon;
 			end
 

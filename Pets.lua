@@ -63,8 +63,10 @@ local function GetPetDataByGUID(petID)
 		return nil;
 	end
 
-	local displayName = customName;
-	if displayName == nil or displayName == "" then
+	local displayName;
+	if customName ~= nil and customName ~= "" then
+		displayName = customName .. " (" .. name .. ")";
+	else
 		displayName = name;
 	end
 
