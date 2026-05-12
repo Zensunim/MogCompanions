@@ -63,3 +63,5 @@ L["Settings No Applicable Mounts"] = "No applicable mounts";
 L["Settings Random Section Title"] = "Random Mount Selection";
 L["Settings Random Ground Allow Flying"] = "Allow flying mounts to be used when choosing a random ground mount";
 L["Settings Random Ground Allow Flying Tooltip"] = "Turn this feature off to restrict random ground mounts to use non-flying mounts only.";
+L["Settings Clone Targeted Mount"] = "Clone targeted mount";
+L["Settings Clone Targeted Mount Tooltip"] = "When summoning a random mount, target a mounted player to summon the same mount, if you own it.";

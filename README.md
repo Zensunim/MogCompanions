@@ -23,3 +23,6 @@ No third-party code is knowingly included beyond the work credited above and cod
 * Initial release
 * Added `/mcomp` slash command
 * Added Hearthstones tab support for selecting an owned Hearthstone toy per outfit.
+
+### 1.1
+* Added mount cloning support

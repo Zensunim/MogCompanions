@@ -126,6 +126,19 @@ local function InitSettings()
 	Settings.CreateCheckbox(category, setting, tooltip);
 	setting:SetValueChangedCallback(OnSettingChanged);
 
+	-- Clone targeted mount
+
+	local variable = "CloneTargetedMount";
+	local defaultValue = false;
+	local name = L["Settings Clone Targeted Mount"];
+	local tooltip = L["Settings Clone Targeted Mount Tooltip"];
+	local variableKey = "CloneTargetedMount";
+	local variableTable = MogCompanionsSaved;
+
+	local setting = Settings.RegisterAddOnSetting(category, variable, variableKey, variableTable, type(defaultValue), name, defaultValue);
+	Settings.CreateCheckbox(category, setting, tooltip);
+	setting:SetValueChangedCallback(OnSettingChanged);
+
 	Settings.RegisterAddOnCategory(category);
 end
 

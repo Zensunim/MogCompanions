@@ -180,6 +180,54 @@ function MogCompanionsSummonAlternative()
 	if randomMount then C_MountJournal.SummonByID(randomMount.id); end
 end
 
+-- Cache: spellID → mountID for all collected, usable mounts owned by this character.
+-- nil means the cache has not been built yet (or was invalidated).
+-- Rebuilt lazily on the next tryCloneTargetedMount call.
+local mountCloneCache = nil;
+
+local function buildMountCloneCache()
+	mountCloneCache = {};
+	local mountIDs = C_MountJournal.GetMountIDs();
+	for _, mountID in ipairs(mountIDs) do
+		local name, spellID, icon, isActive, isUsable, sourceType, isFavorite, isFactionSpecific, faction, shouldHideOnChar, isCollected = C_MountJournal.GetMountInfoByID(mountID);
+		if isCollected and isUsable and not shouldHideOnChar and spellID then
+			mountCloneCache[spellID] = mountID;
+		end
+	end
+end
+
+-- Invalidate the cache when mount collection or usability changes.
+local MountCloneCacheFrame = CreateFrame("Frame");
+MountCloneCacheFrame:RegisterEvent("NEW_MOUNT_ADDED");
+MountCloneCacheFrame:RegisterEvent("MOUNT_JOURNAL_USABILITY_CHANGED");
+MountCloneCacheFrame:SetScript("OnEvent", function() mountCloneCache = nil; end);
+
+-- Returns the mount ID of the mount the target player is riding, if the local
+-- player also has that mount collected and usable. Returns nil otherwise.
+-- Used by MogCompanionsSummon when CloneTargetedMount is enabled.
+local function tryCloneTargetedMount()
+	if not MogCompanionsSaved.CloneTargetedMount then return nil; end
+	if not UnitExists("target") then return nil; end
+	if not UnitIsPlayer("target") then return nil; end
+
+	if not mountCloneCache then
+		buildMountCloneCache();
+	end
+
+	-- Scan the target's buffs (typically < 40) and do an O(1) cache lookup per entry.
+	local i = 1;
+	while true do
+		local aura = C_UnitAuras.GetAuraDataByIndex("target", i, "HELPFUL");
+		if not aura then break; end
+		if aura.spellId and mountCloneCache[aura.spellId] then
+			return mountCloneCache[aura.spellId];
+		end
+		i = i + 1;
+	end
+
+	return nil;
+end
+
 -- Main mount/dismount entry point. Evaluates current state and modifier keys
 -- to determine which category to summon, then calls the appropriate helper.
 -- Also applies the per-outfit title after summoning via MogCompanions:UpdateTitle().
@@ -208,15 +256,24 @@ function MogCompanionsSummon()
 		-- Alternative mount, whatever the player wants it to be
 		MogCompanionsSummonAlternative();
 
-	elseif IsFlyableArea() and not IsControlKeyDown() then
-
-		-- Flyable
-		MogCompanionsSummonFlying();
-
 	else
 
-		-- Ground or when control key is pressed
-		MogCompanionsSummonGround();
+		-- Flyable or ground. Try cloning the targeted player's mount first;
+		-- a successful clone ignores the "allow flying in ground" setting entirely.
+		local cloneID = tryCloneTargetedMount();
+		if cloneID then
+			C_MountJournal.SummonByID(cloneID);
+		elseif IsFlyableArea() and not IsControlKeyDown() then
+
+			-- Flyable
+			MogCompanionsSummonFlying();
+
+		else
+
+			-- Ground or when control key is pressed
+			MogCompanionsSummonGround();
+
+		end
 
 	end
 

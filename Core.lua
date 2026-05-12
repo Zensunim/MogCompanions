@@ -262,6 +262,10 @@ function MogCompanions:OnEvent(event, addOnName)
 			MogCompanionsSaved.RandomGroundAllowFlying = true;
 		end
 
+		if MogCompanionsSaved.CloneTargetedMount == nil then
+			MogCompanionsSaved.CloneTargetedMount = false;
+		end
+
 		loaded = true;
 	
 	end
