@@ -34,10 +34,14 @@ local FlyingMountListScrollView, FlyingMountListScrollBox, FlyingMountListScroll
 local GroundMountListScrollView, GroundMountListScrollBox, GroundMountListScrollBar, GroundMountDataProvider;
 
 local FlyingMountClear, GroundMountClear;
+local FlyingMountShowSelectedButton, GroundMountShowSelectedButton;
+local FlyingMountNoResultsText, GroundMountNoResultsText;
 local SetSelectedFlyingMount, SetSelectedGroundMount;
 local RefreshFlyingMountList, RefreshGroundMountList, RefreshMountSlots;
 local FlyingSlotTitle, GroundSlotTitle;
 local LastClickedFlyingMountID, LastClickedGroundMountID;
+local ShowOnlySelectedFlyingMounts = false;
+local ShowOnlySelectedGroundMounts = false;
 
 local MountListSearchBox, FilterDropdown, ShortcutSettings;
 
@@ -231,6 +235,30 @@ local function SetMountSectionTitle(titleFontString, baseText, count)
 	else
 		titleFontString:SetText(baseText);
 	end
+end
+
+local function ValidateFlyingMountSelection(_, mountID)
+	return MogCompanions:IsMountUsableForCategory(mountID, "flying");
+end
+
+local function ValidateGroundMountSelection(_, mountID)
+	return MogCompanions:IsMountUsableForCategory(mountID, "ground");
+end
+
+local function GetFilteredSelectedMountInfos(outfit, poolKey, category)
+	local mounts = MogCompanions:GetValidMountPoolInfos(outfit, poolKey, category);
+	if MogCompanions.MountSearchString == nil or MogCompanions.MountSearchString == "" then
+		return mounts;
+	end
+
+	local filtered = {};
+	for i = 1, #mounts do
+		if MogCompanions:listSearchString(mounts[i].name) then
+			table.insert(filtered, mounts[i]);
+		end
+	end
+
+	return filtered;
 end
 
 local function UpdateMountPreviewModel(modelFrame, previewControls, mountID)
@@ -584,6 +612,7 @@ function MogCompanions:InitMountSlots(reset)
 		FlyingMountClear:SetScript("OnClick", function()
 			local outfit = GetViewedOutfitData();
 			if outfit ~= nil then
+				ShowOnlySelectedFlyingMounts = false;
 				MogCompanions:ClearSelectionPool(outfit, "FlyingMounts");
 				SyncLegacyMountSelection(outfit, "Flying", "FlyingMounts", "flying");
 				RefreshMountSlots();
@@ -655,6 +684,7 @@ function MogCompanions:InitMountSlots(reset)
 		GroundMountClear:SetScript("OnClick", function()
 			local outfit = GetViewedOutfitData();
 			if outfit ~= nil then
+				ShowOnlySelectedGroundMounts = false;
 				MogCompanions:ClearSelectionPool(outfit, "GroundMounts");
 				SyncLegacyMountSelection(outfit, "Ground", "GroundMounts", "ground");
 				RefreshMountSlots();
@@ -1062,11 +1092,21 @@ function MogCompanions:InitMountTab()
 		local gap = 16 * s;
 		local r = 8;
 
-		FlyingMountList = CreateFrame("Frame", "FlyingMountList", f);
+		local FlyingMountList = CreateFrame("Frame", "FlyingMountList", f);
 		FlyingMountList:SetPoint("TOPLEFT", f, "TOPLEFT", xx + gap + x, yy - ii);
 		FlyingMountList:SetFrameStrata("HIGH");
 		FlyingMountList:SetSize(fw - (xx + ww + gap + xx + r), y - (ii * 2));
 		FlyingMountList:SetParent(f);
+
+		FlyingMountShowSelectedButton = CreateFrame("Button", nil, f, "UIPanelButtonTemplate");
+		FlyingMountShowSelectedButton:SetSize(110, 22);
+		FlyingMountShowSelectedButton:SetPoint("BOTTOMRIGHT", FlyingMountList, "TOPRIGHT", -40, 4);
+		FlyingMountShowSelectedButton:SetText(L["Show Selected"]);
+		FlyingMountShowSelectedButton:Hide();
+		FlyingMountShowSelectedButton:SetScript("OnClick", function()
+			ShowOnlySelectedFlyingMounts = not ShowOnlySelectedFlyingMounts;
+			RefreshFlyingMountList(false);
+		end);
 
 		-- Flying mount scroll box and list controls
 
@@ -1152,8 +1192,23 @@ function MogCompanions:InitMountTab()
 				return;
 			end
 
-			local mounts = MogCompanions:getSortedFlyingMounts();
 			local viewedOutfit = GetViewedOutfitData();
+			if viewedOutfit ~= nil then
+				MogCompanions:PruneInvalidSelectionPool(viewedOutfit, "FlyingMounts", ValidateFlyingMountSelection);
+				SyncLegacyMountSelection(viewedOutfit, "Flying", "FlyingMounts", "flying");
+			end
+
+			local selectedCount = GetValidMountSelectionCount(viewedOutfit, "FlyingMounts", "flying");
+			if selectedCount <= 0 then
+				ShowOnlySelectedFlyingMounts = false;
+			end
+
+			local mounts;
+			if ShowOnlySelectedFlyingMounts then
+				mounts = GetFilteredSelectedMountInfos(viewedOutfit, "FlyingMounts", "flying");
+			else
+				mounts = MogCompanions:getSortedFlyingMounts();
+			end
 
 			FlyingMountDataProvider = CreateDataProvider(mounts);
 			FlyingMountListScrollView:SetDataProvider(FlyingMountDataProvider);
@@ -1166,6 +1221,10 @@ function MogCompanions:InitMountTab()
 						break;
 					end
 				end
+
+				SetMountSectionTitle(FlyingSlotTitle, L["Mount Tab Flying Section Title"], selectedCount);
+				MogCompanions:UpdateShowSelectedButton(FlyingMountShowSelectedButton, ShowOnlySelectedFlyingMounts, selectedCount);
+				MogCompanions:UpdateNoResultsText(FlyingMountNoResultsText, MountListSearchBox, #mounts);
 			end
 		end
 
@@ -1176,6 +1235,11 @@ function MogCompanions:InitMountTab()
 		local FlyingMountListBackground = FlyingMountList:CreateTexture(nil, "OVERLAY");
 		FlyingMountListBackground:SetAtlas("transmog-situations-containerbg", true);
 		FlyingMountListBackground:SetAllPoints(true);
+
+		FlyingMountNoResultsText = FlyingMountList:CreateFontString(nil, "OVERLAY", "GameFontDisable");
+		FlyingMountNoResultsText:SetPoint("CENTER", FlyingMountList, "CENTER", 0, 0);
+		FlyingMountNoResultsText:SetText(L["No Items Match Search"]);
+		FlyingMountNoResultsText:Hide();
 
 		GroundMountPreview = CreateFrame("Frame", "MountTabGroundPreview", f);
 		GroundMountPreview:SetPoint("TOPLEFT", f, "TOPLEFT", 24 * s, (-564 + topOffset) * s);
@@ -1220,15 +1284,30 @@ function MogCompanions:InitMountTab()
 		local _, _, _, xx, yy = GroundMountPreview:GetPoint();
 		local ww, hh = GroundMountPreview:GetSize();
 
-		GroundMountList = CreateFrame("Frame", "MountTabGroundList", f);
+		local GroundMountList = CreateFrame("Frame", "MountTabGroundList", f);
 		GroundMountList:SetPoint("TOPLEFT", f, "TOPLEFT", xx + gap + x, yy - ii);
 		GroundMountList:SetFrameStrata("HIGH");
 		GroundMountList:SetSize(fw - (xx + ww + gap + xx + r), y - (ii * 2));
 		GroundMountList:SetParent(f);
 
+		GroundMountShowSelectedButton = CreateFrame("Button", nil, f, "UIPanelButtonTemplate");
+		GroundMountShowSelectedButton:SetSize(110, 22);
+		GroundMountShowSelectedButton:SetPoint("BOTTOMRIGHT", GroundMountList, "TOPRIGHT", -40, 4);
+		GroundMountShowSelectedButton:SetText(L["Show Selected"]);
+		GroundMountShowSelectedButton:Hide();
+		GroundMountShowSelectedButton:SetScript("OnClick", function()
+			ShowOnlySelectedGroundMounts = not ShowOnlySelectedGroundMounts;
+			RefreshGroundMountList(false);
+		end);
+
 		local GroundMountListBackground = GroundMountList:CreateTexture(nil, "BACKGROUND");
 		GroundMountListBackground:SetAtlas("transmog-situations-containerbg", true);
 		GroundMountListBackground:SetAllPoints(true);
+
+		GroundMountNoResultsText = GroundMountList:CreateFontString(nil, "OVERLAY", "GameFontDisable");
+		GroundMountNoResultsText:SetPoint("CENTER", GroundMountList, "CENTER", 0, 0);
+		GroundMountNoResultsText:SetText(L["No Items Match Search"]);
+		GroundMountNoResultsText:Hide();
 
 		-- Ground mount scroll box and list controls
 
@@ -1314,8 +1393,23 @@ function MogCompanions:InitMountTab()
 				return;
 			end
 
-			local mounts = MogCompanions:getSortedGroundMounts();
 			local viewedOutfit = GetViewedOutfitData();
+			if viewedOutfit ~= nil then
+				MogCompanions:PruneInvalidSelectionPool(viewedOutfit, "GroundMounts", ValidateGroundMountSelection);
+				SyncLegacyMountSelection(viewedOutfit, "Ground", "GroundMounts", "ground");
+			end
+
+			local selectedCount = GetValidMountSelectionCount(viewedOutfit, "GroundMounts", "ground");
+			if selectedCount <= 0 then
+				ShowOnlySelectedGroundMounts = false;
+			end
+
+			local mounts;
+			if ShowOnlySelectedGroundMounts then
+				mounts = GetFilteredSelectedMountInfos(viewedOutfit, "GroundMounts", "ground");
+			else
+				mounts = MogCompanions:getSortedGroundMounts();
+			end
 
 			GroundMountDataProvider = CreateDataProvider(mounts);
 			GroundMountListScrollView:SetDataProvider(GroundMountDataProvider);
@@ -1328,6 +1422,10 @@ function MogCompanions:InitMountTab()
 						break;
 					end
 				end
+
+				SetMountSectionTitle(GroundSlotTitle, L["Mount Tab Ground Section Title"], selectedCount);
+				MogCompanions:UpdateShowSelectedButton(GroundMountShowSelectedButton, ShowOnlySelectedGroundMounts, selectedCount);
+				MogCompanions:UpdateNoResultsText(GroundMountNoResultsText, MountListSearchBox, #mounts);
 			end
 		end
 
@@ -1469,6 +1567,7 @@ function ClearSelectedFlyingMount()
 		return;
 	end
 
+	ShowOnlySelectedFlyingMounts = false;
 	MogCompanions:ClearSelectionPool(outfit, "FlyingMounts");
 	SyncLegacyMountSelection(outfit, "Flying", "FlyingMounts", "flying");
 	RefreshMountSlots();
@@ -1486,6 +1585,7 @@ function ClearSelectedGroundMount()
 		return;
 	end
 
+	ShowOnlySelectedGroundMounts = false;
 	MogCompanions:ClearSelectionPool(outfit, "GroundMounts");
 	SyncLegacyMountSelection(outfit, "Ground", "GroundMounts", "ground");
 	RefreshMountSlots();
@@ -1511,6 +1611,8 @@ function UpdateSelectedMountRow()
 
 	LastClickedFlyingMountID = nil;
 	LastClickedGroundMountID = nil;
+	ShowOnlySelectedFlyingMounts = false;
+	ShowOnlySelectedGroundMounts = false;
 
 	RefreshMountSlots();
 	RefreshFlyingMountList(true);

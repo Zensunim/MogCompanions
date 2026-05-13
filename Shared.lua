@@ -560,6 +560,84 @@ function MogCompanions:GetValidSelectionPoolValues(outfit, poolKey, isValidFunc)
 	return validValues;
 end
 
+function MogCompanions:PruneInvalidSelectionPool(outfit, poolKey, isValidFunc)
+	local pool = MogCompanions:GetOutfitSelectionPool(outfit, poolKey);
+	if pool == nil or type(isValidFunc) ~= "function" then
+		return 0;
+	end
+
+	local validValues = {};
+	for i = 1, #pool do
+		local value = pool[i];
+		if isValidFunc(self, value) then
+			addUniquePoolValue(validValues, value);
+		end
+	end
+
+	for i = #pool, 1, -1 do
+		table.remove(pool, i);
+	end
+
+	for i = 1, #validValues do
+		table.insert(pool, validValues[i]);
+	end
+
+	return #pool;
+end
+
+function MogCompanions:FilterSelectedOnly(items, outfit, poolKey)
+	local filtered = {};
+
+	if outfit == nil or items == nil then
+		return filtered;
+	end
+
+	for i = 1, #items do
+		if MogCompanions:IsInSelectionPool(outfit, poolKey, items[i].id) then
+			table.insert(filtered, items[i]);
+		end
+	end
+
+	return filtered;
+end
+
+function MogCompanions:UpdateShowSelectedButton(button, showOnlySelected, selectedCount)
+	if button == nil then
+		return;
+	end
+
+	if selectedCount <= 0 then
+		button:Hide();
+		return;
+	end
+
+	if showOnlySelected then
+		button:SetText(MogCompanionsLocales["Show All"]);
+	else
+		button:SetText(MogCompanionsLocales["Show Selected"]);
+	end
+
+	button:Show();
+end
+
+function MogCompanions:UpdateNoResultsText(textFrame, searchBox, itemCount)
+	if textFrame == nil then
+		return;
+	end
+
+	local searchText = "";
+	if searchBox ~= nil and searchBox.GetText ~= nil then
+		searchText = searchBox:GetText() or "";
+	end
+
+	if itemCount == 0 and searchText ~= "" then
+		textFrame:SetText(MogCompanionsLocales["No Items Match Search"]);
+		textFrame:Show();
+	else
+		textFrame:Hide();
+	end
+	end
+
 -- Returns sorted mount info tables for all still-valid selections in the saved pool.
 function MogCompanions:GetValidMountPoolInfos(outfit, poolKey, category)
 	local pool = MogCompanions:GetOutfitSelectionPool(outfit, poolKey);

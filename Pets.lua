@@ -26,10 +26,13 @@ local PetsDataProvider;
 local PetsScrollView;
 local PetsListScrollBox;
 local PetsSlotTitle;
+local PetShowSelectedButton;
+local PetNoResultsText;
 local PetsInitScheduled = false;
 local RefreshPetList;
 local PetDetailsCache = {};
 local LastClickedPetID;
+local ShowOnlySelectedPets = false;
 
 MogCompanions.PetSearchString = "";
 
@@ -51,8 +54,31 @@ local function GetOutfitTable(outfitID)
 	return MogCompanionsCharacterSaved["Outfit"..outfitID];
 end
 
-local function GetPetDataByGUID(petID)
+local function GetPetJournalInfo(petID)
 	if petID == nil or petID == "" or C_PetJournal == nil or C_PetJournal.GetPetInfoByPetID == nil then
+		return nil;
+	end
+
+	if C_PetJournal.GetPetInfoTableByPetID ~= nil then
+		return C_PetJournal.GetPetInfoTableByPetID(petID);
+	end
+
+	local speciesID, customName, level, xp, maxXp, displayID, favorite, name, icon = C_PetJournal.GetPetInfoByPetID(petID);
+	if name == nil or icon == nil then
+		return nil;
+	end
+
+	return {
+		speciesID = speciesID,
+		customName = customName,
+		displayID = displayID,
+		name = name,
+		icon = icon,
+	};
+end
+
+local function GetPetDataByGUID(petID)
+	if petID == nil or petID == "" then
 		return nil;
 	end
 
@@ -60,25 +86,30 @@ local function GetPetDataByGUID(petID)
 		return PetDetailsCache[petID];
 	end
 
-	local speciesID, customName, level, xp, maxXp, displayID, favorite, name, icon = C_PetJournal.GetPetInfoByPetID(petID);
+	local info = GetPetJournalInfo(petID);
+	if info == nil or info.name == nil or info.icon == nil then
+		return nil;
+	end
 
-	if name == nil or icon == nil then
+	if info.isRevoked == true or info.canBattle == false then
 		return nil;
 	end
 
 	local displayName;
-	if customName ~= nil and customName ~= "" then
-		displayName = customName .. " (" .. name .. ")";
+	if info.customName ~= nil and info.customName ~= "" then
+		displayName = info.customName .. " (" .. info.name .. ")";
 	else
-		displayName = name;
+		displayName = info.name;
 	end
 
 	PetDetailsCache[petID] = {
 		id = petID,
 		name = displayName,
-		icon = icon,
-		displayID = displayID,
-		speciesID = speciesID,
+		customName = info.customName,
+		speciesName = info.name,
+		icon = info.icon,
+		displayID = info.displayID,
+		speciesID = info.speciesID,
 	};
 
 	return PetDetailsCache[petID];
@@ -138,7 +169,49 @@ local function GetValidPetDataSelections(outfit)
 		end
 	end
 
+	table.sort(pets, MogCompanionsSortAlphabetical);
+
 	return pets;
+end
+
+local function PetMatchesSearch(pet)
+	local searchString = MogCompanions.PetSearchString;
+	if searchString == nil or searchString == "" then
+		return true;
+	end
+
+	local lowered = searchString:lower();
+	local displayName = pet ~= nil and pet.name or "";
+	local speciesName = pet ~= nil and pet.speciesName or "";
+
+	return string.find(displayName:lower(), lowered, 1, true) ~= nil
+		or string.find(speciesName:lower(), lowered, 1, true) ~= nil;
+end
+
+local function GetFilteredNormalPets()
+	local pets = MogCompanions:GetSortedPets();
+	local filtered = {};
+
+	for i = 1, #pets do
+		if IsValidPetSelection(pets[i].id) then
+			table.insert(filtered, pets[i]);
+		end
+	end
+
+	return filtered;
+end
+
+local function GetFilteredSelectedPets(outfit)
+	local pets = GetValidPetDataSelections(outfit);
+	local filtered = {};
+
+	for i = 1, #pets do
+		if PetMatchesSearch(pets[i]) then
+			table.insert(filtered, pets[i]);
+		end
+	end
+
+	return filtered;
 end
 
 local function SetPetsSectionTitle(count)
@@ -272,8 +345,24 @@ RefreshPetList = function(scrollToSelection)
 		return;
 	end
 
-	local pets = MogCompanions:GetSortedPets();
 	local outfit = GetOutfitTable(GetViewedOutfitID());
+	if outfit ~= nil then
+		MogCompanions:PruneInvalidSelectionPool(outfit, "Pets", ValidatePetSelection);
+		SyncLegacyPetSelection(outfit);
+	end
+
+	local selectedCount = #GetValidPetSelectionValues(outfit);
+	if selectedCount <= 0 then
+		ShowOnlySelectedPets = false;
+	end
+
+	local pets;
+	if ShowOnlySelectedPets then
+		pets = GetFilteredSelectedPets(outfit);
+	else
+		pets = GetFilteredNormalPets();
+	end
+
 	local selectedPetID = GetValidPetSelection(outfit, false);
 
 	PetsDataProvider = CreateDataProvider(pets);
@@ -288,7 +377,9 @@ RefreshPetList = function(scrollToSelection)
 		end
 	end
 
-	SetPetsSectionTitle(select(2, GetPetTooltipLines(outfit)));
+	SetPetsSectionTitle(selectedCount);
+	MogCompanions:UpdateShowSelectedButton(PetShowSelectedButton, ShowOnlySelectedPets, selectedCount);
+	MogCompanions:UpdateNoResultsText(PetNoResultsText, PetsSearchBox, #pets);
 end
 
 local function SetSelectedPet(petID)
@@ -300,6 +391,10 @@ local function SetSelectedPet(petID)
 
 	if petID == nil then
 		petID = "";
+	end
+
+	if petID ~= "" and not IsValidPetSelection(petID) then
+		return;
 	end
 
 	LastClickedPetID = petID;
@@ -322,6 +417,7 @@ local function SetSelectedPet(petID)
 	end
 
 local function ClearSelectedPet()
+	ShowOnlySelectedPets = false;
 	LastClickedPetID = nil;
 	SetSelectedPet("");
 	if PetClear ~= nil then
@@ -557,9 +653,24 @@ function MogCompanions:CreatePetsFrame(parent)
 	PetsList:SetPoint("BOTTOMRIGHT", PetsFrame, "BOTTOMRIGHT", -listRightInset, 42);
 	PetsList:SetFrameStrata("HIGH");
 
+	PetShowSelectedButton = CreateFrame("Button", nil, PetsFrame, "UIPanelButtonTemplate");
+	PetShowSelectedButton:SetSize(110, 22);
+	PetShowSelectedButton:SetPoint("BOTTOMRIGHT", PetsList, "TOPRIGHT", -40, 4);
+	PetShowSelectedButton:SetText(L["Show Selected"]);
+	PetShowSelectedButton:Hide();
+	PetShowSelectedButton:SetScript("OnClick", function()
+		ShowOnlySelectedPets = not ShowOnlySelectedPets;
+		RefreshPetList(false);
+	end);
+
 	local PetsListBackground = PetsList:CreateTexture(nil, "OVERLAY");
 	PetsListBackground:SetAtlas("transmog-situations-containerbg", true);
 	PetsListBackground:SetAllPoints(true);
+
+	PetNoResultsText = PetsList:CreateFontString(nil, "OVERLAY", "GameFontDisable");
+	PetNoResultsText:SetPoint("CENTER", PetsList, "CENTER", 0, 0);
+	PetNoResultsText:SetText(L["No Items Match Search"]);
+	PetNoResultsText:Hide();
 
 	-- ScrollBox
 	PetsListScrollBox = CreateFrame("Frame", "MogCompanionsPetsScrollBox", PetsList, "WowScrollBoxList");
@@ -676,6 +787,10 @@ PetEventFrame:SetScript("OnEvent", function(self, event)
 		end
 
 		return;
+	end
+
+	if event == "VIEWED_TRANSMOG_OUTFIT_CHANGED" or event == "TRANSMOG_DISPLAYED_OUTFIT_CHANGED" then
+		ShowOnlySelectedPets = false;
 	end
 
 	if not IsTransmogShown() then
