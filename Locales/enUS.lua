@@ -39,12 +39,13 @@ L["Pets Tab Title"] = "Pets";
 L["Pets Tab Section Title"] = "Pet";
 
 -- Settings buttons
+L["Binding Mount/Dismount"] = "Mount/Dismount";
 L["Open Settings"] = "Open Options";
 L["Open Keybinds"] = "Open Keybinds";
 L["Create Mount Macro"] = "Create Mount Macro";
 L["Create Pet Macro"] = "Create Pet Macro";
 L["Create Hearthstone Macro"] = "Create Hearthstone Macro";
-L["Setup Reminder"] = "Set up a MogCompanions keybind and/or macro";
+L["Setup Reminder"] = "Set up a Mog Companions keybind and/or macro";
 L["Drop Macro Tooltip"] = "Drop this Mount macro in |nyour action bar";
 L["Drop Pet Macro Tooltip"] = "Drop this pet macro in |nyour action bar";
 L["Drop Hearthstone Macro Tooltip"] = "Drop this Hearthstone macro in |nyour action bar";
@@ -52,13 +53,29 @@ L["Show Flying In Ground Toggle"] = "Show flying mounts in ground mount list";
 L["Show Selected"] = "Show Selected";
 L["Show All"] = "Show All";
 L["No Items Match Search"] = "No items match your search";
-L["Slash Help Mount"] = "Summon or dismount using MogCompanions";
+L["Slash Help Mount"] = "Summon or dismount using Mog Companions";
 L["Slash Help Pet"] = "Summon a random pet from the active outfit selection, or a random pet if none is set. Pet macro modifiers can also summon random pets or dismiss your current pet.";
-L["Slash Help Options"] = "Open the MogCompanions options panel";
+L["Slash Help Options"] = "Open the Mog Companions options panel";
 L["No Hearthstone Toys"] = "No Hearthstone toys are available.";
 L["Pet Command Stub"] = "Pets companion actions are not implemented yet.";
 L["Use Hearthstone"] = "Use Hearthstone";
-L["Macro Combat Error"] = "MogCompanions cannot create macros while you are in combat.";
+L["Macro Combat Error"] = "Mog Companions cannot create macros while you are in combat.";
+L["MogMount Conflict Prompt"] = "MogMount and Mog Companions are both enabled";
+L["MogMount Conflict Body"] = "These addons cannot both manage transmog companion settings. Choose how you want to continue.";
+L["Use MogMount"] = "Use MogMount";
+L["Use MogCompanions"] = "Use Mog Companions";
+L["Disable MogMount"] = "Disable MogMount";
+L["Disable MogMount Description"] = "Keep using Mog Companions and disable MogMount for this character.";
+L["Transfer MogMount"] = "Transfer MogMount to Mog Companions";
+L["Transfer MogMount Button"] = "Transfer Settings";
+L["Transfer MogMount Description"] = "Transfer your MogMount outfit settings into Mog Companions and disable MogMount for this character.";
+L["Disable MogCompanions"] = "Disable Mog Companions";
+L["Disable MogCompanions Description"] = "Keep using MogMount and disable Mog Companions for this character.";
+L["MogMount Disabled"] = "MogMount disabled. Reloading UI.";
+L["MogCompanions Disabled"] = "Mog Companions disabled. Reloading UI.";
+L["MogMount Import Complete"] = "MogMount settings transferred. Disabling MogMount and reloading UI.";
+L["MogMount Import No Data"] = "No MogMount settings were found to transfer.";
+L["MogMount Import Failed"] = "MogMount settings could not be transferred.";
 
 -- Settings
 

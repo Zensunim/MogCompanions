@@ -11,6 +11,7 @@ local MogCompanions = CreateFrame('Frame', 'MogCompanionsAddonFrame', UIParent)
 ns.MogCompanions = MogCompanions;
 local L = MogCompanionsLocales;
 
+_G["BINDING_NAME_MOGCOMPANIONS_MOUNT_DISMOUNT"] = L["Binding Mount/Dismount"] or "Mount/Dismount";
 _G["BINDING_NAME_CLICK MCHearthButton:LeftButton"] = L["Use Hearthstone"] or "Use Hearthstone";
 
 local playerName = UnitName("player");
@@ -214,6 +215,9 @@ SlashCmdList["MOGCOMPANIONS"] = function(msg)
 	local command = string.lower(string.match(msg or "", "^%s*(.-)%s*$"));
 
 	if command == "" or command == "help" then
+		if MogCompanions.ShowConflictResolver ~= nil then
+			MogCompanions:ShowConflictResolver();
+		end
 		PrintSlashHelp();
 	elseif command == "mount" then
 		MogCompanionsSummon();
@@ -222,6 +226,9 @@ SlashCmdList["MOGCOMPANIONS"] = function(msg)
 	elseif command == "options" then
 		OpenSettingsToMogCompanions();
 	else
+		if MogCompanions.ShowConflictResolver ~= nil then
+			MogCompanions:ShowConflictResolver();
+		end
 		PrintSlashHelp();
 	end
 end

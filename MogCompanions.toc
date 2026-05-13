@@ -3,9 +3,10 @@
 ## Notes: Companion pairings for your transmogs
 ## Author: Zensunim of Dragonblight
 ## IconTexture: 6841475
-## Version: 1.1
+## Version: 1.2
 ## DefaultState: Enabled
 ## Category: Transmogrification
+## OptionalDeps: MogMount
 ## SavedVariables: MogCompanionsSaved
 ## SavedVariablesPerCharacter: MogCompanionsCharacterSaved
 ## LoadSavedVariablesFirst: 1
@@ -15,6 +16,7 @@ Locales/Localization.xml
 Core.lua
 Core.xml
 Shared.lua
+Importer.lua
 Mounts.lua
 Hearthstones.lua
 Pets.lua

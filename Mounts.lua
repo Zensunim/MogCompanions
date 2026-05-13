@@ -807,7 +807,7 @@ end
 -- on any action bar slot. Retained as a compatibility helper for setup state checks.
 function MissingKeybindOrMacro()
 	local key1, key2 = '', '';
-	key1, key2 = GetBindingKey("Mount/Dismount");
+	key1, key2 = GetBindingKey("MOGCOMPANIONS_MOUNT_DISMOUNT");
 
 	local missingKeys = false;
 	local missingMacro = true;
