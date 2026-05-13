@@ -146,15 +146,49 @@ function MogCompanions:SummonPet()
 		return;
 	end
 
-	local activePetGUID = petJournal.GetSummonedPetGUID();
-	local outfitData = MogCompanions:GetActiveOutfitTable();
-	local selectedPetGUID = outfitData and outfitData.Pet;
-
-	if selectedPetGUID ~= nil and selectedPetGUID ~= "" then
-		if activePetGUID ~= selectedPetGUID then
-			petJournal.SummonPetByGUID(selectedPetGUID);
+	local function IsValidOwnedPetGUID(petGUID)
+		if type(petGUID) ~= "string" or petGUID == "" or petJournal.GetPetInfoByPetID == nil then
+			return false;
 		end
-		return;
+
+		local _, _, _, _, _, _, _, name, icon = petJournal.GetPetInfoByPetID(petGUID);
+		return name ~= nil and icon ~= nil;
+	end
+
+	local activePetGUID = petJournal.GetSummonedPetGUID();
+	local activePetGUIDKey = activePetGUID ~= nil and tostring(activePetGUID) or "";
+	local outfitData = MogCompanions:GetActiveOutfitTable();
+	local selectedPetGUIDs = {};
+
+	if outfitData ~= nil then
+		selectedPetGUIDs = MogCompanions:GetValidSelectionPoolValues(outfitData, "Pets", function(_, petID)
+			return IsValidOwnedPetGUID(petID);
+		end);
+	end
+
+	if #selectedPetGUIDs > 0 then
+		local summonPool = {};
+
+		for i = 1, #selectedPetGUIDs do
+			local candidatePetGUID = selectedPetGUIDs[i];
+			if type(candidatePetGUID) == "string" and candidatePetGUID ~= "" then
+				if activePetGUIDKey == "" or candidatePetGUID ~= activePetGUIDKey then
+					table.insert(summonPool, candidatePetGUID);
+				end
+			end
+		end
+
+		if #summonPool == 0 then
+			return;
+		end
+
+		local selectedPetGUID = summonPool[math.random(1, #summonPool)];
+		local currentPetGUID = petJournal.GetSummonedPetGUID();
+		local currentPetGUIDKey = currentPetGUID ~= nil and tostring(currentPetGUID) or activePetGUIDKey;
+		if selectedPetGUID ~= nil and selectedPetGUID ~= "" and selectedPetGUID ~= currentPetGUIDKey and IsValidOwnedPetGUID(selectedPetGUID) then
+			petJournal.SummonPetByGUID(selectedPetGUID);
+			return;
+		end
 	end
 
 	local randomPetGUID = MogCompanions:getRandomPet(activePetGUID);

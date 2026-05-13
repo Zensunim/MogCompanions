@@ -21,6 +21,13 @@ L["Item Slot Flying Mount Clear Tooltip"] = "Clear Flying Mount";
 L["Item Slot Ground Mount Clear Tooltip"] = "Clear Ground Mount";
 L["Item Slot Hearthstone Clear Tooltip"] = "Clear Hearthstone";
 L["Item Slot Pet Clear Tooltip"] = "Clear Pet";
+L["Selected Count Format"] = "(%d selected)";
+L["Random From Selected Mounts"] = "Random from %d selected mounts";
+L["More Selected Mounts"] = "+%d more";
+L["Random From Selected Hearthstones"] = "Random from %d selected hearthstones";
+L["More Selected Hearthstones"] = "+%d more";
+L["Random From Selected Pets"] = "Random from %d selected pets";
+L["More Selected Pets"] = "+%d more";
 
 -- Tab
 L["Companions Tab Title"] = "Companions";
@@ -42,8 +49,11 @@ L["Drop Macro Tooltip"] = "Drop this Mount macro in |nyour action bar";
 L["Drop Pet Macro Tooltip"] = "Drop this pet macro in |nyour action bar";
 L["Drop Hearthstone Macro Tooltip"] = "Drop this Hearthstone macro in |nyour action bar";
 L["Show Flying In Ground Toggle"] = "Show flying mounts in ground mount list";
+L["Show Selected"] = "Show Selected";
+L["Show All"] = "Show All";
+L["No Items Match Search"] = "No items match your search";
 L["Slash Help Mount"] = "Summon or dismount using MogCompanions";
-L["Slash Help Pet"] = "Summon the active outfit pet, or a random pet if none is set. Pet macro modifiers can also summon random pets or dismiss your current pet.";
+L["Slash Help Pet"] = "Summon a random pet from the active outfit selection, or a random pet if none is set. Pet macro modifiers can also summon random pets or dismiss your current pet.";
 L["Slash Help Options"] = "Open the MogCompanions options panel";
 L["No Hearthstone Toys"] = "No Hearthstone toys are available.";
 L["Pet Command Stub"] = "Pets companion actions are not implemented yet.";
@@ -77,14 +87,14 @@ L["Settings Summon Random Mount"] = "Summon Random Mount";
 
 -- Hearthstone Macro Modifier Settings
 L["Settings Hearthstone Macro Title"] = "Hearthstone Macro";
-L["Settings Use Selected Hearthstone"] = "Use Selected Hearthstone";
+L["Settings Use Selected Hearthstone"] = "Use Selected Hearthstone Pool";
 L["Settings Use Garrison Hearthstone"] = "Use Garrison Hearthstone";
 L["Settings Use Dalaran Hearthstone"] = "Use Dalaran Hearthstone";
 L["Settings Teleport Home"] = "Teleport Home (Coming Soon)";
 
 -- Pet Macro Modifier Settings
 L["Settings Pet Macro Title"] = "Pet Macro";
-L["Settings Summon Selected Pet"] = "Summon Selected Pet";
+L["Settings Summon Selected Pet"] = "Summon Selected Pet Pool";
 L["Settings Summon Random Pet"] = "Summon Random Pet";
 L["Settings Summon Random Favorite Pet"] = "Summon Random Favorite Pet";
 L["Settings Dismiss Pet"] = "Dismiss Pet";

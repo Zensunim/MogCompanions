@@ -23,14 +23,19 @@ local HearthstoneBorderHighlight;
 local HearthstoneBorderHighlightTexture;
 local HearthstoneClear;
 local HearthstonesPage;
+local HearthstoneSlotTitle;
 local HearthstonesSearchBox;
 local HearthstoneListScrollView;
+local HearthstoneListScrollBox;
 local HearthstoneDataProvider;
-local HearthstoneSelectionBehavior;
+local RefreshHearthstoneList;
+local HearthstoneShowSelectedButton;
+local HearthstoneNoResultsText;
 local HearthstonesInitialized = false;
 local HearthstoneSecureButton;
 local HearthstonePendingItemID;
 local HearthstoneShortcuts;
+local ShowOnlySelectedHearthstones = false;
 
 MogCompanions.HearthstoneSearchString = "";
 MogCompanionsSelectedHearthstone = {};
@@ -65,13 +70,130 @@ local function GetOutfitTable(outfitID)
 	return MogCompanionsCharacterSaved["Outfit"..outfitID];
 end
 
--- Returns a toy info table for the hearthstone pinned to the given outfit,
--- or nil if none is pinned or the toy is no longer collected.
+local function IsValidHearthstoneSelection(itemID)
+	return type(itemID) == "number" and itemID > 1 and MogCompanions:IsHearthstoneToyCollected(itemID);
+end
+
+local function GetValidHearthstoneSelectionValues(outfit)
+	return MogCompanions:GetValidSelectionPoolValues(outfit, "Hearthstones", MogCompanions.IsHearthstoneToyCollected);
+end
+
+local function GetValidHearthstoneSelection(outfit, preferLast, preferredItemID)
+	if outfit == nil then
+		return 1;
+	end
+
+	if IsValidHearthstoneSelection(preferredItemID) then
+		return preferredItemID;
+	end
+
+	local validSelections = GetValidHearthstoneSelectionValues(outfit);
+	if #validSelections == 0 then
+		return 1;
+	end
+
+	if preferLast then
+		return validSelections[#validSelections];
+	end
+
+	return validSelections[1];
+end
+
+local function SyncLegacyHearthstoneSelection(outfit)
+	if outfit == nil then
+		return 1;
+	end
+
+	local itemID = GetValidHearthstoneSelection(outfit, false);
+	outfit.Hearthstone = itemID;
+	return itemID;
+end
+
+local function GetValidHearthstoneToyInfos(outfit)
+	local validSelections = GetValidHearthstoneSelectionValues(outfit);
+	local toys = {};
+
+	for i = 1, #validSelections do
+		local toy = MogCompanions:GetHearthstoneToyInfo(validSelections[i]);
+		if toy ~= nil then
+			table.insert(toys, toy);
+		end
+	end
+
+	return toys;
+end
+
+local function GetFilteredSelectedHearthstones(outfit)
+	local toys = MogCompanions:getSortedHearthstoneToys(false);
+	return MogCompanions:FilterSelectedOnly(toys, outfit, "Hearthstones");
+end
+
+local function SetHearthstoneSectionTitle(count)
+	if HearthstoneSlotTitle == nil then
+		return;
+	end
+
+	if count > 0 then
+		HearthstoneSlotTitle:SetText(L["Hearthstone Tab Title"].." "..string.format(L["Selected Count Format"], count));
+	else
+		HearthstoneSlotTitle:SetText(L["Hearthstone Tab Title"]);
+	end
+end
+
+local function GetHearthstoneTooltipLines(outfit)
+	local toys = GetValidHearthstoneToyInfos(outfit);
+	local tooltipLines = {};
+
+	if #toys > 0 then
+		table.insert(tooltipLines, string.format(L["Random From Selected Hearthstones"], #toys));
+
+		for i = 1, math.min(3, #toys) do
+			table.insert(tooltipLines, "|T"..toys[i].icon..":18|t "..toys[i].name);
+		end
+
+		if #toys > 3 then
+			table.insert(tooltipLines, string.format(L["More Selected Hearthstones"], #toys - 3));
+		end
+	end
+
+	return tooltipLines, #toys;
+end
+
+local function RefreshVisibleHearthstoneRows()
+	if HearthstoneListScrollBox == nil or HearthstoneListScrollBox.ScrollTarget == nil then
+		return;
+	end
+
+	local outfit = GetOutfitTable(GetViewedOutfitID());
+	local children = { HearthstoneListScrollBox.ScrollTarget:GetChildren() };
+
+	for i = 1, #children do
+		local child = children[i];
+		local itemID = child.HearthstoneID;
+		if itemID ~= nil then
+			local isSelected = outfit ~= nil and MogCompanions:IsInSelectionPool(outfit, "Hearthstones", itemID);
+
+			if child.CheckboxCheck ~= nil then
+				child.CheckboxCheck:SetShown(isSelected);
+			end
+
+			if isSelected then
+				child:LockHighlight();
+			else
+				child:UnlockHighlight();
+			end
+		end
+	end
+end
+
+-- Returns a toy info table for the first valid selected hearthstone for the given outfit,
+-- or nil if none is selected or the toy is no longer collected.
 local function GetSelectedHearthstoneToy(outfitID)
 	local outfit = GetOutfitTable(outfitID);
+	local itemID = GetValidHearthstoneSelection(outfit, false);
 
-	if outfit ~= nil and outfit.Hearthstone ~= nil and outfit.Hearthstone > 1 and MogCompanions:IsHearthstoneToyCollected(outfit.Hearthstone) then
-		return MogCompanions:GetHearthstoneToyInfo(outfit.Hearthstone);
+	if itemID > 1 then
+		return MogCompanions:GetHearthstoneToyInfo(itemID);
 	end
 
 	return nil;
@@ -104,13 +226,15 @@ local function EnsureHearthstoneSecureButton()
 end
 
 -- Returns the item ID to use for the secure button for the given outfit.
--- Prefers a pinned toy (outfit.Hearthstone > 1). Falls back to a random collected toy.
+-- Uses a random valid selected toy when the outfit pool is non-empty.
+-- Falls back to a random collected toy when the pool is empty.
 -- Returns nil if no hearthstone toys are collected at all.
 local function GetHearthstoneItemIDForOutfit(outfitID)
 	local outfit = GetOutfitTable(outfitID);
+	local validSelections = GetValidHearthstoneSelectionValues(outfit);
 
-	if outfit ~= nil and outfit.Hearthstone ~= nil and outfit.Hearthstone > 1 and MogCompanions:IsHearthstoneToyCollected(outfit.Hearthstone) then
-		return outfit.Hearthstone;
+	if #validSelections > 0 then
+		return validSelections[math.random(1, #validSelections)];
 	end
 
 	local randomToy = MogCompanions:getRandomHearthstoneToy();
@@ -174,9 +298,9 @@ local function EnsureHearthstonePostClick()
 		if InCombatLockdown and InCombatLockdown() then
 			return;
 		end
-		-- Re-randomize for next press when no specific toy is pinned to this outfit
+		-- Re-arm for the next press when the active outfit resolves to a random choice.
 		local outfit = GetOutfitTable(GetActiveOutfitID());
-		if outfit == nil or outfit.Hearthstone == nil or outfit.Hearthstone <= 1 then
+		if outfit == nil or #GetValidHearthstoneSelectionValues(outfit) ~= 1 then
 			SetHearthstoneSecureButtonItem(GetHearthstoneItemIDForOutfit(GetActiveOutfitID()));
 		end
 	end);
@@ -264,16 +388,12 @@ local function UpdateHearthstoneSlot()
 
 	local outfitID = GetViewedOutfitID();
 	local outfit = GetOutfitTable(outfitID);
-	local selectedItemID = 1;
-
-	if outfit ~= nil and outfit.Hearthstone ~= nil then
-		selectedItemID = outfit.Hearthstone;
-	end
+	local selectedItemID = SyncLegacyHearthstoneSelection(outfit);
 
 	local toy = nil;
 
 	if selectedItemID > 1 then
-		toy = GetSelectedHearthstoneToy(outfitID);
+		toy = MogCompanions:GetHearthstoneToyInfo(selectedItemID);
 	end
 
 	if toy ~= nil then
@@ -294,10 +414,11 @@ local function UpdateHearthstoneSlot()
 
 	HearthstoneTexture:SetAllPoints(HearthstoneFrame);
 	HearthstoneFrame.texture = HearthstoneTexture;
+	SetHearthstoneSectionTitle(select(2, GetHearthstoneTooltipLines(outfit)));
 end
 
--- Saves the chosen hearthstone toy for the currently viewed outfit and refreshes the UI.
--- itemID = 1 means "clear" (fall back to random).
+-- Toggles a hearthstone toy in the current outfit pool and refreshes the UI.
+-- itemID = 1 clears the pool and falls back to random collected toys.
 local function SetSelectedHearthstone(itemID)
 	local outfitID = GetViewedOutfitID();
 	local outfit = GetOutfitTable(outfitID);
@@ -306,29 +427,71 @@ local function SetSelectedHearthstone(itemID)
 		return;
 	end
 
-	outfit.Hearthstone = itemID;
+	if itemID == nil or itemID <= 1 then
+		MogCompanions:ClearSelectionPool(outfit, "Hearthstones");
+	else
+		MogCompanions:ToggleSelectionPoolValue(outfit, "Hearthstones", itemID);
+	end
+
+	SyncLegacyHearthstoneSelection(outfit);
 	UpdateHearthstoneSlot();
+	RefreshHearthstoneList(false);
 	RefreshHearthstoneSecureButton();
+
+	if PlaySound ~= nil and SOUNDKIT ~= nil and SOUNDKIT.UI_TRANSMOG_ITEM_CLICK ~= nil then
+		PlaySound(SOUNDKIT.UI_TRANSMOG_ITEM_CLICK);
+	end
 end
 
 function ClearSelectedHearthstone()
+	ShowOnlySelectedHearthstones = false;
 	SetSelectedHearthstone(1);
 end
 
 -- Flushes and repopulates the HearthstoneDataProvider with the current toy list.
 -- Called after search text changes, outfit changes, or toy collection changes.
-local function RefreshHearthstoneList()
-	if HearthstoneDataProvider == nil then
+RefreshHearthstoneList = function(scrollToSelection)
+	if HearthstoneListScrollView == nil then
 		return;
 	end
 
-	local toys = MogCompanions:getSortedHearthstoneToys(false);
-
-	HearthstoneDataProvider:Flush();
-
-	for i = 1, #toys do
-		HearthstoneDataProvider:Insert(toys[i]);
+	local outfit = GetOutfitTable(GetViewedOutfitID());
+	if outfit ~= nil then
+		MogCompanions:PruneInvalidSelectionPool(outfit, "Hearthstones", MogCompanions.IsHearthstoneToyCollected);
+		SyncLegacyHearthstoneSelection(outfit);
 	end
+
+	local selectedCount = #GetValidHearthstoneSelectionValues(outfit);
+	if selectedCount <= 0 then
+		ShowOnlySelectedHearthstones = false;
+	end
+
+	local toys;
+	if ShowOnlySelectedHearthstones then
+		toys = GetFilteredSelectedHearthstones(outfit);
+	else
+		toys = MogCompanions:getSortedHearthstoneToys(false);
+	end
+
+	local selectedItemID = GetValidHearthstoneSelection(outfit, false);
+
+	HearthstoneDataProvider = CreateDataProvider(toys);
+	HearthstoneListScrollView:SetDataProvider(HearthstoneDataProvider);
+
+	if scrollToSelection and HearthstonesPage ~= nil then
+		if HearthstoneListScrollBox ~= nil and selectedItemID > 1 then
+			for i = 1, #toys do
+				if toys[i].id == selectedItemID then
+					HearthstoneListScrollBox:ScrollToElementDataIndex(i);
+					break;
+				end
+			end
+		end
+	end
+
+	SetHearthstoneSectionTitle(selectedCount);
+	MogCompanions:UpdateShowSelectedButton(HearthstoneShowSelectedButton, ShowOnlySelectedHearthstones, selectedCount);
+	MogCompanions:UpdateNoResultsText(HearthstoneNoResultsText, HearthstonesSearchBox, #toys);
 end
 
 -- Creates a "MogComp Hearth" macro (or edits the existing one) and puts it on the cursor
@@ -407,11 +570,11 @@ function MogCompanions:CreateHearthstonesFrame(parent)
 			SearchBoxTemplate_OnTextChanged(self);
 		end
 		MogCompanions.HearthstoneSearchString = self:GetText() or "";
-		RefreshHearthstoneList();
+		RefreshHearthstoneList(true);
 	end)
 
 	-- Section title (matching Mounts FlyingSlotTitle style)
-	local HearthstoneSlotTitle = HearthstonesPage:CreateFontString(nil, "OVERLAY", "GameFontHighlightHuge");
+	HearthstoneSlotTitle = HearthstonesPage:CreateFontString(nil, "OVERLAY", "GameFontHighlightHuge");
 	HearthstoneSlotTitle:SetJustifyH("LEFT");
 	HearthstoneSlotTitle:SetPoint("TOPLEFT", HearthstonesPage, "TOPLEFT", 24, -76 + topOffset);
 	HearthstoneSlotTitle:SetText(L["Hearthstone Tab Title"]);
@@ -427,32 +590,50 @@ function MogCompanions:CreateHearthstonesFrame(parent)
 	HearthstoneList:SetPoint("BOTTOMRIGHT", HearthstonesPage, "BOTTOMRIGHT", -listRightInset, 42);
 	HearthstoneList:SetFrameStrata("HIGH");
 
+	HearthstoneShowSelectedButton = CreateFrame("Button", nil, HearthstonesPage, "UIPanelButtonTemplate");
+	HearthstoneShowSelectedButton:SetSize(110, 22);
+	HearthstoneShowSelectedButton:SetPoint("BOTTOMRIGHT", HearthstoneList, "TOPRIGHT", 0, 4);
+	HearthstoneShowSelectedButton:SetText(L["Show Selected"]);
+	HearthstoneShowSelectedButton:Hide();
+	HearthstoneShowSelectedButton:SetScript("OnClick", function()
+		ShowOnlySelectedHearthstones = not ShowOnlySelectedHearthstones;
+		RefreshHearthstoneList(false);
+	end);
+
 	local HearthstoneListBackground = HearthstoneList:CreateTexture(nil, "OVERLAY");
 	HearthstoneListBackground:SetAtlas("transmog-situations-containerbg", true);
 	HearthstoneListBackground:SetAllPoints(true);
 
+	HearthstoneNoResultsText = HearthstoneList:CreateFontString(nil, "OVERLAY", "GameFontDisable");
+	HearthstoneNoResultsText:SetPoint("CENTER", HearthstoneList, "CENTER", 0, 0);
+	HearthstoneNoResultsText:SetText(L["No Items Match Search"]);
+	HearthstoneNoResultsText:Hide();
+
 	-- ScrollBox
-	local HearthstoneScrollBox = CreateFrame("Frame", "MogCompanionsHearthstoneScrollBox", HearthstoneList, "WowScrollBoxList");
-	HearthstoneScrollBox:SetPoint("TOPLEFT", HearthstoneList, "TOPLEFT", 12, -2);
-	HearthstoneScrollBox:SetPoint("BOTTOMRIGHT", HearthstoneList, "BOTTOMRIGHT", -40, 4);
+	HearthstoneListScrollBox = CreateFrame("Frame", "MogCompanionsHearthstoneScrollBox", HearthstoneList, "WowScrollBoxList");
+	HearthstoneListScrollBox:SetPoint("TOPLEFT", HearthstoneList, "TOPLEFT", 12, -2);
+	HearthstoneListScrollBox:SetPoint("BOTTOMRIGHT", HearthstoneList, "BOTTOMRIGHT", -40, 4);
 
 	-- ScrollBar
 	local HearthstoneScrollBar = CreateFrame("EventFrame", nil, HearthstoneList, "MinimalScrollBar");
-	HearthstoneScrollBar:SetPoint("TOPLEFT", HearthstoneScrollBox, "TOPRIGHT", 10, -6);
-	HearthstoneScrollBar:SetPoint("BOTTOMLEFT", HearthstoneScrollBox, "BOTTOMRIGHT", 10, 6);
+	HearthstoneScrollBar:SetPoint("TOPLEFT", HearthstoneListScrollBox, "TOPRIGHT", 10, -6);
+	HearthstoneScrollBar:SetPoint("BOTTOMLEFT", HearthstoneListScrollBox, "BOTTOMRIGHT", 10, 6);
 	HearthstoneScrollBar:SetHideIfUnscrollable(true);
 
 	-- Data provider and scroll view
 	HearthstoneDataProvider = CreateDataProvider();
 	local scrollView = CreateScrollBoxListLinearView();
-	HearthstoneSelectionBehavior = ScrollUtil.AddSelectionBehavior(HearthstoneScrollBox, SelectionBehaviorFlags.Intrusive);
 
 	local function HearthstoneListInitializer(button, data)
 		local outfit = GetOutfitTable(GetViewedOutfitID());
-		local isSelected = outfit ~= nil and outfit.Hearthstone == data.id;
+		local isSelected = outfit ~= nil and MogCompanions:IsInSelectionPool(outfit, "Hearthstones", data.id);
 
+		button.HearthstoneID = data.id;
 		button.Name:SetText("|T"..data.icon..":18|t "..data.name);
 		button:SetHighlightTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight");
+		if button.CheckboxCheck ~= nil then
+			button.CheckboxCheck:SetShown(isSelected);
+		end
 
 		if isSelected then
 			button:LockHighlight();
@@ -462,7 +643,6 @@ function MogCompanions:CreateHearthstonesFrame(parent)
 
 		button:SetScript("OnClick", function(self)
 			SetSelectedHearthstone(data.id);
-			RefreshHearthstoneList();
 		end)
 		button:SetScript("OnEnter", function(self)
 			GameTooltip:SetOwner(self, "ANCHOR_RIGHT");
@@ -474,9 +654,9 @@ function MogCompanions:CreateHearthstonesFrame(parent)
 		end)
 	end
 
-	scrollView:SetElementInitializer("MogCompanionsListButtonTemplate", HearthstoneListInitializer);
+	scrollView:SetElementInitializer("MogCompanionsMultiSelectListButtonTemplate", HearthstoneListInitializer);
 	scrollView:SetElementExtent(22);
-	ScrollUtil.InitScrollBoxListWithScrollBar(HearthstoneScrollBox, HearthstoneScrollBar, scrollView);
+	ScrollUtil.InitScrollBoxListWithScrollBar(HearthstoneListScrollBox, HearthstoneScrollBar, scrollView);
 	scrollView:SetDataProvider(HearthstoneDataProvider);
 
 	HearthstoneListScrollView = scrollView;
@@ -485,6 +665,7 @@ function MogCompanions:CreateHearthstonesFrame(parent)
 	for i = 1, #toys do
 		HearthstoneDataProvider:Insert(toys[i]);
 	end
+	SetHearthstoneSectionTitle(select(2, GetHearthstoneTooltipLines(GetOutfitTable(GetViewedOutfitID()))));
 
 	return HearthstonesPage;
 end
@@ -547,24 +728,20 @@ local function CreateHearthstoneSlot()
 	HearthstoneClear:SetScript("OnClick", function()
 		ClearSelectedHearthstone();
 		HearthstoneClear:Hide();
-		RefreshHearthstoneList();
 	end)
 
 	HearthstoneBorder:HookScript("OnEnter", function()
 		GameTooltip:SetOwner(HearthstoneBorder, "ANCHOR_RIGHT");
 
 		local outfit = GetOutfitTable(GetViewedOutfitID());
+		local tooltipLines, count = GetHearthstoneTooltipLines(outfit);
 
-		if outfit ~= nil and outfit.Hearthstone ~= nil and outfit.Hearthstone > 1 then
-			local toy = GetSelectedHearthstoneToy(GetViewedOutfitID());
-
-			if toy ~= nil then
-				GameTooltip:AddLine(toy.name);
-				GameTooltip:AddLine("|cFFFFFFFF"..L["Item Slot Hearthstone Title"].."|r");
-				HearthstoneClear:Show();
-			else
-				GameTooltip:SetText(L["Item Slot Hearthstone Title"]);
+		if count > 0 then
+			GameTooltip:AddLine(L["Item Slot Hearthstone Title"]);
+			for i = 1, #tooltipLines do
+				GameTooltip:AddLine(tooltipLines[i], 1, 1, 1);
 			end
+			HearthstoneClear:Show();
 		else
 			GameTooltip:SetText(L["Item Slot Hearthstone Title"]);
 		end
@@ -676,6 +853,10 @@ HearthstoneEventFrame:SetScript("OnEvent", function(self, event, ...)
 		if itemID == nil or not MogCompanions:hasValue(MogCompanions.HearthstoneToyItemIDs, itemID) then
 			return;
 		end
+	end
+
+	if event == "VIEWED_TRANSMOG_OUTFIT_CHANGED" or event == "TRANSMOG_DISPLAYED_OUTFIT_CHANGED" then
+		ShowOnlySelectedHearthstones = false;
 	end
 
 	EnsureOutfitHearthstoneSaved();
