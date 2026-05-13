@@ -88,6 +88,41 @@ local function EnsureDestinationSavedVariables()
 	end
 end
 
+local function GetMogMountDefaultTables()
+	local accountDefaults = nil;
+	local characterDefaults = nil;
+
+	if type(MogMountSaved) == "table" and type(MogMountSaved.Default) == "table" then
+		accountDefaults = MogMountSaved.Default;
+	end
+
+	if type(MogMountCharacterSaved) == "table" and type(MogMountCharacterSaved.Default) == "table" then
+		characterDefaults = MogMountCharacterSaved.Default;
+	end
+
+	return accountDefaults, characterDefaults;
+end
+
+local function GetMogMountDefaultValue(accountDefaults, characterDefaults, key, alternateKey)
+	if accountDefaults ~= nil and type(accountDefaults[key]) == "number" then
+		return accountDefaults[key];
+	end
+
+	if alternateKey ~= nil and accountDefaults ~= nil and type(accountDefaults[alternateKey]) == "number" then
+		return accountDefaults[alternateKey];
+	end
+
+	if characterDefaults ~= nil and type(characterDefaults[key]) == "number" then
+		return characterDefaults[key];
+	end
+
+	if alternateKey ~= nil and characterDefaults ~= nil and type(characterDefaults[alternateKey]) == "number" then
+		return characterDefaults[alternateKey];
+	end
+
+	return nil;
+end
+
 local function ImportMogMountSettingsInternal()
 	if MogCompanions == nil or MogCompanions.CreateEmptyOutfit == nil then
 		return false, "MogMount Import Failed";
@@ -102,6 +137,7 @@ local function ImportMogMountSettingsInternal()
 	local importedAnything = false;
 	local importedOutfitCount = 0;
 	local importedMountCount = 0;
+	local accountDefaults, characterDefaults = GetMogMountDefaultTables();
 
 	if type(MogMountSaved) == "table" then
 		if MogMountSaved.ShowFlyingInGround ~= nil and MogCompanionsSaved.ShowFlyingInGround == nil then
@@ -115,31 +151,23 @@ local function ImportMogMountSettingsInternal()
 		end
 	end
 
+	local aquaticValue = GetMogMountDefaultValue(accountDefaults, characterDefaults, "Aquatic");
+	if type(aquaticValue) == "number"
+		and (MogCompanionsCharacterSaved.Default.Aquatic == nil or MogCompanionsCharacterSaved.Default.Aquatic == 0 or MogCompanionsCharacterSaved.Default.Aquatic == 1)
+		and MogCompanionsCharacterSaved.Default.Aquatic ~= aquaticValue then
+		MogCompanionsCharacterSaved.Default.Aquatic = aquaticValue;
+		importedAnything = true;
+	end
+
+	local repairValue = GetMogMountDefaultValue(accountDefaults, characterDefaults, "Repair", "Special");
+	if type(repairValue) == "number"
+		and (MogCompanionsCharacterSaved.Default.Repair == nil or MogCompanionsCharacterSaved.Default.Repair == 0 or MogCompanionsCharacterSaved.Default.Repair == 1)
+		and MogCompanionsCharacterSaved.Default.Repair ~= repairValue then
+		MogCompanionsCharacterSaved.Default.Repair = repairValue;
+		importedAnything = true;
+	end
+
 	if type(MogMountCharacterSaved) == "table" then
-		local sourceDefault = MogMountCharacterSaved.Default;
-		local repairValue = nil;
-
-		if type(sourceDefault) == "table" then
-			if type(sourceDefault.Aquatic) == "number"
-				and (MogCompanionsCharacterSaved.Default.Aquatic == nil or MogCompanionsCharacterSaved.Default.Aquatic == 0 or MogCompanionsCharacterSaved.Default.Aquatic == 1)
-				and MogCompanionsCharacterSaved.Default.Aquatic ~= sourceDefault.Aquatic then
-				MogCompanionsCharacterSaved.Default.Aquatic = sourceDefault.Aquatic;
-				importedAnything = true;
-			end
-
-			if type(sourceDefault.Repair) == "number" then
-				repairValue = sourceDefault.Repair;
-			elseif type(sourceDefault.Special) == "number" then
-				repairValue = sourceDefault.Special;
-			end
-		end
-
-		if type(repairValue) == "number"
-			and (MogCompanionsCharacterSaved.Default.Repair == nil or MogCompanionsCharacterSaved.Default.Repair == 0 or MogCompanionsCharacterSaved.Default.Repair == 1)
-			and MogCompanionsCharacterSaved.Default.Repair ~= repairValue then
-			MogCompanionsCharacterSaved.Default.Repair = repairValue;
-			importedAnything = true;
-		end
 
 		for key, sourceOutfit in pairs(MogMountCharacterSaved) do
 			local outfitID = string.match(key, "^Outfit(%d+)$");
