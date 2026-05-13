@@ -43,7 +43,7 @@ local LastClickedFlyingMountID, LastClickedGroundMountID;
 local ShowOnlySelectedFlyingMounts = false;
 local ShowOnlySelectedGroundMounts = false;
 
-local MountListSearchBox, FilterDropdown, ShortcutSettings;
+local MountListSearchBox, FilterDropdown, MountShortcuts;
 
 MogCompanions.MountSearchString = "";
 
@@ -849,8 +849,8 @@ local function FilterSetChecked(filter)
 end
 
 local function CreateShortcuts(f, topOffset)
-	ShortcutSettings = MogCompanions:CreateCompanionsShortcutMenu(f, "ShortcutSettings");
-	ShortcutSettings:SetPoint("TOPRIGHT", f, "TOPRIGHT", -26, -50 + (topOffset or 0));
+	MountShortcuts = MogCompanions:CreateCompanionsShortcutMenu(f, "MogCompanionsMountShortcuts");
+	MountShortcuts:SetPoint("TOPRIGHT", f, "TOPRIGHT", -26, -50 + (topOffset or 0));
 end
 
 local function GetConfiguredMountMacroConditionLabel(mountID)

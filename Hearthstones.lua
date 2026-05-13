@@ -556,7 +556,7 @@ function MogCompanions:CreateHearthstonesFrame(parent)
 	local topOffset = 26;
 	local listRightInset = 28;
 
-	-- Gear dropdown (matching Mounts tab ShortcutSettings)
+	-- Gear dropdown (matching Mounts tab MountShortcuts)
 	HearthstoneShortcuts = MogCompanions:CreateCompanionsShortcutMenu(HearthstonesPage, "MogCompanionsHearthstoneShortcuts");
 	HearthstoneShortcuts:SetPoint("TOPRIGHT", HearthstonesPage, "TOPRIGHT", -26, -50 + topOffset);
 
