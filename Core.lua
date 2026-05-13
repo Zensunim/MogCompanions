@@ -147,6 +147,7 @@ function MogCompanions:SummonPet()
 	end
 
 	local activePetGUID = petJournal.GetSummonedPetGUID();
+	local activePetGUIDKey = activePetGUID ~= nil and tostring(activePetGUID) or "";
 	local outfitData = MogCompanions:GetActiveOutfitTable();
 	local selectedPetGUIDs = {};
 
@@ -157,8 +158,25 @@ function MogCompanions:SummonPet()
 	end
 
 	if #selectedPetGUIDs > 0 then
-		local selectedPetGUID = selectedPetGUIDs[math.random(1, #selectedPetGUIDs)];
-		if activePetGUID ~= selectedPetGUID then
+		local summonPool = {};
+
+		for i = 1, #selectedPetGUIDs do
+			local candidatePetGUID = selectedPetGUIDs[i];
+			if type(candidatePetGUID) == "string" and candidatePetGUID ~= "" then
+				if activePetGUIDKey == "" or candidatePetGUID ~= activePetGUIDKey then
+					table.insert(summonPool, candidatePetGUID);
+				end
+			end
+		end
+
+		if #summonPool == 0 then
+			return;
+		end
+
+		local selectedPetGUID = summonPool[math.random(1, #summonPool)];
+		local currentPetGUID = petJournal.GetSummonedPetGUID();
+		local currentPetGUIDKey = currentPetGUID ~= nil and tostring(currentPetGUID) or activePetGUIDKey;
+		if selectedPetGUID ~= nil and selectedPetGUID ~= "" and selectedPetGUID ~= currentPetGUIDKey then
 			petJournal.SummonPetByGUID(selectedPetGUID);
 		end
 		return;
