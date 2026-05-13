@@ -37,6 +37,7 @@ local FlyingMountClear, GroundMountClear;
 local SetSelectedFlyingMount, SetSelectedGroundMount;
 local RefreshFlyingMountList, RefreshGroundMountList, RefreshMountSlots;
 local FlyingSlotTitle, GroundSlotTitle;
+local LastClickedFlyingMountID, LastClickedGroundMountID;
 
 local MountListSearchBox, FilterDropdown, ShortcutSettings;
 
@@ -166,20 +167,50 @@ local function ClearSelectedMountDetails(type)
 	MogCompanionsSelectedMount[type].type = nil;
 end
 
+local function GetValidPoolMountSelection(outfit, poolKey, category, preferLast, preferredMountID)
+	if outfit == nil then
+		return 1;
+	end
+
+	if type(preferredMountID) == "number" and preferredMountID > 1 then
+		if MogCompanions:IsMountUsableForCategory(preferredMountID, category) then
+			return preferredMountID;
+		end
+	end
+
+	local pool = MogCompanions:GetOutfitSelectionPool(outfit, poolKey);
+	if pool == nil then
+		return 1;
+	end
+
+	if preferLast then
+		for i = #pool, 1, -1 do
+			local mountID = pool[i];
+			if type(mountID) == "number" and MogCompanions:IsMountUsableForCategory(mountID, category) then
+				return mountID;
+			end
+		end
+	else
+		for i = 1, #pool do
+			local mountID = pool[i];
+			if type(mountID) == "number" and MogCompanions:IsMountUsableForCategory(mountID, category) then
+				return mountID;
+			end
+		end
+	end
+
+	return 1;
+end
+
 local function SyncLegacyMountSelection(outfit, legacyKey, poolKey, category)
 	if outfit == nil then
 		return 1;
 	end
 
-	local pool = MogCompanions:GetOutfitSelectionPool(outfit, poolKey);
-	if pool ~= nil then
-		for i = 1, #pool do
-			local mountID = pool[i];
-			if type(mountID) == "number" and MogCompanions:IsMountUsableForCategory(mountID, category) then
-				outfit[legacyKey] = mountID;
-				return mountID;
-			end
-		end
+	local mountID = GetValidPoolMountSelection(outfit, poolKey, category, false);
+	if mountID > 1 then
+		outfit[legacyKey] = mountID;
+		return mountID;
 	end
 
 	outfit[legacyKey] = 1;
@@ -282,7 +313,11 @@ local function UpdateMountSlot(type, legacyKey, poolKey, category, texture, fram
 
 	texture:SetAllPoints(frame);
 	frame.texture = texture;
-	UpdateMountPreviewModel(previewModel, previewControls, mountID);
+	if type == "Flying" then
+		UpdateMountPreviewModel(previewModel, previewControls, GetValidPoolMountSelection(outfit, poolKey, category, false, LastClickedFlyingMountID));
+	else
+		UpdateMountPreviewModel(previewModel, previewControls, GetValidPoolMountSelection(outfit, poolKey, category, false, LastClickedGroundMountID));
+	end
 end
 
 RefreshMountSlots = function()
@@ -974,8 +1009,8 @@ function MogCompanions:InitMountTab()
 		if outfit ~= nil then
 			local flyingMountID = SyncLegacyMountSelection(outfit, "Flying", "FlyingMounts", "flying");
 			local groundMountID = SyncLegacyMountSelection(outfit, "Ground", "GroundMounts", "ground");
-			flyingModelID = C_MountJournal.GetMountInfoExtraByID(flyingMountID);
-			groundModelID = C_MountJournal.GetMountInfoExtraByID(groundMountID);
+			flyingModelID = C_MountJournal.GetMountInfoExtraByID(GetValidPoolMountSelection(outfit, "FlyingMounts", "flying", true));
+			groundModelID = C_MountJournal.GetMountInfoExtraByID(GetValidPoolMountSelection(outfit, "GroundMounts", "ground", true));
 		end
 
 		-- Flying mount model preview frame and list
@@ -1054,6 +1089,8 @@ function MogCompanions:InitMountTab()
 				return;
 			end
 
+			LastClickedFlyingMountID = value;
+
 			if value == nil or value <= 1 then
 				MogCompanions:ClearSelectionPool(outfit, "FlyingMounts");
 			else
@@ -1097,7 +1134,7 @@ function MogCompanions:InitMountTab()
 
 			button:SetScript("OnLeave", function()
 				local viewedOutfit = GetViewedOutfitData();
-				local mountID = SyncLegacyMountSelection(viewedOutfit, "Flying", "FlyingMounts", "flying");
+				local mountID = GetValidPoolMountSelection(viewedOutfit, "FlyingMounts", "flying", false, LastClickedFlyingMountID);
 				UpdateMountPreviewModel(FlyingMountModel, FlyingMountPreviewControls, mountID);
 			end)
 			button:SetScript("OnClick", function()
@@ -1122,8 +1159,9 @@ function MogCompanions:InitMountTab()
 			FlyingMountListScrollView:SetDataProvider(FlyingMountDataProvider);
 
 			if scrollToSelection and viewedOutfit ~= nil and FlyingMountListScrollBox ~= nil then
+				local scrollMountID = GetValidPoolMountSelection(viewedOutfit, "FlyingMounts", "flying", false);
 				for i = 1, #mounts do
-					if MogCompanions:IsInSelectionPool(viewedOutfit, "FlyingMounts", mounts[i].id) then
+					if mounts[i].id == scrollMountID then
 						FlyingMountListScrollBox:ScrollToElementDataIndex(i);
 						break;
 					end
@@ -1213,6 +1251,8 @@ function MogCompanions:InitMountTab()
 				return;
 			end
 
+			LastClickedGroundMountID = value;
+
 			if value == nil or value <= 1 then
 				MogCompanions:ClearSelectionPool(outfit, "GroundMounts");
 			else
@@ -1256,7 +1296,7 @@ function MogCompanions:InitMountTab()
 
 			button:SetScript("OnLeave", function()
 				local viewedOutfit = GetViewedOutfitData();
-				local mountID = SyncLegacyMountSelection(viewedOutfit, "Ground", "GroundMounts", "ground");
+				local mountID = GetValidPoolMountSelection(viewedOutfit, "GroundMounts", "ground", false, LastClickedGroundMountID);
 				UpdateMountPreviewModel(GroundMountModel, GroundMountPreviewControls, mountID);
 			end)
 			button:SetScript("OnClick", function()
@@ -1281,8 +1321,9 @@ function MogCompanions:InitMountTab()
 			GroundMountListScrollView:SetDataProvider(GroundMountDataProvider);
 
 			if scrollToSelection and viewedOutfit ~= nil and GroundMountListScrollBox ~= nil then
+				local scrollMountID = GetValidPoolMountSelection(viewedOutfit, "GroundMounts", "ground", false);
 				for i = 1, #mounts do
-					if MogCompanions:IsInSelectionPool(viewedOutfit, "GroundMounts", mounts[i].id) then
+					if mounts[i].id == scrollMountID then
 						GroundMountListScrollBox:ScrollToElementDataIndex(i);
 						break;
 					end
@@ -1467,6 +1508,9 @@ function UpdateSelectedMountRow()
         or RefreshGroundMountList == nil then
         return;
     end
+
+	LastClickedFlyingMountID = nil;
+	LastClickedGroundMountID = nil;
 
 	RefreshMountSlots();
 	RefreshFlyingMountList(true);
