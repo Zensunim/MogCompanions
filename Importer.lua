@@ -51,19 +51,23 @@ local function ReloadUIFromClick()
 	end
 end
 
-local function AddUniqueMount(pool, mountID)
-	if type(pool) ~= "table" or type(mountID) ~= "number" then
+local function AddUniqueValue(pool, value)
+	if type(pool) ~= "table" or value == nil or value == "" then
 		return false;
 	end
 
 	for i = 1, #pool do
-		if pool[i] == mountID then
+		if pool[i] == value then
 			return false;
 		end
 	end
 
-	table.insert(pool, mountID);
+	table.insert(pool, value);
 	return true;
+end
+
+local function IsValidModifierValue(value)
+	return type(value) == "number" and value >= 1 and value <= 3;
 end
 
 local function EnsureDestinationSavedVariables()
@@ -78,49 +82,6 @@ local function EnsureDestinationSavedVariables()
 	if MogCompanionsCharacterSaved.Default == nil then
 		MogCompanionsCharacterSaved.Default = {};
 	end
-
-	if MogCompanionsCharacterSaved.Default.Aquatic == nil then
-		MogCompanionsCharacterSaved.Default.Aquatic = 0;
-	end
-
-	if MogCompanionsCharacterSaved.Default.Repair == nil then
-		MogCompanionsCharacterSaved.Default.Repair = 0;
-	end
-end
-
-local function GetMogMountDefaultTables()
-	local accountDefaults = nil;
-	local characterDefaults = nil;
-
-	if type(MogMountSaved) == "table" and type(MogMountSaved.Default) == "table" then
-		accountDefaults = MogMountSaved.Default;
-	end
-
-	if type(MogMountCharacterSaved) == "table" and type(MogMountCharacterSaved.Default) == "table" then
-		characterDefaults = MogMountCharacterSaved.Default;
-	end
-
-	return accountDefaults, characterDefaults;
-end
-
-local function GetMogMountDefaultValue(accountDefaults, characterDefaults, key, alternateKey)
-	if accountDefaults ~= nil and type(accountDefaults[key]) == "number" then
-		return accountDefaults[key];
-	end
-
-	if alternateKey ~= nil and accountDefaults ~= nil and type(accountDefaults[alternateKey]) == "number" then
-		return accountDefaults[alternateKey];
-	end
-
-	if characterDefaults ~= nil and type(characterDefaults[key]) == "number" then
-		return characterDefaults[key];
-	end
-
-	if alternateKey ~= nil and characterDefaults ~= nil and type(characterDefaults[alternateKey]) == "number" then
-		return characterDefaults[alternateKey];
-	end
-
-	return nil;
 end
 
 local function ImportMogMountSettingsInternal()
@@ -135,40 +96,30 @@ local function ImportMogMountSettingsInternal()
 	EnsureDestinationSavedVariables();
 
 	local importedAnything = false;
-	local importedOutfitCount = 0;
-	local importedMountCount = 0;
-	local accountDefaults, characterDefaults = GetMogMountDefaultTables();
 
-	if type(MogMountSaved) == "table" then
-		if MogMountSaved.ShowFlyingInGround ~= nil and MogCompanionsSaved.ShowFlyingInGround == nil then
-			MogCompanionsSaved.ShowFlyingInGround = MogMountSaved.ShowFlyingInGround;
-			importedAnything = true;
+	-- Default mounts
+	if type(MogMountSaved) == "table" and type(MogMountSaved.Default) == "table" then
+		local aquaticValue = MogMountSaved.Default.Aquatic;
+		if type(aquaticValue) == "number" then
+			local dest = MogCompanionsCharacterSaved.Default.Aquatic;
+			if dest == nil or dest == 0 or dest == 1 then
+				MogCompanionsCharacterSaved.Default.Aquatic = aquaticValue;
+				importedAnything = true;
+			end
 		end
 
-		if MogMountSaved.RandomGroundAllowFlying ~= nil and MogCompanionsSaved.RandomGroundAllowFlying == nil then
-			MogCompanionsSaved.RandomGroundAllowFlying = MogMountSaved.RandomGroundAllowFlying;
-			importedAnything = true;
+		local specialValue = MogMountSaved.Default.Special;
+		if type(specialValue) == "number" then
+			local dest = MogCompanionsCharacterSaved.Default.Repair;
+			if dest == nil or dest == 0 or dest == 1 then
+				MogCompanionsCharacterSaved.Default.Repair = specialValue;
+				importedAnything = true;
+			end
 		end
 	end
 
-	local aquaticValue = GetMogMountDefaultValue(accountDefaults, characterDefaults, "Aquatic");
-	if type(aquaticValue) == "number"
-		and (MogCompanionsCharacterSaved.Default.Aquatic == nil or MogCompanionsCharacterSaved.Default.Aquatic == 0 or MogCompanionsCharacterSaved.Default.Aquatic == 1)
-		and MogCompanionsCharacterSaved.Default.Aquatic ~= aquaticValue then
-		MogCompanionsCharacterSaved.Default.Aquatic = aquaticValue;
-		importedAnything = true;
-	end
-
-	local repairValue = GetMogMountDefaultValue(accountDefaults, characterDefaults, "Repair", "Special");
-	if type(repairValue) == "number"
-		and (MogCompanionsCharacterSaved.Default.Repair == nil or MogCompanionsCharacterSaved.Default.Repair == 0 or MogCompanionsCharacterSaved.Default.Repair == 1)
-		and MogCompanionsCharacterSaved.Default.Repair ~= repairValue then
-		MogCompanionsCharacterSaved.Default.Repair = repairValue;
-		importedAnything = true;
-	end
-
+	-- Per-outfit settings
 	if type(MogMountCharacterSaved) == "table" then
-
 		for key, sourceOutfit in pairs(MogMountCharacterSaved) do
 			local outfitID = string.match(key, "^Outfit(%d+)$");
 
@@ -177,47 +128,146 @@ local function ImportMogMountSettingsInternal()
 				MogCompanions:CreateEmptyOutfit(outfitID);
 
 				local destinationOutfit = MogCompanionsCharacterSaved["Outfit" .. outfitID];
-				local outfitImported = false;
 
+				-- Flying
 				if type(sourceOutfit.Flying) == "number" and sourceOutfit.Flying > 1 then
-					if AddUniqueMount(destinationOutfit.FlyingMounts, sourceOutfit.Flying) then
-						importedMountCount = importedMountCount + 1;
-						importedAnything = true;
-						outfitImported = true;
+					if type(destinationOutfit.FlyingMounts) ~= "table" then
+						destinationOutfit.FlyingMounts = {};
 					end
-
-					if destinationOutfit.Flying == nil or destinationOutfit.Flying == 0 or destinationOutfit.Flying == 1 then
+					if AddUniqueValue(destinationOutfit.FlyingMounts, sourceOutfit.Flying) then
+						importedAnything = true;
+					end
+					local dest = destinationOutfit.Flying;
+					if dest == nil or dest == 0 or dest == 1 then
 						destinationOutfit.Flying = sourceOutfit.Flying;
 						importedAnything = true;
-						outfitImported = true;
 					end
 				end
 
+				-- Ground
 				if type(sourceOutfit.Ground) == "number" and sourceOutfit.Ground > 1 then
-					if AddUniqueMount(destinationOutfit.GroundMounts, sourceOutfit.Ground) then
-						importedMountCount = importedMountCount + 1;
-						importedAnything = true;
-						outfitImported = true;
+					if type(destinationOutfit.GroundMounts) ~= "table" then
+						destinationOutfit.GroundMounts = {};
 					end
-
-					if destinationOutfit.Ground == nil or destinationOutfit.Ground == 0 or destinationOutfit.Ground == 1 then
+					if AddUniqueValue(destinationOutfit.GroundMounts, sourceOutfit.Ground) then
+						importedAnything = true;
+					end
+					local dest = destinationOutfit.Ground;
+					if dest == nil or dest == 0 or dest == 1 then
 						destinationOutfit.Ground = sourceOutfit.Ground;
 						importedAnything = true;
-						outfitImported = true;
 					end
 				end
 
-				if type(sourceOutfit.Title) == "number"
-					and (destinationOutfit.Title == nil or destinationOutfit.Title == 0)
-					and destinationOutfit.Title ~= sourceOutfit.Title then
-					destinationOutfit.Title = sourceOutfit.Title;
-					importedAnything = true;
-					outfitImported = true;
+				-- Hearthstone
+				if type(sourceOutfit.Hearthstone) == "number" and sourceOutfit.Hearthstone > 1 then
+					if type(destinationOutfit.Hearthstones) ~= "table" then
+						destinationOutfit.Hearthstones = {};
+					end
+					if AddUniqueValue(destinationOutfit.Hearthstones, sourceOutfit.Hearthstone) then
+						importedAnything = true;
+					end
+					local dest = destinationOutfit.Hearthstone;
+					if dest == nil or dest == 0 or dest == 1 then
+						destinationOutfit.Hearthstone = sourceOutfit.Hearthstone;
+						importedAnything = true;
+					end
 				end
 
-				if outfitImported then
-					importedOutfitCount = importedOutfitCount + 1;
+				-- Pet
+				if type(sourceOutfit.Pet) == "string" and sourceOutfit.Pet ~= "" then
+					if type(destinationOutfit.Pets) ~= "table" then
+						destinationOutfit.Pets = {};
+					end
+					if AddUniqueValue(destinationOutfit.Pets, sourceOutfit.Pet) then
+						importedAnything = true;
+					end
+					local dest = destinationOutfit.Pet;
+					if dest == nil or dest == "" then
+						destinationOutfit.Pet = sourceOutfit.Pet;
+						importedAnything = true;
+					end
 				end
+
+				-- Title
+				if type(sourceOutfit.Title) == "number" then
+					local dest = destinationOutfit.Title;
+					if dest == nil or dest == 0 then
+						destinationOutfit.Title = sourceOutfit.Title;
+						importedAnything = true;
+					end
+				end
+			end
+		end
+	end
+
+	-- Mount modifiers
+	if type(MogMountSaved) == "table" and type(MogMountSaved.MountMods) == "table" then
+		local sourceMods = MogMountSaved.MountMods;
+		local sourceGroundValid = IsValidModifierValue(sourceMods.Ground);
+		local sourceSpecialValid = IsValidModifierValue(sourceMods.Special);
+		local sourceValues = {};
+		local sourceDuplicates = false;
+		if sourceGroundValid then
+			if sourceValues[sourceMods.Ground] then sourceDuplicates = true; end
+			sourceValues[sourceMods.Ground] = true;
+		end
+		if sourceSpecialValid then
+			if sourceValues[sourceMods.Special] then sourceDuplicates = true; end
+			sourceValues[sourceMods.Special] = true;
+		end
+
+		if not sourceDuplicates then
+			if MogCompanionsSaved.MountMods == nil then
+				MogCompanionsSaved.MountMods = {};
+			end
+			if sourceGroundValid and not IsValidModifierValue(MogCompanionsSaved.MountMods.Ground) then
+				MogCompanionsSaved.MountMods.Ground = sourceMods.Ground;
+				importedAnything = true;
+			end
+			if sourceSpecialValid and not IsValidModifierValue(MogCompanionsSaved.MountMods.Repair) then
+				MogCompanionsSaved.MountMods.Repair = sourceMods.Special;
+				importedAnything = true;
+			end
+		end
+	end
+
+	-- Hearthstone modifiers
+	if type(MogMountSaved) == "table" and type(MogMountSaved.HearthstoneMods) == "table" then
+		local sourceMods = MogMountSaved.HearthstoneMods;
+		local sourceGarrisonValid = IsValidModifierValue(sourceMods.Garrison);
+		local sourceDalaranValid = IsValidModifierValue(sourceMods.Dalaran);
+		local sourceTeleportHomeValid = IsValidModifierValue(sourceMods.TeleportHome);
+		local sourceValues = {};
+		local sourceDuplicates = false;
+		if sourceGarrisonValid then
+			if sourceValues[sourceMods.Garrison] then sourceDuplicates = true; end
+			sourceValues[sourceMods.Garrison] = true;
+		end
+		if sourceDalaranValid then
+			if sourceValues[sourceMods.Dalaran] then sourceDuplicates = true; end
+			sourceValues[sourceMods.Dalaran] = true;
+		end
+		if sourceTeleportHomeValid then
+			if sourceValues[sourceMods.TeleportHome] then sourceDuplicates = true; end
+			sourceValues[sourceMods.TeleportHome] = true;
+		end
+
+		if not sourceDuplicates then
+			if MogCompanionsSaved.HearthstoneMods == nil then
+				MogCompanionsSaved.HearthstoneMods = {};
+			end
+			if sourceGarrisonValid and not IsValidModifierValue(MogCompanionsSaved.HearthstoneMods.Garrison) then
+				MogCompanionsSaved.HearthstoneMods.Garrison = sourceMods.Garrison;
+				importedAnything = true;
+			end
+			if sourceDalaranValid and not IsValidModifierValue(MogCompanionsSaved.HearthstoneMods.Dalaran) then
+				MogCompanionsSaved.HearthstoneMods.Dalaran = sourceMods.Dalaran;
+				importedAnything = true;
+			end
+			if sourceTeleportHomeValid and not IsValidModifierValue(MogCompanionsSaved.HearthstoneMods.TeleportHome) then
+				MogCompanionsSaved.HearthstoneMods.TeleportHome = sourceMods.TeleportHome;
+				importedAnything = true;
 			end
 		end
 	end
@@ -225,13 +275,6 @@ local function ImportMogMountSettingsInternal()
 	if not importedAnything then
 		return false, "MogMount Import No Data";
 	end
-
-	MogCompanionsCharacterSaved.MogMountImport = {
-		Imported = true,
-		ImportedAt = date("%Y-%m-%d %H:%M:%S"),
-		ImportedOutfits = importedOutfitCount,
-		ImportedMounts = importedMountCount,
-	};
 
 	return true;
 end
@@ -334,18 +377,14 @@ local choices = {
 
 			if success then
 				print(L["MogMount Import Complete"]);
-				DisableAddonForCurrentCharacter("MogMount");
-				ReloadUIFromClick();
-				return;
+			elseif failureKey == "MogMount Import No Data" then
+				print(L["MogMount Import No Data"]);
+			else
+				print(L[failureKey or "MogMount Import Failed"]);
 			end
 
-			if failureKey == "MogMount Import No Data" then
-				DisableAddonForCurrentCharacter("MogMount");
-				ReloadUIFromClick();
-				return;
-			end
-
-			print(L[failureKey or "MogMount Import Failed"]);
+			DisableAddonForCurrentCharacter("MogMount");
+			ReloadUIFromClick();
 		end,
 	},
 	{
