@@ -146,6 +146,15 @@ function MogCompanions:SummonPet()
 		return;
 	end
 
+	local function IsValidOwnedPetGUID(petGUID)
+		if type(petGUID) ~= "string" or petGUID == "" or petJournal.GetPetInfoByPetID == nil then
+			return false;
+		end
+
+		local _, _, _, _, _, _, _, name, icon = petJournal.GetPetInfoByPetID(petGUID);
+		return name ~= nil and icon ~= nil;
+	end
+
 	local activePetGUID = petJournal.GetSummonedPetGUID();
 	local activePetGUIDKey = activePetGUID ~= nil and tostring(activePetGUID) or "";
 	local outfitData = MogCompanions:GetActiveOutfitTable();
@@ -153,7 +162,7 @@ function MogCompanions:SummonPet()
 
 	if outfitData ~= nil then
 		selectedPetGUIDs = MogCompanions:GetValidSelectionPoolValues(outfitData, "Pets", function(_, petID)
-			return petID ~= nil and petID ~= "" and C_PetJournal ~= nil and C_PetJournal.GetPetInfoByPetID ~= nil and select(8, C_PetJournal.GetPetInfoByPetID(petID)) ~= nil;
+			return IsValidOwnedPetGUID(petID);
 		end);
 	end
 
@@ -176,10 +185,10 @@ function MogCompanions:SummonPet()
 		local selectedPetGUID = summonPool[math.random(1, #summonPool)];
 		local currentPetGUID = petJournal.GetSummonedPetGUID();
 		local currentPetGUIDKey = currentPetGUID ~= nil and tostring(currentPetGUID) or activePetGUIDKey;
-		if selectedPetGUID ~= nil and selectedPetGUID ~= "" and selectedPetGUID ~= currentPetGUIDKey then
+		if selectedPetGUID ~= nil and selectedPetGUID ~= "" and selectedPetGUID ~= currentPetGUIDKey and IsValidOwnedPetGUID(selectedPetGUID) then
 			petJournal.SummonPetByGUID(selectedPetGUID);
+			return;
 		end
-		return;
 	end
 
 	local randomPetGUID = MogCompanions:getRandomPet(activePetGUID);
