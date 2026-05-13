@@ -407,12 +407,16 @@ local function CreatePetSlot()
 	end)
 
 	PetBorder:HookScript("OnEnter", function()
-		local pet = GetSelectedPet(GetViewedOutfitID());
-
 		GameTooltip:SetOwner(PetBorder, "ANCHOR_RIGHT");
-		if pet ~= nil then
-			GameTooltip:AddLine(pet.name);
-			GameTooltip:AddLine("|cFFFFFFFF"..L["Item Slot Pet Title"].."|r");
+
+		local outfit = GetOutfitTable(GetViewedOutfitID());
+		local tooltipLines, count = GetPetTooltipLines(outfit);
+
+		if count > 0 then
+			GameTooltip:AddLine(L["Item Slot Pet Title"]);
+			for i = 1, #tooltipLines do
+				GameTooltip:AddLine(tooltipLines[i], 1, 1, 1);
+			end
 			PetClear:Show();
 		else
 			GameTooltip:SetText(L["Item Slot Pet Title"]);
