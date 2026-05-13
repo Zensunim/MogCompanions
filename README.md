@@ -25,8 +25,14 @@ No third-party code is knowingly included beyond the work credited above and cod
 * Added Hearthstones tab support for selecting an owned Hearthstone toy per outfit.
 
 ### 1.1
-* Consolidated the Mounts and Hearthstones tabs into a single Companions tab with Mounts, Hearthstones, and Pets sub-tabs.
-* Added modifier customization
-* Added pet support including modifiers and macros
-* Added mount cloning support
-* Renamed "Special" to "Repair" and "Alternative" to "Random"
+* Consolidated mounts, hearthstones, and pets into a single Companions tab with dedicated sub-tabs.
+* Added multi-selection support for mounts, hearthstones, and pets.
+* Added companion pet support:
+  * Assign pets to individual transmog outfits.
+  * Use `/mcomp pet` to summon the outfit pet, or a random pet when no pet is selected.
+  * Create a pet macro from the Companions shortcut menu.
+* Added mount and pet preview controls for zooming, positioning, rotating, and resetting preview models.
+* Added configurable macro modifiers for mounts, hearthstones, and pets.
+* Added Clone targeted mount setting. When enabled, summoning a random mount while targeting a mounted player will summon the same mount if you own it.
+* Renamed "Special Mount" to "Repair Mount" and "Alternative Mount" to "Random Mount" for clearer behavior.
+* Improved selection cleanup so invalid, unowned, or unavailable selections are removed automatically.

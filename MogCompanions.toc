@@ -1,9 +1,9 @@
 ## Interface: 120005
 ## Title: Mog Companions
-## Notes: Companions for your transmogs
-## Author: Zensunim of Dragonblight (forked from perrinthesmith's MogCompanions addon)
+## Notes: Companion pairings for your transmogs
+## Author: Zensunim of Dragonblight
 ## IconTexture: 6841475
-## Version: 1.2
+## Version: 1.1
 ## DefaultState: Enabled
 ## Category: Transmogrification
 ## SavedVariables: MogCompanionsSaved
