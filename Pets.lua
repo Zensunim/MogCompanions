@@ -25,9 +25,11 @@ local PetsSearchBox;
 local PetsDataProvider;
 local PetsScrollView;
 local PetsListScrollBox;
+local PetsSlotTitle;
 local PetsInitScheduled = false;
 local RefreshPetList;
 local PetDetailsCache = {};
+local LastClickedPetID;
 
 MogCompanions.PetSearchString = "";
 
@@ -82,14 +84,103 @@ local function GetPetDataByGUID(petID)
 	return PetDetailsCache[petID];
 end
 
+local function IsValidPetSelection(petID)
+	return type(petID) == "string" and petID ~= "" and GetPetDataByGUID(petID) ~= nil;
+end
+
+local function ValidatePetSelection(_, petID)
+	return IsValidPetSelection(petID);
+end
+
+local function GetValidPetSelectionValues(outfit)
+	return MogCompanions:GetValidSelectionPoolValues(outfit, "Pets", ValidatePetSelection);
+end
+
+local function GetValidPetSelection(outfit, preferLast, preferredPetID)
+	if outfit == nil then
+		return "";
+	end
+
+	if IsValidPetSelection(preferredPetID) then
+		return preferredPetID;
+	end
+
+	local validSelections = GetValidPetSelectionValues(outfit);
+	if #validSelections == 0 then
+		return "";
+	end
+
+	if preferLast then
+		return validSelections[#validSelections];
+	end
+
+	return validSelections[1];
+end
+
+local function SyncLegacyPetSelection(outfit)
+	if outfit == nil then
+		return "";
+	end
+
+	local petID = GetValidPetSelection(outfit, false);
+	outfit.Pet = petID;
+	return petID;
+end
+
+local function GetValidPetDataSelections(outfit)
+	local validSelections = GetValidPetSelectionValues(outfit);
+	local pets = {};
+
+	for i = 1, #validSelections do
+		local pet = GetPetDataByGUID(validSelections[i]);
+		if pet ~= nil then
+			table.insert(pets, pet);
+		end
+	end
+
+	return pets;
+end
+
+local function SetPetsSectionTitle(count)
+	if PetsSlotTitle == nil then
+		return;
+	end
+
+	if count > 0 then
+		PetsSlotTitle:SetText(L["Pets Tab Section Title"].." "..string.format(L["Selected Count Format"], count));
+	else
+		PetsSlotTitle:SetText(L["Pets Tab Section Title"]);
+	end
+end
+
+local function GetPetTooltipLines(outfit)
+	local pets = GetValidPetDataSelections(outfit);
+	local tooltipLines = {};
+
+	if #pets > 0 then
+		table.insert(tooltipLines, string.format(L["Random From Selected Pets"], #pets));
+
+		for i = 1, math.min(3, #pets) do
+			table.insert(tooltipLines, "|T"..pets[i].icon..":18|t "..pets[i].name);
+		end
+
+		if #pets > 3 then
+			table.insert(tooltipLines, string.format(L["More Selected Pets"], #pets - 3));
+		end
+	end
+
+	return tooltipLines, #pets;
+end
+
 local function GetSelectedPet(outfitID)
 	local outfit = GetOutfitTable(outfitID);
+	local petID = GetValidPetSelection(outfit, false);
 
-	if outfit == nil or outfit.Pet == nil or outfit.Pet == "" then
+	if petID == nil or petID == "" then
 		return nil;
 	end
 
-	return GetPetDataByGUID(outfit.Pet);
+	return GetPetDataByGUID(petID);
 end
 
 local function EnsurePetModel()
@@ -152,7 +243,9 @@ local function UpdatePetSlot()
 		return;
 	end
 
-	local pet = GetSelectedPet(GetViewedOutfitID());
+	local outfit = GetOutfitTable(GetViewedOutfitID());
+	local petID = SyncLegacyPetSelection(outfit);
+	local pet = GetPetDataByGUID(petID);
 
 	if pet ~= nil then
 		PetTexture:SetTexture(pet.icon);
@@ -170,6 +263,8 @@ local function UpdatePetSlot()
 
 	PetTexture:SetAllPoints(PetFrame);
 	PetFrame.texture = PetTexture;
+	SetPetsSectionTitle(select(2, GetPetTooltipLines(outfit)));
+	UpdatePetPreview(GetValidPetSelection(outfit, false, LastClickedPetID));
 end
 
 RefreshPetList = function(scrollToSelection)
@@ -178,19 +273,22 @@ RefreshPetList = function(scrollToSelection)
 	end
 
 	local pets = MogCompanions:GetSortedPets();
-	local selectedPet = GetSelectedPet(GetViewedOutfitID());
+	local outfit = GetOutfitTable(GetViewedOutfitID());
+	local selectedPetID = GetValidPetSelection(outfit, false);
 
 	PetsDataProvider = CreateDataProvider(pets);
 	PetsScrollView:SetDataProvider(PetsDataProvider);
 
-	if scrollToSelection and PetsListScrollBox ~= nil and selectedPet ~= nil then
+	if scrollToSelection and PetsListScrollBox ~= nil and selectedPetID ~= nil and selectedPetID ~= "" then
 		for i = 1, #pets do
-			if pets[i].id == selectedPet.id then
+			if pets[i].id == selectedPetID then
 				PetsListScrollBox:ScrollToElementDataIndex(i);
 				break;
 			end
 		end
 	end
+
+	SetPetsSectionTitle(select(2, GetPetTooltipLines(outfit)));
 end
 
 local function SetSelectedPet(petID)
@@ -204,10 +302,18 @@ local function SetSelectedPet(petID)
 		petID = "";
 	end
 
-	outfit.Pet = petID;
+	LastClickedPetID = petID;
+
+	if petID == "" then
+		MogCompanions:ClearSelectionPool(outfit, "Pets");
+	else
+		MogCompanions:ToggleSelectionPoolValue(outfit, "Pets", petID);
+	end
+
+	SyncLegacyPetSelection(outfit);
 
 	UpdatePetSlot();
-	UpdatePetPreview(petID);
+	UpdatePetPreview(GetValidPetSelection(outfit, false, LastClickedPetID));
 	RefreshPetList(false);
 
 	if PlaySound ~= nil and SOUNDKIT ~= nil and SOUNDKIT.UI_TRANSMOG_ITEM_CLICK ~= nil then
@@ -216,6 +322,7 @@ local function SetSelectedPet(petID)
 	end
 
 local function ClearSelectedPet()
+	LastClickedPetID = nil;
 	SetSelectedPet("");
 	if PetClear ~= nil then
 		PetClear:Hide();
@@ -344,7 +451,7 @@ function MogCompanions:CreatePetMacro(parent)
 	local macroIcon = 656575;
 	local showTooltipLine = "#showtooltip";
 	local outfitData = MogCompanions:GetActiveOutfitTable();
-	local selectedPet = outfitData and GetPetDataByGUID(outfitData.Pet);
+	local selectedPet = outfitData and GetPetDataByGUID(SyncLegacyPetSelection(outfitData));
 	if selectedPet ~= nil then
 		macroIcon = selectedPet.icon or macroIcon;
 		showTooltipLine = showTooltipLine .. " " .. selectedPet.name;
@@ -413,7 +520,7 @@ function MogCompanions:CreatePetsFrame(parent)
 	end)
 
 	-- Section title (matching the Mounts tab layout style)
-	local PetsSlotTitle = PetsFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightHuge");
+	PetsSlotTitle = PetsFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightHuge");
 	PetsSlotTitle:SetJustifyH("LEFT");
 	PetsSlotTitle:SetPoint("TOPLEFT", PetsFrame, "TOPLEFT", 24, -76 + topOffset);
 	PetsSlotTitle:SetText(L["Pets Tab Section Title"]);
@@ -463,12 +570,15 @@ function MogCompanions:CreatePetsFrame(parent)
 
 	PetsDataProvider = CreateDataProvider();
 	PetsScrollView = CreateScrollBoxListLinearView();
-	PetsScrollView:SetElementInitializer("MogCompanionsListButtonTemplate", function(button, data)
-		local selectedPet = GetSelectedPet(GetViewedOutfitID());
-		local isSelected = selectedPet ~= nil and selectedPet.id == data.id;
+	PetsScrollView:SetElementInitializer("MogCompanionsMultiSelectListButtonTemplate", function(button, data)
+		local outfit = GetOutfitTable(GetViewedOutfitID());
+		local isSelected = outfit ~= nil and MogCompanions:IsInSelectionPool(outfit, "Pets", data.id);
 
 		button.Name:SetText("|T"..data.icon..":18|t "..data.name);
 		button:SetHighlightTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight");
+		if button.CheckboxCheck ~= nil then
+			button.CheckboxCheck:SetShown(isSelected);
+		end
 
 		if isSelected then
 			button:LockHighlight();
@@ -485,7 +595,8 @@ function MogCompanions:CreatePetsFrame(parent)
 		end)
 		button:SetScript("OnLeave", function()
 			GameTooltip:Hide();
-			UpdatePetPreview(GetSelectedPet(GetViewedOutfitID()));
+			local viewedOutfit = GetOutfitTable(GetViewedOutfitID());
+			UpdatePetPreview(GetValidPetSelection(viewedOutfit, false, LastClickedPetID));
 		end)
 		button:SetScript("OnClick", function()
 			SetSelectedPet(data.id);

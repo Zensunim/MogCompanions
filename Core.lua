@@ -148,9 +148,16 @@ function MogCompanions:SummonPet()
 
 	local activePetGUID = petJournal.GetSummonedPetGUID();
 	local outfitData = MogCompanions:GetActiveOutfitTable();
-	local selectedPetGUID = outfitData and outfitData.Pet;
+	local selectedPetGUIDs = {};
 
-	if selectedPetGUID ~= nil and selectedPetGUID ~= "" then
+	if outfitData ~= nil then
+		selectedPetGUIDs = MogCompanions:GetValidSelectionPoolValues(outfitData, "Pets", function(_, petID)
+			return petID ~= nil and petID ~= "" and C_PetJournal ~= nil and C_PetJournal.GetPetInfoByPetID ~= nil and select(8, C_PetJournal.GetPetInfoByPetID(petID)) ~= nil;
+		end);
+	end
+
+	if #selectedPetGUIDs > 0 then
+		local selectedPetGUID = selectedPetGUIDs[math.random(1, #selectedPetGUIDs)];
 		if activePetGUID ~= selectedPetGUID then
 			petJournal.SummonPetByGUID(selectedPetGUID);
 		end

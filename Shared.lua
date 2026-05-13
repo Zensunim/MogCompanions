@@ -543,6 +543,23 @@ function MogCompanions:GetSelectionPoolCount(outfit, poolKey)
 	return #pool;
 end
 
+function MogCompanions:GetValidSelectionPoolValues(outfit, poolKey, isValidFunc)
+	local pool = MogCompanions:GetOutfitSelectionPool(outfit, poolKey);
+	if pool == nil or type(isValidFunc) ~= "function" then
+		return {};
+	end
+
+	local validValues = {};
+	for i = 1, #pool do
+		local value = pool[i];
+		if isValidFunc(self, value) then
+			addUniquePoolValue(validValues, value);
+		end
+	end
+
+	return validValues;
+end
+
 -- Returns sorted mount info tables for all still-valid selections in the saved pool.
 function MogCompanions:GetValidMountPoolInfos(outfit, poolKey, category)
 	local pool = MogCompanions:GetOutfitSelectionPool(outfit, poolKey);
@@ -864,8 +881,22 @@ function MogCompanions:CreateEmptyOutfit(id)
 		outfit.Hearthstone = 1;
 	end
 
+	if outfit.Hearthstones == nil then
+		outfit.Hearthstones = {};
+		if outfit.Hearthstone ~= nil and outfit.Hearthstone > 1 then
+			addUniquePoolValue(outfit.Hearthstones, outfit.Hearthstone);
+		end
+	end
+
 	if outfit.Pet == nil then
 		outfit.Pet = "";
+	end
+
+	if outfit.Pets == nil then
+		outfit.Pets = {};
+		if outfit.Pet ~= nil and outfit.Pet ~= "" then
+			addUniquePoolValue(outfit.Pets, outfit.Pet);
+		end
 	end
 
 	if outfit.Title == nil then
