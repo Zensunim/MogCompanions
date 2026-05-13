@@ -655,7 +655,7 @@ function MogCompanions:CreatePetsFrame(parent)
 
 	PetShowSelectedButton = CreateFrame("Button", nil, PetsFrame, "UIPanelButtonTemplate");
 	PetShowSelectedButton:SetSize(110, 22);
-	PetShowSelectedButton:SetPoint("BOTTOMRIGHT", PetsList, "TOPRIGHT", -40, 4);
+	PetShowSelectedButton:SetPoint("BOTTOMRIGHT", PetsList, "TOPRIGHT", 0, 4);
 	PetShowSelectedButton:SetText(L["Show Selected"]);
 	PetShowSelectedButton:Hide();
 	PetShowSelectedButton:SetScript("OnClick", function()

@@ -636,7 +636,7 @@ function MogCompanions:UpdateNoResultsText(textFrame, searchBox, itemCount)
 	else
 		textFrame:Hide();
 	end
-	end
+end
 
 -- Returns sorted mount info tables for all still-valid selections in the saved pool.
 function MogCompanions:GetValidMountPoolInfos(outfit, poolKey, category)

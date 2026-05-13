@@ -592,7 +592,7 @@ function MogCompanions:CreateHearthstonesFrame(parent)
 
 	HearthstoneShowSelectedButton = CreateFrame("Button", nil, HearthstonesPage, "UIPanelButtonTemplate");
 	HearthstoneShowSelectedButton:SetSize(110, 22);
-	HearthstoneShowSelectedButton:SetPoint("BOTTOMRIGHT", HearthstoneList, "TOPRIGHT", -40, 4);
+	HearthstoneShowSelectedButton:SetPoint("BOTTOMRIGHT", HearthstoneList, "TOPRIGHT", 0, 4);
 	HearthstoneShowSelectedButton:SetText(L["Show Selected"]);
 	HearthstoneShowSelectedButton:Hide();
 	HearthstoneShowSelectedButton:SetScript("OnClick", function()

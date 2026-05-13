@@ -1100,7 +1100,7 @@ function MogCompanions:InitMountTab()
 
 		FlyingMountShowSelectedButton = CreateFrame("Button", nil, f, "UIPanelButtonTemplate");
 		FlyingMountShowSelectedButton:SetSize(110, 22);
-		FlyingMountShowSelectedButton:SetPoint("BOTTOMRIGHT", FlyingMountList, "TOPRIGHT", -40, 4);
+		FlyingMountShowSelectedButton:SetPoint("BOTTOMRIGHT", FlyingMountList, "TOPRIGHT", 0, 4);
 		FlyingMountShowSelectedButton:SetText(L["Show Selected"]);
 		FlyingMountShowSelectedButton:Hide();
 		FlyingMountShowSelectedButton:SetScript("OnClick", function()
@@ -1221,11 +1221,11 @@ function MogCompanions:InitMountTab()
 						break;
 					end
 				end
-
-				SetMountSectionTitle(FlyingSlotTitle, L["Mount Tab Flying Section Title"], selectedCount);
-				MogCompanions:UpdateShowSelectedButton(FlyingMountShowSelectedButton, ShowOnlySelectedFlyingMounts, selectedCount);
-				MogCompanions:UpdateNoResultsText(FlyingMountNoResultsText, MountListSearchBox, #mounts);
 			end
+
+			SetMountSectionTitle(FlyingSlotTitle, L["Mount Tab Flying Section Title"], selectedCount);
+			MogCompanions:UpdateShowSelectedButton(FlyingMountShowSelectedButton, ShowOnlySelectedFlyingMounts, selectedCount);
+			MogCompanions:UpdateNoResultsText(FlyingMountNoResultsText, MountListSearchBox, #mounts);
 		end
 
 		RefreshFlyingMountList(true);
@@ -1292,7 +1292,7 @@ function MogCompanions:InitMountTab()
 
 		GroundMountShowSelectedButton = CreateFrame("Button", nil, f, "UIPanelButtonTemplate");
 		GroundMountShowSelectedButton:SetSize(110, 22);
-		GroundMountShowSelectedButton:SetPoint("BOTTOMRIGHT", GroundMountList, "TOPRIGHT", -40, 4);
+		GroundMountShowSelectedButton:SetPoint("BOTTOMRIGHT", GroundMountList, "TOPRIGHT", 0, 4);
 		GroundMountShowSelectedButton:SetText(L["Show Selected"]);
 		GroundMountShowSelectedButton:Hide();
 		GroundMountShowSelectedButton:SetScript("OnClick", function()
@@ -1422,11 +1422,11 @@ function MogCompanions:InitMountTab()
 						break;
 					end
 				end
-
-				SetMountSectionTitle(GroundSlotTitle, L["Mount Tab Ground Section Title"], selectedCount);
-				MogCompanions:UpdateShowSelectedButton(GroundMountShowSelectedButton, ShowOnlySelectedGroundMounts, selectedCount);
-				MogCompanions:UpdateNoResultsText(GroundMountNoResultsText, MountListSearchBox, #mounts);
 			end
+
+			SetMountSectionTitle(GroundSlotTitle, L["Mount Tab Ground Section Title"], selectedCount);
+			MogCompanions:UpdateShowSelectedButton(GroundMountShowSelectedButton, ShowOnlySelectedGroundMounts, selectedCount);
+			MogCompanions:UpdateNoResultsText(GroundMountNoResultsText, MountListSearchBox, #mounts);
 		end
 
 		RefreshGroundMountList(true);
