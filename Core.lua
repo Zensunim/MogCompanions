@@ -215,6 +215,9 @@ SlashCmdList["MOGCOMPANIONS"] = function(msg)
 	local command = string.lower(string.match(msg or "", "^%s*(.-)%s*$"));
 
 	if command == "" or command == "help" then
+		if MogCompanions.ShowConflictResolver ~= nil then
+			MogCompanions:ShowConflictResolver();
+		end
 		PrintSlashHelp();
 	elseif command == "mount" then
 		MogCompanionsSummon();
@@ -223,6 +226,9 @@ SlashCmdList["MOGCOMPANIONS"] = function(msg)
 	elseif command == "options" then
 		OpenSettingsToMogCompanions();
 	else
+		if MogCompanions.ShowConflictResolver ~= nil then
+			MogCompanions:ShowConflictResolver();
+		end
 		PrintSlashHelp();
 	end
 end

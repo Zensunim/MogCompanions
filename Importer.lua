@@ -282,16 +282,15 @@ end
 
 local choices = {
 	{
-		key = "DisableMogMount",
-		title = L["Disable MogMount"],
-		description = L["Disable MogMount Description"],
-		buttonText = L["Disable MogMount"],
+		key = "UseMogMount",
+		title = L["Use MogMount"],
+		description = L["Disable MogCompanions Description"],
+		buttonText = L["Use MogMount"],
 		iconTexture = "Interface\\ICONS\\inv_blacksmith_leystonehoofplates_blue",
-		desaturate = true,
-		iconVertexColor = {0.9, 0.4, 0.4},
+		iconVertexColor = {1, 0.92, 0.72},
 		onClick = function()
-			print(L["MogMount Disabled"]);
-			DisableAddonForCurrentCharacter("MogMount");
+			print(L["MogCompanions Disabled"]);
+			DisableAddonForCurrentCharacter("MogCompanions");
 			ReloadUIFromClick();
 		end,
 	},
@@ -312,20 +311,25 @@ local choices = {
 				return;
 			end
 
+			if failureKey == "MogMount Import No Data" then
+				DisableAddonForCurrentCharacter("MogMount");
+				ReloadUIFromClick();
+				return;
+			end
+
 			print(L[failureKey or "MogMount Import Failed"]);
 		end,
 	},
 	{
-		key = "DisableMogCompanions",
-		title = L["Disable MogCompanions"],
-		description = L["Disable MogCompanions Description"],
-		buttonText = L["Disable MogCompanions"],
+		key = "UseMogCompanions",
+		title = L["Use MogCompanions"],
+		description = L["Disable MogMount Description"],
+		buttonText = L["Use MogCompanions"],
 		iconTexture = "Interface\\ICONS\\inv_cosmicdragonmount",
-		desaturate = true,
-		iconVertexColor = {0.88, 0.4, 0.4},
+		iconVertexColor = {1, 0.92, 0.72},
 		onClick = function()
-			print(L["MogCompanions Disabled"]);
-			DisableAddonForCurrentCharacter("MogCompanions");
+			print(L["MogMount Disabled"]);
+			DisableAddonForCurrentCharacter("MogMount");
 			ReloadUIFromClick();
 		end,
 	},
@@ -353,6 +357,10 @@ local function TryShowConflictFrame()
 	frame.pendingCombatShow = nil;
 	frame:UnregisterEvent("PLAYER_REGEN_ENABLED");
 	frame:Show();
+end
+
+function MogCompanions:ShowConflictResolver()
+	TryShowConflictFrame();
 end
 
 GetConflictFrame = function()
