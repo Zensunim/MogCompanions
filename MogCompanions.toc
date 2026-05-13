@@ -6,6 +6,7 @@
 ## Version: 1.1
 ## DefaultState: Enabled
 ## Category: Transmogrification
+## OptionalDeps: MogMount
 ## SavedVariables: MogCompanionsSaved
 ## SavedVariablesPerCharacter: MogCompanionsCharacterSaved
 ## LoadSavedVariablesFirst: 1
@@ -15,6 +16,7 @@ Locales/Localization.xml
 Core.lua
 Core.xml
 Shared.lua
+Importer.lua
 Mounts.lua
 Hearthstones.lua
 Pets.lua

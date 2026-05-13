@@ -11,6 +11,7 @@ local MogCompanions = CreateFrame('Frame', 'MogCompanionsAddonFrame', UIParent)
 ns.MogCompanions = MogCompanions;
 local L = MogCompanionsLocales;
 
+_G["BINDING_NAME_MOGCOMPANIONS_MOUNT_DISMOUNT"] = L["Binding Mount/Dismount"] or "Mount/Dismount";
 _G["BINDING_NAME_CLICK MCHearthButton:LeftButton"] = L["Use Hearthstone"] or "Use Hearthstone";
 
 local playerName = UnitName("player");

@@ -39,6 +39,7 @@ L["Pets Tab Title"] = "Pets";
 L["Pets Tab Section Title"] = "Pet";
 
 -- Settings buttons
+L["Binding Mount/Dismount"] = "Mount/Dismount";
 L["Open Settings"] = "Open Options";
 L["Open Keybinds"] = "Open Keybinds";
 L["Create Mount Macro"] = "Create Mount Macro";
@@ -59,6 +60,20 @@ L["No Hearthstone Toys"] = "No Hearthstone toys are available.";
 L["Pet Command Stub"] = "Pets companion actions are not implemented yet.";
 L["Use Hearthstone"] = "Use Hearthstone";
 L["Macro Combat Error"] = "MogCompanions cannot create macros while you are in combat.";
+L["MogMount Conflict Prompt"] = "MogMount and MogCompanions are both enabled";
+L["MogMount Conflict Body"] = "These addons cannot both manage transmog companion settings. Choose how you want to continue.";
+L["Disable MogMount"] = "Disable MogMount";
+L["Disable MogMount Description"] = "Keep using MogCompanions and disable MogMount for this character.";
+L["Transfer MogMount"] = "Transfer MogMount to MogCompanions";
+L["Transfer MogMount Button"] = "Transfer Settings";
+L["Transfer MogMount Description"] = "Transfer your MogMount outfit settings into MogCompanions and disable MogMount for this character.";
+L["Disable MogCompanions"] = "Disable MogCompanions";
+L["Disable MogCompanions Description"] = "Keep using MogMount and disable MogCompanions for this character.";
+L["MogMount Disabled"] = "MogMount disabled. Reloading UI.";
+L["MogCompanions Disabled"] = "MogCompanions disabled. Reloading UI.";
+L["MogMount Import Complete"] = "MogMount settings transferred. Disabling MogMount and reloading UI.";
+L["MogMount Import No Data"] = "No MogMount settings were found to transfer.";
+L["MogMount Import Failed"] = "MogMount settings could not be transferred.";
 
 -- Settings
 

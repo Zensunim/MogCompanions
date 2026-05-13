@@ -13,8 +13,13 @@ local MogCompanionsSettings = CreateFrame('Frame', 'MogCompanionsSettingsFrame',
 local L = MogCompanionsLocales;
 
 local settingsLoaded = false;
+local SETTINGS_PREFIX = "MogCompanions";
 
 MogCompanionsSettingsCategoryID = 0;
+
+local function CreateSettingIdentifier(name)
+	return SETTINGS_PREFIX .. name;
+end
 
 -- ── Default Mount Dropdown Data Providers ───────────────────────────────────
 -- Each GetOptionsXxx function returns a Settings control data container used by
@@ -150,11 +155,11 @@ local function InitSettings()
 
 	layout:AddInitializer(CreateSettingsListSectionHeaderInitializer(L["Settings Default Section Title"], ''));
 
-	local key1, key2 = GetBindingKey("Mount/Dismount");
+	local key1, key2 = GetBindingKey("MOGCOMPANIONS_MOUNT_DISMOUNT");
 
 	-- Default aquatic mount
 
-	local variable = "DefaultAquatic";
+	local variable = CreateSettingIdentifier("DefaultAquatic");
 	local defaultValue = 0;
 	local name = L["Settings Aquatic Mount"];
 	local tooltip = nil;
@@ -172,7 +177,7 @@ local function InitSettings()
 
 	-- Default repair mount
 
-	local variable = "DefaultRepair";
+	local variable = CreateSettingIdentifier("DefaultRepair");
 	local defaultValue = 0;
 	local name = L["Settings Repair Mount"];
 	local tooltip = nil;
@@ -192,7 +197,7 @@ local function InitSettings()
 
 	layout:AddInitializer(CreateSettingsListSectionHeaderInitializer(L["Settings Random Section Title"], ''));
 
-	local variable = "RandomGroundAllowFlying";
+	local variable = CreateSettingIdentifier("RandomGroundAllowFlying");
 	local defaultValue = true;
 	local name = L["Settings Random Ground Allow Flying"];
 	local tooltip = L["Settings Random Ground Allow Flying Tooltip"];
@@ -205,7 +210,7 @@ local function InitSettings()
 
 	-- Clone targeted mount
 
-	local variable = "CloneTargetedMount";
+	local variable = CreateSettingIdentifier("CloneTargetedMount");
 	local defaultValue = false;
 	local name = L["Settings Clone Targeted Mount"];
 	local tooltip = L["Settings Clone Targeted Mount Tooltip"];
@@ -263,7 +268,7 @@ local function InitSettings()
 		end
 	end
 
-	local variable = "MountMacroModFlyingOrGround";
+	local variable = CreateSettingIdentifier("MountMacroModFlyingOrGround");
 	local defaultValue = 1;
 	local name = L["Settings Summon Flying Mount"];
 	local variableKey = "FlyingOrGround";
@@ -278,7 +283,7 @@ local function InitSettings()
 	end
 	hooksecurefunc(initializer, "InitFrame", function(self, frame) DisableDropdown(frame); end);
 
-	local variable = "MountMacroModGround";
+	local variable = CreateSettingIdentifier("MountMacroModGround");
 	local defaultValue = 1;
 	local name = L["Settings Summon Ground Mount"];
 	local variableKey = "Ground";
@@ -289,7 +294,7 @@ local function InitSettings()
 	setting:SetValueChangedCallback(OnMountModSettingChanged);
 	tinsert(MountModDropdowns, setting);
 
-	local variable = "MountMacroModRepair";
+	local variable = CreateSettingIdentifier("MountMacroModRepair");
 	local defaultValue = 2;
 	local name = L["Settings Summon Repair Mount"];
 	local variableKey = "Repair";
@@ -300,7 +305,7 @@ local function InitSettings()
 	setting:SetValueChangedCallback(OnMountModSettingChanged);
 	tinsert(MountModDropdowns, setting);
 
-	local variable = "MountMacroModRandom";
+	local variable = CreateSettingIdentifier("MountMacroModRandom");
 	local defaultValue = 3;
 	local name = L["Settings Summon Random Mount"];
 	local variableKey = "Random";
@@ -351,7 +356,7 @@ local function InitSettings()
 
 	layout:AddInitializer(CreateSettingsListSectionHeaderInitializer(L["Settings Hearthstone Macro Title"], ''));
 
-	local variable = "HearthstoneModSelected";
+	local variable = CreateSettingIdentifier("HearthstoneModSelected");
 	local defaultValue = 1;
 	local name = L["Settings Use Selected Hearthstone"];
 	local variableKey = "Selected";
@@ -363,7 +368,7 @@ local function InitSettings()
 	-- Disable: "Click (no modifier)" is always for the selected hearthstone.
 	hooksecurefunc(initializer, "InitFrame", function(self, frame) DisableDropdown(frame); end);
 
-	local variable = "HearthstoneModGarrison";
+	local variable = CreateSettingIdentifier("HearthstoneModGarrison");
 	local defaultValue = 1;
 	local name = L["Settings Use Garrison Hearthstone"];
 	local variableKey = "Garrison";
@@ -374,7 +379,7 @@ local function InitSettings()
 	setting:SetValueChangedCallback(OnHearthstoneModSettingChanged);
 	tinsert(HearthstoneModDropdowns, setting);
 
-	local variable = "HearthstoneModDalaran";
+	local variable = CreateSettingIdentifier("HearthstoneModDalaran");
 	local defaultValue = 2;
 	local name = L["Settings Use Dalaran Hearthstone"];
 	local variableKey = "Dalaran";
@@ -385,7 +390,7 @@ local function InitSettings()
 	setting:SetValueChangedCallback(OnHearthstoneModSettingChanged);
 	tinsert(HearthstoneModDropdowns, setting);
 
-	local variable = "HearthstoneModTeleportHome";
+	local variable = CreateSettingIdentifier("HearthstoneModTeleportHome");
 	local defaultValue = 3;
 	local name = L["Settings Teleport Home"];
 	local variableKey = "TeleportHome";
@@ -429,7 +434,7 @@ local function InitSettings()
 
 	layout:AddInitializer(CreateSettingsListSectionHeaderInitializer(L["Settings Pet Macro Title"], ''));
 
-	local variable = "PetModSelected";
+	local variable = CreateSettingIdentifier("PetModSelected");
 	local defaultValue = 1;
 	local name = L["Settings Summon Selected Pet"];
 	local variableKey = "Selected";
@@ -441,7 +446,7 @@ local function InitSettings()
 	-- Disable: click without a modifier always uses the selected/random pet action.
 	hooksecurefunc(initializer, "InitFrame", function(self, frame) DisableDropdown(frame); end);
 
-	local variable = "PetModRandom";
+	local variable = CreateSettingIdentifier("PetModRandom");
 	local defaultValue = 1;
 	local name = L["Settings Summon Random Pet"];
 	local variableKey = "Random";
@@ -452,7 +457,7 @@ local function InitSettings()
 	setting:SetValueChangedCallback(OnPetModSettingChanged);
 	tinsert(PetModDropdowns, setting);
 
-	local variable = "PetModFavorite";
+	local variable = CreateSettingIdentifier("PetModFavorite");
 	local defaultValue = 2;
 	local name = L["Settings Summon Random Favorite Pet"];
 	local variableKey = "Favorite";
@@ -463,7 +468,7 @@ local function InitSettings()
 	setting:SetValueChangedCallback(OnPetModSettingChanged);
 	tinsert(PetModDropdowns, setting);
 
-	local variable = "PetModDismiss";
+	local variable = CreateSettingIdentifier("PetModDismiss");
 	local defaultValue = 3;
 	local name = L["Settings Dismiss Pet"];
 	local variableKey = "Dismiss";
