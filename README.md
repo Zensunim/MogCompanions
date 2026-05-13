@@ -36,3 +36,7 @@ No third-party code is knowingly included beyond the work credited above and cod
 * Added Clone targeted mount setting. When enabled, summoning a random mount while targeting a mounted player will summon the same mount if you own it.
 * Renamed "Special Mount" to "Repair Mount" and "Alternative Mount" to "Random Mount" for clearer behavior.
 * Improved selection cleanup so invalid, unowned, or unavailable selections are removed automatically.
+
+### 1.2
+* Added a MogMount to Mog Companions importer
+* Added a warning message if both addons are enabled at the same time
