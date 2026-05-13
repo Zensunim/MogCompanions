@@ -206,28 +206,24 @@ local function ImportMogMountSettingsInternal()
 		local sourceMods = MogMountSaved.MountMods;
 		local sourceGroundValid = IsValidModifierValue(sourceMods.Ground);
 		local sourceSpecialValid = IsValidModifierValue(sourceMods.Special);
-		local sourceValues = {};
-		local sourceDuplicates = false;
-		if sourceGroundValid then
-			if sourceValues[sourceMods.Ground] then sourceDuplicates = true; end
-			sourceValues[sourceMods.Ground] = true;
-		end
-		if sourceSpecialValid then
-			if sourceValues[sourceMods.Special] then sourceDuplicates = true; end
-			sourceValues[sourceMods.Special] = true;
-		end
 
-		if not sourceDuplicates then
+		if sourceGroundValid and sourceSpecialValid and sourceMods.Ground ~= sourceMods.Special then
 			if MogCompanionsSaved.MountMods == nil then
 				MogCompanionsSaved.MountMods = {};
 			end
-			if sourceGroundValid and not IsValidModifierValue(MogCompanionsSaved.MountMods.Ground) then
-				MogCompanionsSaved.MountMods.Ground = sourceMods.Ground;
-				importedAnything = true;
-			end
-			if sourceSpecialValid and not IsValidModifierValue(MogCompanionsSaved.MountMods.Repair) then
-				MogCompanionsSaved.MountMods.Repair = sourceMods.Special;
-				importedAnything = true;
+			MogCompanionsSaved.MountMods.Ground = sourceMods.Ground;
+			MogCompanionsSaved.MountMods.Repair = sourceMods.Special;
+			importedAnything = true;
+
+			-- Keep Random a valid unused modifier value
+			local currentRandom = MogCompanionsSaved.MountMods.Random;
+			if currentRandom == sourceMods.Ground or currentRandom == sourceMods.Special then
+				for i = 1, 3 do
+					if i ~= sourceMods.Ground and i ~= sourceMods.Special then
+						MogCompanionsSaved.MountMods.Random = i;
+						break;
+					end
+				end
 			end
 		end
 	end
@@ -238,37 +234,18 @@ local function ImportMogMountSettingsInternal()
 		local sourceGarrisonValid = IsValidModifierValue(sourceMods.Garrison);
 		local sourceDalaranValid = IsValidModifierValue(sourceMods.Dalaran);
 		local sourceTeleportHomeValid = IsValidModifierValue(sourceMods.TeleportHome);
-		local sourceValues = {};
-		local sourceDuplicates = false;
-		if sourceGarrisonValid then
-			if sourceValues[sourceMods.Garrison] then sourceDuplicates = true; end
-			sourceValues[sourceMods.Garrison] = true;
-		end
-		if sourceDalaranValid then
-			if sourceValues[sourceMods.Dalaran] then sourceDuplicates = true; end
-			sourceValues[sourceMods.Dalaran] = true;
-		end
-		if sourceTeleportHomeValid then
-			if sourceValues[sourceMods.TeleportHome] then sourceDuplicates = true; end
-			sourceValues[sourceMods.TeleportHome] = true;
-		end
+		local sourceNoDuplicates = sourceMods.Garrison ~= sourceMods.Dalaran
+			and sourceMods.Garrison ~= sourceMods.TeleportHome
+			and sourceMods.Dalaran ~= sourceMods.TeleportHome;
 
-		if not sourceDuplicates then
+		if sourceGarrisonValid and sourceDalaranValid and sourceTeleportHomeValid and sourceNoDuplicates then
 			if MogCompanionsSaved.HearthstoneMods == nil then
 				MogCompanionsSaved.HearthstoneMods = {};
 			end
-			if sourceGarrisonValid and not IsValidModifierValue(MogCompanionsSaved.HearthstoneMods.Garrison) then
-				MogCompanionsSaved.HearthstoneMods.Garrison = sourceMods.Garrison;
-				importedAnything = true;
-			end
-			if sourceDalaranValid and not IsValidModifierValue(MogCompanionsSaved.HearthstoneMods.Dalaran) then
-				MogCompanionsSaved.HearthstoneMods.Dalaran = sourceMods.Dalaran;
-				importedAnything = true;
-			end
-			if sourceTeleportHomeValid and not IsValidModifierValue(MogCompanionsSaved.HearthstoneMods.TeleportHome) then
-				MogCompanionsSaved.HearthstoneMods.TeleportHome = sourceMods.TeleportHome;
-				importedAnything = true;
-			end
+			MogCompanionsSaved.HearthstoneMods.Garrison = sourceMods.Garrison;
+			MogCompanionsSaved.HearthstoneMods.Dalaran = sourceMods.Dalaran;
+			MogCompanionsSaved.HearthstoneMods.TeleportHome = sourceMods.TeleportHome;
+			importedAnything = true;
 		end
 	end
 
