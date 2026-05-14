@@ -122,16 +122,12 @@ local function GetPetDataByGUID(petID)
 		return PetDetailsCache[petID];
 	end
 
-	local info = GetPetJournalInfo(petID);
+	if not MogCompanions:IsPetSummonableOwned(petID) then
+		return nil;
+	end
+
+	local info = MogCompanions:GetPetInfoSafe(petID);
 	if info == nil or info.name == nil or info.icon == nil then
-		return nil;
-	end
-
-	if info.isRevoked == true then
-		return nil;
-	end
-
-	if info.canSummon == false then
 		return nil;
 	end
 
@@ -754,9 +750,9 @@ function MogCompanions:CreatePetsFrame(parent)
 	local modeSpacing = 6;
 	PetModeButtons = {};
 	local modeDefs = {
-		{ key = "None", label = L["No Pet"] or "No Pet", icon = PET_NO_PET_ICON, tooltip = L["No Pet Tooltip"] or "No pet will be summoned for this outfit." },
-		{ key = "Random", label = L["Random Pet"] or "Random Pet", icon = PET_RANDOM_ICON, tooltip = L["Random Pet Tooltip"] or "A random owned summonable pet will be summoned for this outfit." },
-		{ key = "Favorite", label = L["Random Favorite Pet"] or "Random Favorite Pet", icon = PET_RANDOM_FAVORITE_ICON, tooltip = L["Random Favorite Pet Tooltip"] or "A random owned favorite summonable pet will be summoned for this outfit." },
+		{ key = "None", label = L["No Pet"] or "No Pet", icon = PET_NO_PET_ICON, tooltip = L["No Pet Tooltip"] or "No pet will be summoned for this outfit.", iconInset = 0 },
+		{ key = "Random", label = L["Random Pet"] or "Random Pet", icon = PET_RANDOM_ICON, tooltip = L["Random Pet Tooltip"] or "A random owned summonable pet will be summoned for this outfit.", iconInset = 0 },
+		{ key = "Favorite", label = L["Random Favorite Pet"] or "Random Favorite Pet", icon = PET_RANDOM_FAVORITE_ICON, tooltip = L["Random Favorite Pet Tooltip"] or "A random owned favorite summonable pet will be summoned for this outfit.", iconInset = -2 },
 	};
 	for i, def in ipairs(modeDefs) do
 		local btn = CreateFrame("Button", nil, PetsFrame, "UIPanelButtonTemplate");
@@ -766,7 +762,8 @@ function MogCompanions:CreatePetsFrame(parent)
 		btn:SetFrameLevel(PetsList:GetFrameLevel() + 5);
 		btn:SetHighlightTexture("Interface\\Buttons\\ButtonHilight-Square", "ADD");
 		btn.icon = btn:CreateTexture(nil, "ARTWORK");
-		btn.icon:SetAllPoints(btn);
+		btn.icon:SetPoint("TOPLEFT", btn, "TOPLEFT", def.iconInset, def.iconInset * -1);
+		btn.icon:SetPoint("BOTTOMRIGHT", btn, "BOTTOMRIGHT", def.iconInset * -1, def.iconInset);
 		btn.icon:SetTexture(def.icon);
 		btn.selectedBorder = btn:CreateTexture(nil, "OVERLAY");
 		btn.selectedBorder:SetTexture("Interface\\Buttons\\UI-ActionButton-Border");

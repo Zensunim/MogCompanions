@@ -241,11 +241,11 @@ function MogCompanions:GetPetInfoSafe(petGUID)
 			speciesID = info.speciesID,
 			customName = info.customName,
 			displayID = info.displayID,
-			name = info.name,
+			isFavorite = IsTrueOrOne(info.isFavorite),
 			icon = info.icon,
-			favorite = IsTrueOrOne(info.isFavorite) or IsTrueOrOne(info.favorite),
-			canSummon = info.canSummon,
-			isRevoked = info.isRevoked,
+			name = info.name,
+			canBattle = info.canBattle,
+			obtainable = info.obtainable,
 		};
 	end
 
@@ -258,11 +258,9 @@ function MogCompanions:GetPetInfoSafe(petGUID)
 		speciesID = tuple[1],
 		customName = tuple[2],
 		displayID = tuple[6],
-		favorite = IsTrueOrOne(tuple[7]),
+		isFavorite = IsTrueOrOne(tuple[7]),
 		name = tuple[8],
 		icon = tuple[9],
-		canSummon = tuple[12],
-		isRevoked = tuple[13],
 	};
 end
 
@@ -276,20 +274,12 @@ function MogCompanions:IsPetSummonableOwned(petGUID)
 		return false;
 	end
 
-	if info.isRevoked == true then
-		return false;
-	end
-
-	if info.canSummon == false then
-		return false;
-	end
-
 	return true;
 end
 
 function MogCompanions:IsFavoritePet(petGUID)
 	local info = MogCompanions:GetPetInfoSafe(petGUID);
-	return info ~= nil and IsTrueOrOne(info.favorite);
+	return info ~= nil and IsTrueOrOne(info.isFavorite);
 end
 
 -- Returns collected battle pets as sorted display entries for the pets UI.

@@ -178,8 +178,13 @@ function MogCompanions:SummonPet()
 		local activePetGUID = petJournal.GetSummonedPetGUID();
 		local randomFavoritePetGUID = MogCompanions:getRandomPet(activePetGUID, true);
 		if randomFavoritePetGUID ~= nil and randomFavoritePetGUID ~= "" then
-			petJournal.SummonPetByGUID(randomFavoritePetGUID);
+			petJournal.SummonPetByGUID(randomFavoritePetGUID);			return;
 		end
+
+		-- Fall back to random if no valid favorite pet is available.
+		local randomPetGUID = MogCompanions:getRandomPet(activePetGUID, false);
+		if randomPetGUID ~= nil and randomPetGUID ~= \"\" then
+			petJournal.SummonPetByGUID(randomPetGUID);		end
 		return;
 	end
 
@@ -287,6 +292,13 @@ function MogCompanions:SummonAssignedOutfitPet(options)
 			return true;
 		end
 
+		-- Fall back to random if no valid favorite pet is available.
+		local randomPetGUID = MogCompanions:getRandomPet(activePetGUID, false);
+		if randomPetGUID ~= nil and randomPetGUID ~= "" and IsValidOwnedPetGUID(randomPetGUID) then
+			petJournal.SummonPetByGUID(randomPetGUID);
+			return true;
+		end
+
 		return false;
 	end
 
@@ -336,21 +348,34 @@ function MogCompanions:HandleAutoPetSummon(settingKey)
 
 	local petMode = GetNormalizedPetMode(outfitData);
 
-	if settingKey == "PetSummonOnChange" and (petMode == "Random" or petMode == "Favorite") then
+	if settingKey == "PetSummonOnChange" then
 		local activeOutfitID = MogCompanions:GetSafeActiveOutfitID();
-		local autoKey = tostring(activeOutfitID or "")..":"..petMode;
-		if autoKey ~= ":" and lastPetAutoSummonChangeKey == autoKey then
+
+		if activeOutfitID ~= nil then
+			local autoKey = tostring(activeOutfitID) .. ":" .. petMode;
+
+			if lastPetAutoSummonChangeKey == autoKey then
+				return;
+			end
+
+			local forceReroll = (petMode == "Random" or petMode == "Favorite");
+			local handled = MogCompanions:SummonAssignedOutfitPet({
+				reason = settingKey,
+				forceRandom = forceReroll,
+			});
+
+			if handled then
+				lastPetAutoSummonChangeKey = autoKey;
+			end
+
 			return;
 		end
-
-		local handled = MogCompanions:SummonAssignedOutfitPet({ reason = settingKey, forceRandom = true });
-		if handled then
-			lastPetAutoSummonChangeKey = autoKey;
-		end
-		return;
 	end
 
-	MogCompanions:SummonAssignedOutfitPet({ reason = settingKey, forceRandom = false });
+	MogCompanions:SummonAssignedOutfitPet({
+		reason = settingKey,
+		forceRandom = false,
+	});
 end
 
 function MogCompanions:HandlePetAction()
