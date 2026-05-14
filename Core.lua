@@ -545,3 +545,5 @@ MogCompanions:RegisterEvent("PLAYER_ENTERING_WORLD")
 MogCompanions:RegisterEvent("TRANSMOGRIFY_OPEN")
 MogCompanions:RegisterEvent("VIEWED_TRANSMOG_OUTFIT_CHANGED")
 MogCompanions:RegisterEvent("TRANSMOG_DISPLAYED_OUTFIT_CHANGED")
+
+MogCompanions:SetScript("OnEvent", MogCompanions.OnEvent)
