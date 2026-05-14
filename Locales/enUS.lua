@@ -148,6 +148,6 @@ L["Settings Clone Targeted Mount Tooltip"] = "When summoning a random mount, tar
 -- Macros section
 L["Settings Macros Section Title"] = "Macros";
 L["Settings Dynamic Mount Macro Icon"] = "Dynamically change mount icon";
-L["Settings Dynamic Mount Macro Icon Tooltip"] = "When enabled, the mount macro will change its icon dynamically based on the outfit.";
+L["Settings Dynamic Mount Macro Icon Tooltip"] = "When enabled, the mount macro icon updates to match the current assigned mount when possible. When disabled, it always uses the mount placeholder icon.";
 L["Settings Dynamic Pet Macro Icon"] = "Dynamically change pet icon";
-L["Settings Dynamic Pet Macro Icon Tooltip"] = "When enabled, the pet macro will change its icon dynamically based on the outfit.";
+L["Settings Dynamic Pet Macro Icon Tooltip"] = "When enabled, the pet macro icon updates to match the current selected pet when possible. When disabled, it always uses the pet placeholder icon.";
