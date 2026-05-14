@@ -222,6 +222,76 @@ function MogCompanions:InvalidateSortedPetsCache()
 	sortedPetsCache = nil;
 end
 
+local function IsTrueOrOne(value)
+	return value == true or value == 1;
+end
+
+function MogCompanions:GetPetInfoSafe(petGUID)
+	if type(petGUID) ~= "string" or petGUID == "" or C_PetJournal == nil or C_PetJournal.GetPetInfoByPetID == nil then
+		return nil;
+	end
+
+	if C_PetJournal.GetPetInfoTableByPetID ~= nil then
+		local info = C_PetJournal.GetPetInfoTableByPetID(petGUID);
+		if info == nil then
+			return nil;
+		end
+
+		return {
+			speciesID = info.speciesID,
+			customName = info.customName,
+			displayID = info.displayID,
+			name = info.name,
+			icon = info.icon,
+			favorite = IsTrueOrOne(info.isFavorite) or IsTrueOrOne(info.favorite),
+			canSummon = info.canSummon,
+			isRevoked = info.isRevoked,
+		};
+	end
+
+	local tuple = { C_PetJournal.GetPetInfoByPetID(petGUID) };
+	if #tuple == 0 then
+		return nil;
+	end
+
+	return {
+		speciesID = tuple[1],
+		customName = tuple[2],
+		displayID = tuple[6],
+		favorite = IsTrueOrOne(tuple[7]),
+		name = tuple[8],
+		icon = tuple[9],
+		canSummon = tuple[12],
+		isRevoked = tuple[13],
+	};
+end
+
+function MogCompanions:IsPetSummonableOwned(petGUID)
+	local info = MogCompanions:GetPetInfoSafe(petGUID);
+	if info == nil then
+		return false;
+	end
+
+	if info.name == nil or info.icon == nil then
+		return false;
+	end
+
+	if info.isRevoked == true then
+		return false;
+	end
+
+	if info.canSummon == false then
+		return false;
+	end
+
+	return true;
+end
+
+function MogCompanions:IsFavoritePet(petGUID)
+	local info = MogCompanions:GetPetInfoSafe(petGUID);
+	return info ~= nil and IsTrueOrOne(info.favorite);
+end
+
 -- Returns collected battle pets as sorted display entries for the pets UI.
 -- Each entry: { id, name, icon }.
 -- Builds the cache synchronously on first call using the fastest available API.
@@ -298,21 +368,10 @@ function MogCompanions:getRandomPet(excludedPetID, favoritesOnly)
 
 	local petsRaw = C_PetJournal.GetOwnedPetIDs();
 	local pets = {};
-	local useTableAPI = C_PetJournal.GetPetInfoTableByPetID ~= nil;
 
 	for i = 1, #petsRaw do
 		local petID = petsRaw[i];
-		local isFavorite = false;
-
-		if useTableAPI then
-			local info = C_PetJournal.GetPetInfoTableByPetID(petID);
-			isFavorite = info ~= nil and info.isFavorite == true;
-		else
-			local _, _, _, _, _, _, favorite = C_PetJournal.GetPetInfoByPetID(petID);
-			isFavorite = favorite == true;
-		end
-
-		if petID ~= nil and petID ~= "" and petID ~= excludedPetID and (not favoritesOnly or isFavorite) then
+		if petID ~= nil and petID ~= "" and MogCompanions:IsPetSummonableOwned(petID) and (not favoritesOnly or MogCompanions:IsFavoritePet(petID)) then
 			table.insert(pets, petID);
 		end
 	end
@@ -321,7 +380,19 @@ function MogCompanions:getRandomPet(excludedPetID, favoritesOnly)
 		return nil;
 	end
 
-	return pets[math.random(1, #pets)];
+	local pool = {};
+
+	for i = 1, #pets do
+		if pets[i] ~= excludedPetID then
+			table.insert(pool, pets[i]);
+		end
+	end
+
+	if #pool == 0 then
+		pool = pets;
+	end
+
+	return pool[math.random(1, #pool)];
 end
 
 -- Returns true if the mount name contains MogCompanions.MountSearchString (case-insensitive),

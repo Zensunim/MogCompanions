@@ -131,6 +131,10 @@ local function GetPetDataByGUID(petID)
 		return nil;
 	end
 
+	if info.canSummon == false then
+		return nil;
+	end
+
 	local displayName;
 	if info.customName ~= nil and info.customName ~= "" then
 		displayName = info.customName .. " (" .. info.name .. ")";
@@ -598,8 +602,15 @@ local function CreatePetSlot()
 
 		if #tooltipLines > 0 then
 			GameTooltip:AddLine(L["Item Slot Pet Title"]);
+			if mode == "None" then
+				GameTooltip:AddLine(L["No Pet"] or "No Pet", 1, 0.82, 0);
+			elseif mode == "Random" then
+				GameTooltip:AddLine(L["Random Pet"] or "Random Pet", 1, 0.82, 0);
+			elseif mode == "Favorite" then
+				GameTooltip:AddLine(L["Random Favorite Pet"] or "Random Favorite Pet", 1, 0.82, 0);
+			end
 			for i = 1, #tooltipLines do
-				GameTooltip:AddLine(tooltipLines[i], 1, 1, 1);
+				GameTooltip:AddLine(tooltipLines[i], 1, 1, 1, true);
 			end
 			if count > 0 or mode ~= "Selected" then
 				PetClear:Show();
