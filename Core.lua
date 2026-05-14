@@ -166,6 +166,23 @@ local function GetNormalizedPetMode(outfitData)
 	return "Selected";
 end
 
+-- Returns the pet mode that would be used if the pet macro were activated right
+-- now, applying the same modifier-key priority as HandlePetAction:
+--   Dismiss modifier  =>  "None"
+--   Favorite modifier =>  "Favorite"
+--   Random modifier   =>  "Random"
+--   (no modifier)     =>  the outfit's configured PetMode
+function MogCompanions:GetEffectivePetMode(outfitData)
+	if GetPetModKey("Dismiss") then
+		return "None";
+	elseif GetPetModKey("Favorite") then
+		return "Favorite";
+	elseif GetPetModKey("Random") then
+		return "Random";
+	end
+	return GetNormalizedPetMode(outfitData);
+end
+
 function MogCompanions:SummonPet()
 	local petJournal = C_PetJournal;
 	if petJournal == nil or petJournal.SummonPetByGUID == nil or petJournal.GetSummonedPetGUID == nil then

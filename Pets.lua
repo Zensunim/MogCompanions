@@ -998,11 +998,15 @@ do
 			-- #mcomp:pet marker at the start of the body).
 			if type(GetMacroBody) ~= "function" then return end;
 			local body = GetMacroBody(macroIndex);
-			if type(body) ~= "string" or body:sub(1, 10) ~= "#mcomp:pet" then return end;
+			local marker = "#mcomp:pet";
+			if type(body) ~= "string" or body:sub(1, #marker) ~= marker then return end;
 
-			-- Pick a label that matches what /mcomp pet will actually do.
+			-- Pick a label that matches what /mcomp pet will actually do right now,
+			-- accounting for any modifier key the player is currently holding.
+			-- GetEffectivePetMode applies the same Dismiss/Favorite/Random modifier
+			-- priority as HandlePetAction, then falls back to the outfit's PetMode.
 			local outfit = MogCompanions:GetActiveOutfitTable();
-			local mode = GetNormalizedPetMode(outfit);
+			local mode = MogCompanions:GetEffectivePetMode(outfit);
 
 			local label;
 			if mode == "None" then
