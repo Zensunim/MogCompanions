@@ -5,7 +5,7 @@ MogCompanions is a World of Warcraft addon written for WoW's restricted Lua 5.1 
 It is event-driven and runs inside the WoW client.
 There is no standalone runtime or automated test suite in this repository.
 
-This is a maintained fork of MogCompanions with compatibility updates and new functionality. Preserve the fork attribution and license notices.
+This is a maintained fork of MogMount with compatibility updates and new functionality. Preserve the fork attribution and license notices.
 
 ## Hard constraints
 - Use WoW Lua 5.1 compatible syntax only.
@@ -23,13 +23,21 @@ This is a maintained fork of MogCompanions with compatibility updates and new fu
 - `MogCompanions.toc`
   - Addon metadata, saved variable declarations, and file load order.
 - `Core.lua`
-  - Main addon frame, event handling, summon logic, transmog UI integration, title handling, mount slot UI, mount list tab, macro setup, keybind reminder, and selected mount updates.
+  - Main addon frame, event handling, slash commands, keybind entry points, active outfit behavior, pet summon routing, transmog title UI, shared shortcut menu, and transmog outfit event handling.
 - `Shared.lua`
-  - Shared helpers for collected mounts, mount sorting, mount filtering, mount category lists, random mount selection, title sorting, selected mount data, and empty outfit saved-variable creation.
+  - Shared helpers for collected mounts and pets, sorting, filtering, random selection, outfit saved-variable creation, selection pools, macro lookup helpers, and other cross-file addon utilities.
+- `Importer.lua`
+  - MogMount import and conflict-resolution logic for transferring supported legacy settings into MogCompanions.
+- `Mounts.lua`
+  - Mount summon logic, mount category behavior, mount slot UI, mount preview/list UI, selected mount handling, mount macro creation, and mount-specific UI helpers.
+- `Hearthstones.lua`
+  - Hearthstone toy selection, hearthstone secure button/macro behavior, hearthstone slot UI, hearthstone preview/list UI, and hearthstone-specific helpers.
+- `Pets.lua`
+  - Companion pet selection, pet slot UI, pet preview/list UI, pet mode buttons, selected pet handling, and pet macro creation.
 - `Settings.lua`
-  - Retail Settings API registration for default mounts, per-outfit mounts, per-outfit title settings, and addon category setup.
+  - Retail Settings API registration, saved-variable setting defaults, modifier settings, macro settings, pet auto-summon settings, and addon category setup.
 - `Core.xml`
-  - XML UI template for mount list buttons.
+  - XML UI template for list buttons.
 - `Settings.xml`
   - Settings XML shell. Currently empty but loaded by the TOC.
 - `Bindings.xml`
@@ -39,7 +47,7 @@ This is a maintained fork of MogCompanions with compatibility updates and new fu
 - `Locales/enUS.lua`
   - Default user-facing strings.
 - `README.md`
-  - Project description, attribution, and version history.
+  - Project description, attribution, usage notes, and version history.
 - `LICENSE.md`
   - Creative Commons Attribution 4.0 license text.
 - `.github/workflows/build.yml`
@@ -49,15 +57,15 @@ This is a maintained fork of MogCompanions with compatibility updates and new fu
 - Follow the surrounding file's style and formatting.
 - Keep changes localized. Do not rewrite `Core.lua` or `Settings.lua` broadly unless explicitly requested.
 - Do not mix behavior changes with unrelated cleanup.
-- Prefer using existing helpers in `Shared.lua` instead of duplicating mount, title, or outfit logic.
+- Prefer shared helpers over duplicated logic. Before adding a new function or copy/pasting logic, search for existing helpers that already do the same job. Reuse existing helpers when appropriate. If the same logic is needed in more than one file, add or extend a shared `MogCompanions:` helper in `Shared.lua` instead of creating parallel local helpers.
 - Preserve existing public entry points used by bindings, macros, XML, or saved variables.
 - Avoid renaming global functions or saved-variable keys unless the repo owner explicitly requests a migration.
 - Do not change attribution, license text, README attribution, or the original project link unless explicitly requested.
 - Do not add debug output unless explicitly requested or gated behind a clear debug flag.
+- When a request spans multiple risk areas, split the work into small reviewable stages instead of making one broad cross-file change. Examples of separate risk areas include settings UI, saved-variable migrations, macro behavior, combat lockdown handling, event timing, and release packaging.
 
 ## Lua style and namespacing rules
 - Prefer `local` variables and functions unless a global is required by XML, bindings, slash commands, macros, or saved-variable compatibility.
-- Existing required globals include `MogCompanionsLocales`, `MogCompanionsSelectedMount`, `MogCompanionsBindingClicked`, `MogCompanionsSummon`, `MogCompanionsSummonFlying`, `MogCompanionsSummonGround`, `MogCompanionsSummonAquatic`, `MogCompanionsSummonRepair`, `MogCompanionsSummonRandom`, `MissingKeybindOrMacro`, `CreateSetupReminder`, `ClearSelectedFlyingMount`, `ClearSelectedGroundMount`, and `UpdateSelectedMountRow`.
 - Prefer methods on `MogCompanions` for shared addon behavior, for example `function MogCompanions:CreateEmptyOutfit(id)`.
 - Keep the existing namespace pattern:
   - `local addonName, addon = ...`
@@ -135,14 +143,6 @@ This is a maintained fork of MogCompanions with compatibility updates and new fu
 - `Core.lua` must load before files that rely on `ns.MogCompanions`.
 - XML files should be listed where their templates or scripts are needed.
 
-## Packaging rules
-- Release zips are built by `.github/workflows/build.yml` when a tag is pushed.
-- The package root should remain `MogCompanions`.
-- Do not package `.git/` or `.github/` or `docs/`.
-- Do not package AI instruction sets like `AGENTS.md`.
-- Do not include generated zip files in the repository.
-- Keep the artifact naming pattern `MogCompanions-<tag>.zip` unless explicitly requested.
-
 ## Transmog Outfit Events
 
 Use `VIEWED_TRANSMOG_OUTFIT_CHANGED` only for transmog UI refresh logic.
@@ -170,25 +170,26 @@ Rule:
 - Viewed outfit = UI selection
 - Displayed outfit = actual character outfit
 
+## Macro rules
+- Do not create or modify macros during combat.
+- Do not automatically create missing macros from event handlers, setting callbacks, login handlers, or outfit-change handlers unless explicitly requested.
+- User-initiated macro creation may create the macro. Automatic refresh logic should update existing macros only.
+- Keep macro lookup and macro update behavior centralized in shared helpers when possible.
+- Preserve existing macro names unless explicitly requested because users may already have them on action bars.
+
 ## Release, versioning, and documentation rules
-- This fork currently uses a visible `1.0` style version in `MogCompanions.toc` and `README.md`.
-- Unless explicitly instructed otherwise, use simple semantic-style versioning:
+- Do not update `## Version` in `MogCompanions.toc`, create tags, or generate release notes unless explicitly told to prepare a release.
+- When explicitly preparing a release, use simple semantic-style versioning:
   - patch version for small bug fixes, compatibility fixes, text fixes, or packaging-only fixes, for example `1.0.1`
   - minor version for user-visible feature additions or behavior changes, for example `1.1`
   - major version only for major architecture changes, saved-variable-breaking changes, or when explicitly requested, for example `2.0`
-- Every release must update `## Version` in `MogCompanions.toc`.
-- Every release must append notes to `README.md` under `## Version History`.
+- Release prep must update `## Version` in `MogCompanions.toc`.
+- Release prep must append notes to `README.md` under `## Version History`.
 - Release notes should be short, factual, and end-user readable.
 - Do not rewrite old changelog entries.
 - Do not invent release notes that are not supported by actual changes.
+- Do not include low-level implementation details in end-user release notes.
 - Tag names should match the visible addon version unless explicitly instructed otherwise.
-
-## GitHub Actions rules
-- Keep the release workflow simple.
-- Do not add build steps that require nonstandard external tools unless explicitly requested.
-- If changing package contents, review the `rsync` excludes and the final zip root.
-- If changing release permissions, keep `permissions: contents: write` unless a specific workflow change requires otherwise.
-- Do not change release behavior and addon behavior in the same PR unless explicitly requested.
 
 ## Validation checklist
 Before finishing, verify by static review:
@@ -199,8 +200,6 @@ Before finishing, verify by static review:
 - Modifier-key summon behavior still matches tooltips and reminders.
 - User-facing strings are localized through `Locales/enUS.lua`.
 - `MogCompanions.toc` load order is still correct.
-- README version notes were updated for release-related changes.
-- Packaging changes do not include `.git/`, `.github/`, `AGENTS.md`, or generated zip files.
 - No unrelated files were changed.
 
 ## When unsure
