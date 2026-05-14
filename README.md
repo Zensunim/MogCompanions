@@ -49,4 +49,4 @@ No third-party code is knowingly included beyond the work credited above and cod
   * Random Pet: summon a random owned pet for that outfit.
   * Random Favorite Pet: summon a random favorite pet, with fallback to random if no favorites are available.
 * Added pet auto-summon settings for outfit changes, login, and mount/dismount behavior.
-* Bug fixes on various pet summoning behav ior
+* Bug fixes on various pet summoning behavior
