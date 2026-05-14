@@ -90,29 +90,6 @@ local function UpdatePetModeButtonHighlights(outfit)
 	end
 end
 
-local function GetPetJournalInfo(petID)
-	if petID == nil or petID == "" or C_PetJournal == nil or C_PetJournal.GetPetInfoByPetID == nil then
-		return nil;
-	end
-
-	if C_PetJournal.GetPetInfoTableByPetID ~= nil then
-		return C_PetJournal.GetPetInfoTableByPetID(petID);
-	end
-
-	local speciesID, customName, level, xp, maxXp, displayID, favorite, name, icon = C_PetJournal.GetPetInfoByPetID(petID);
-	if name == nil or icon == nil then
-		return nil;
-	end
-
-	return {
-		speciesID = speciesID,
-		customName = customName,
-		displayID = displayID,
-		name = name,
-		icon = icon,
-	};
-end
-
 local function GetPetDataByGUID(petID)
 	if petID == nil or petID == "" then
 		return nil;
@@ -152,7 +129,9 @@ local function GetPetDataByGUID(petID)
 end
 
 local function IsValidPetSelection(petID)
-	return type(petID) == "string" and petID ~= "" and GetPetDataByGUID(petID) ~= nil;
+	return type(petID) == "string"
+		and petID ~= ""
+		and MogCompanions:IsPetSummonableOwned(petID);
 end
 
 local function ValidatePetSelection(_, petID)

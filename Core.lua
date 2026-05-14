@@ -136,7 +136,12 @@ function MogCompanions:SummonRandomFavoritePet()
 	end
 
 	local activePetGUID = petJournal.GetSummonedPetGUID();
+
 	local randomPetGUID = MogCompanions:getRandomPet(activePetGUID, true);
+	if randomPetGUID == nil or randomPetGUID == "" then
+		randomPetGUID = MogCompanions:getRandomPet(activePetGUID, false);
+	end
+
 	if randomPetGUID ~= nil and randomPetGUID ~= "" then
 		petJournal.SummonPetByGUID(randomPetGUID);
 	end
