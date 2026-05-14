@@ -289,8 +289,20 @@ function MogCompanions:SummonAssignedOutfitPet(options)
 
 		return false;
 	elseif petMode == "Favorite" then
-		if not forceRandom and IsValidOwnedPetGUID(activePetGUID) and MogCompanions:IsFavoritePet(activePetGUID) then
-			return true;
+		local hasFavoritePet = MogCompanions:HasFavoritePet();
+
+		if not forceRandom then
+			if hasFavoritePet then
+				if IsValidOwnedPetGUID(activePetGUID) and MogCompanions:IsFavoritePet(activePetGUID) then
+					return true;
+				end
+			else
+				-- No favorites exist, so Favorite mode has fallen back to Random mode.
+				-- Random mode is satisfied by any valid currently summoned pet.
+				if IsValidOwnedPetGUID(activePetGUID) then
+					return true;
+				end
+			end
 		end
 
 		local randomFavoritePetGUID = MogCompanions:getRandomPet(activePetGUID, true);

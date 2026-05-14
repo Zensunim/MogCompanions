@@ -227,7 +227,7 @@ local function IsTrueOrOne(value)
 end
 
 function MogCompanions:GetPetInfoSafe(petGUID)
-	if type(petGUID) ~= "string" or petGUID == "" or C_PetJournal == nil or C_PetJournal.GetPetInfoByPetID == nil then
+	if type(petGUID) ~= "string" or petGUID == "" or C_PetJournal == nil then
 		return nil;
 	end
 
@@ -249,19 +249,23 @@ function MogCompanions:GetPetInfoSafe(petGUID)
 		};
 	end
 
-	local tuple = { C_PetJournal.GetPetInfoByPetID(petGUID) };
-	if #tuple == 0 then
-		return nil;
+	if C_PetJournal.GetPetInfoByPetID ~= nil then
+		local tuple = { C_PetJournal.GetPetInfoByPetID(petGUID) };
+		if #tuple == 0 then
+			return nil;
+		end
+
+		return {
+			speciesID = tuple[1],
+			customName = tuple[2],
+			displayID = tuple[6],
+			isFavorite = IsTrueOrOne(tuple[7]),
+			name = tuple[8],
+			icon = tuple[9],
+		};
 	end
 
-	return {
-		speciesID = tuple[1],
-		customName = tuple[2],
-		displayID = tuple[6],
-		isFavorite = IsTrueOrOne(tuple[7]),
-		name = tuple[8],
-		icon = tuple[9],
-	};
+	return nil;
 end
 
 function MogCompanions:IsPetSummonableOwned(petGUID)
@@ -280,6 +284,23 @@ end
 function MogCompanions:IsFavoritePet(petGUID)
 	local info = MogCompanions:GetPetInfoSafe(petGUID);
 	return info ~= nil and IsTrueOrOne(info.isFavorite);
+end
+
+-- Returns true if at least one valid summonable favorite pet exists.
+function MogCompanions:HasFavoritePet()
+	if C_PetJournal == nil or C_PetJournal.GetOwnedPetIDs == nil then
+		return false;
+	end
+
+	local petsRaw = C_PetJournal.GetOwnedPetIDs();
+	for i = 1, #petsRaw do
+		local petID = petsRaw[i];
+		if MogCompanions:IsPetSummonableOwned(petID) and MogCompanions:IsFavoritePet(petID) then
+			return true;
+		end
+	end
+
+	return false;
 end
 
 -- Returns collected battle pets as sorted display entries for the pets UI.
