@@ -867,19 +867,19 @@ local function GetConfiguredMountMacroConditionLabel(mountID)
 	return nil;
 end
 
-function MogCompanions:CreateMountMacro(parent, options)
+function MogCompanions:CreateMountMacro(parent)
 	if InCombatLockdown and InCombatLockdown() then
 		print(L["Macro Combat Error"]);
 		return nil;
 	end
 
-	local updateExistingOnly = options == true or (type(options) == "table" and options.updateExistingOnly == true);
-	local macroId = MogCompanions:FindMacroByExactName("MogComp Mount");
-	if updateExistingOnly and macroId == nil then
-		return nil;
+	local macroId = false;
+	for i = 1, 120 do
+		if C_Macro.GetMacroName(i) == "MogComp Mount" then
+			macroId = i;
+		end
 	end
 
-	local macroIcon = 6841475;
 	local outfitData = MogCompanions:GetActiveOutfitTable();
 	local mountMods = MogCompanionsSaved and MogCompanionsSaved.MountMods or {};
 	local modTokens = { "ctrl", "shift", "alt" };
@@ -915,16 +915,12 @@ function MogCompanions:CreateMountMacro(parent, options)
 	if #tooltipParts > 0 then
 		macroBody = macroBody.." "..table.concat(tooltipParts, ";")..";";
 	end
-	macroBody = macroBody.."\n/mcomp mount";
+	macroBody = macroBody.."\n/run MogCompanionsSummon();";
 
-	if MogCompanionsSaved ~= nil and MogCompanionsSaved.DynamicMountMacroIcon == true and #tooltipParts > 0 then
-		macroIcon = 134400;
-	end
-
-	if macroId == nil then
-		macroId = CreateMacro("MogComp Mount", macroIcon, macroBody, nil);
+	if not macroId then
+		macroId = CreateMacro("MogComp Mount", 6841475, macroBody, nil);
 	else
-		EditMacro(macroId, "MogComp Mount", macroIcon, macroBody, nil);
+		EditMacro(macroId, "MogComp Mount", 6841475, macroBody, nil);
 	end
 
 	if MogCompanionsSaved ~= nil then

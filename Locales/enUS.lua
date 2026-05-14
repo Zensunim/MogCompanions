@@ -144,10 +144,3 @@ L["Settings Random Ground Allow Flying"] = "Allow 'flying' ground mounts";
 L["Settings Random Ground Allow Flying Tooltip"] = "Turn this feature off to restrict random ground mounts to use non-flying mounts only.";
 L["Settings Clone Targeted Mount"] = "Clone targeted mount";
 L["Settings Clone Targeted Mount Tooltip"] = "When summoning a random mount, target a mounted player to summon the same mount, if you own it.";
-
--- Macros section
-L["Settings Macros Section Title"] = "Macros";
-L["Settings Dynamic Mount Macro Icon"] = "Dynamically change mount icon";
-L["Settings Dynamic Mount Macro Icon Tooltip"] = "When enabled, the mount macro icon updates to match the current assigned mount when possible. When disabled, it always uses the mount placeholder icon.";
-L["Settings Dynamic Pet Macro Icon"] = "Dynamically change pet icon";
-L["Settings Dynamic Pet Macro Icon Tooltip"] = "When enabled, the pet macro icon updates to match the current selected pet when possible. When disabled, it always uses the pet placeholder icon.";

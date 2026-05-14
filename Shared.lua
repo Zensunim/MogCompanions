@@ -39,20 +39,6 @@ function MogCompanionsSortAlphabetical(a, b)
 	return a.name:lower() < b.name:lower();
 end
 
-function MogCompanions:FindMacroByExactName(macroName)
-	if macroName == nil or macroName == "" then
-		return nil;
-	end
-
-	for i = 1, 120 do
-		if C_Macro.GetMacroName(i) == macroName then
-			return i;
-		end
-	end
-
-	return nil;
-end
-
 local function Clamp(value, minValue, maxValue)
 	if value < minValue then
 		return minValue;
