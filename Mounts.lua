@@ -867,20 +867,19 @@ local function GetConfiguredMountMacroConditionLabel(mountID)
 	return nil;
 end
 
-function MogCompanions:CreateMountMacro(parent)
+function MogCompanions:CreateMountMacro(parent, options)
 	if InCombatLockdown and InCombatLockdown() then
 		print(L["Macro Combat Error"]);
 		return nil;
 	end
 
-	local macroId = false;
-	for i = 1, 120 do
-		if C_Macro.GetMacroName(i) == "MogComp Mount" then
-			macroId = i;
-		end
+	local updateExistingOnly = options == true or (type(options) == "table" and options.updateExistingOnly == true);
+	local macroId = MogCompanions:FindMacroByExactName("MogComp Mount");
+	if updateExistingOnly and macroId == nil then
+		return nil;
 	end
 
-	local macroIcon = 656575;
+	local macroIcon = 6841475;
 	local outfitData = MogCompanions:GetActiveOutfitTable();
 	local mountMods = MogCompanionsSaved and MogCompanionsSaved.MountMods or {};
 	local modTokens = { "ctrl", "shift", "alt" };
@@ -918,9 +917,11 @@ function MogCompanions:CreateMountMacro(parent)
 	end
 	macroBody = macroBody.."\n/mcomp mount";
 
-	-- TODO: Use 6841475 as the "random" or placeholder
-	-- TODO: Use 134400 if the mount is assigned via #showtooltip
-	if not macroId then
+	if MogCompanionsSaved ~= nil and MogCompanionsSaved.DynamicMountMacroIcon == true and #tooltipParts > 0 then
+		macroIcon = 134400;
+	end
+
+	if macroId == nil then
 		macroId = CreateMacro("MogComp Mount", macroIcon, macroBody, nil);
 	else
 		EditMacro(macroId, "MogComp Mount", macroIcon, macroBody, nil);
