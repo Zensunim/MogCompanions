@@ -611,30 +611,27 @@ local function CreatePetSlot()
 	UpdatePetSlot();
 	end
 
-function MogCompanions:CreatePetMacro(parent)
+function MogCompanions:CreatePetMacro(parent, options)
 	if InCombatLockdown and InCombatLockdown() then
 		print(L["Macro Combat Error"]);
 		return nil;
 	end
 
-	local macroId = false;
-	for i = 1, 120 do
-		if C_Macro.GetMacroName(i) == "MComp Pets" then
-			macroId = i;
-		end
+	local updateExistingOnly = options == true or (type(options) == "table" and options.updateExistingOnly == true);
+	local macroId = MogCompanions:FindMacroByExactName("MComp Pets");
+	if updateExistingOnly and macroId == nil then
+		return nil;
 	end
 
 	local macroIcon = 656575;
-	local showTooltipLine = "#showtooltip";
 	local outfitData = MogCompanions:GetActiveOutfitTable();
 	local selectedPet = outfitData and GetPetDataByGUID(SyncLegacyPetSelection(outfitData));
-	if selectedPet ~= nil then
-		macroIcon = selectedPet.icon or macroIcon;
-		showTooltipLine = showTooltipLine .. " " .. selectedPet.name;
+	if MogCompanionsSaved ~= nil and MogCompanionsSaved.DynamicPetMacroIcon == true and selectedPet ~= nil then
+		macroIcon = selectedPet.icon or 656575;
 	end
 
-	local macroBody = showTooltipLine.."\n/mcomp pet";
-	if not macroId then
+	local macroBody = "#mcomp:pet\n/mcomp pet";
+	if macroId == nil then
 		macroId = CreateMacro("MComp Pets", macroIcon, macroBody, nil);
 	else
 		EditMacro(macroId, "MComp Pets", macroIcon, macroBody, nil);
@@ -957,5 +954,82 @@ end
 function MogCompanions:HidePetsPage()
 	if PetsFrame ~= nil then
 		PetsFrame:Hide();
+	end
+end
+
+-- When the player hovers over the MComp Pets macro on an action bar, append a
+-- line describing what the macro will do based on the active outfit's pet mode.
+-- We use TooltipDataProcessor.AddTooltipPostCall so the line is added after
+-- Blizzard has already populated the rest of the macro tooltip.
+do
+	local macroTooltipType = type(Enum) == "table"
+		and type(Enum.TooltipDataType) == "table"
+		and Enum.TooltipDataType.Macro;
+
+	if macroTooltipType
+		and type(TooltipDataProcessor) == "table"
+		and type(TooltipDataProcessor.AddTooltipPostCall) == "function"
+	then
+		TooltipDataProcessor.AddTooltipPostCall(macroTooltipType, function(tooltip)
+			-- Sanity-check the tooltip object before using it.
+			if not tooltip or type(tooltip.AddLine) ~= "function" then return end;
+
+			-- The tooltip's infoList holds one entry per action button that
+			-- triggered the tooltip. We only care about the first entry.
+			local infoList = tooltip.infoList;
+			local firstEntry = type(infoList) == "table" and infoList[1];
+			if not firstEntry then return end;
+
+			-- Confirm this is actually a macro tooltip, not some other type.
+			local data = firstEntry.tooltipData;
+			if not data or data.type ~= macroTooltipType then return end;
+
+			-- getterArgs[1] is the action bar slot number.
+			local args = firstEntry.getterArgs;
+			local actionSlot = type(args) == "table" and args[1];
+			if not actionSlot then return end;
+
+			-- Resolve the action slot to a macro index.
+			if type(GetActionInfo) ~= "function" then return end;
+			local actionType, macroIndex = GetActionInfo(actionSlot);
+			if actionType ~= "macro" or not macroIndex then return end;
+
+			-- Only handle macros created by MogCompanions (identified by the
+			-- #mcomp:pet marker at the start of the body).
+			if type(GetMacroBody) ~= "function" then return end;
+			local body = GetMacroBody(macroIndex);
+			local marker = "#mcomp:pet";
+			if type(body) ~= "string" or body:sub(1, #marker) ~= marker then return end;
+
+			-- Pick a label that matches what /mcomp pet will actually do right now,
+			-- accounting for any modifier key the player is currently holding.
+			-- GetEffectivePetMode applies the same Dismiss/Favorite/Random modifier
+			-- priority as HandlePetAction, then falls back to the outfit's PetMode.
+			local outfit = MogCompanions:GetActiveOutfitTable();
+			local mode = MogCompanions:GetEffectivePetMode(outfit);
+
+			local label;
+			if mode == "None" then
+				-- "No Pet" mode dismisses the current companion.
+				label = L["Pet Macro Tooltip None"];
+			elseif mode == "Favorite" then
+				-- "Favorite" mode summons a random favorite pet.
+				label = L["Pet Macro Tooltip Favorite"];
+			elseif mode == "Selected" then
+				-- Show the specific pet's name, or fall back to random if the
+				-- outfit has no valid pet assigned.
+				local pet = outfit and GetPetDataByGUID(SyncLegacyPetSelection(outfit));
+				label = (pet and pet.name) or L["Pet Macro Tooltip Random"];
+			else
+				-- "Random" mode and any unrecognised mode summon a random pet.
+				label = L["Pet Macro Tooltip Random"];
+			end
+
+			tooltip:AddLine(label, 1, 1, 1);
+
+			if type(tooltip.Show) == "function" then
+				tooltip:Show();
+			end
+		end);
 	end
 end

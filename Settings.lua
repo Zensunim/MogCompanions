@@ -74,8 +74,37 @@ local function OnSettingChanged()
 	-- No side-effects needed; the Settings API variable binding handles persistence.
 end
 
+local pendingMountMacroUpdate = false;
+local pendingPetMacroUpdate = false;
+
+local function SafeUpdateMountMacroExistingOnly()
+	if InCombatLockdown and InCombatLockdown() then
+		pendingMountMacroUpdate = true;
+		MogCompanionsSettings:RegisterEvent("PLAYER_REGEN_ENABLED");
+	else
+		MogCompanions:CreateMountMacro(nil, true);
+	end
+end
+
+local function SafeUpdatePetMacroExistingOnly()
+	if InCombatLockdown and InCombatLockdown() then
+		pendingPetMacroUpdate = true;
+		MogCompanionsSettings:RegisterEvent("PLAYER_REGEN_ENABLED");
+	else
+		MogCompanions:CreatePetMacro(nil, true);
+	end
+end
+
 local function OnPetSettingChanged()
-	MogCompanions:CreatePetMacro();
+	SafeUpdatePetMacroExistingOnly();
+end
+
+local function OnMountMacroSettingChanged()
+	SafeUpdateMountMacroExistingOnly();
+end
+
+local function OnPetDynamicMacroIconSettingChanged()
+	SafeUpdatePetMacroExistingOnly();
 end
 
 -- ── Modifier Key Helpers ─────────────────────────────────────────────────────
@@ -162,6 +191,18 @@ local function InitSettings()
 	if MogCompanionsSaved.PetSummonOnLogin == nil then
 		MogCompanionsSaved.PetSummonOnLogin = true;
 	end
+	if MogCompanionsSaved.PetDismissInPvE == nil then
+		MogCompanionsSaved.PetDismissInPvE = false;
+	end
+	if MogCompanionsSaved.PetDismissInPvP == nil then
+		MogCompanionsSaved.PetDismissInPvP = false;
+	end
+	if MogCompanionsSaved.DynamicMountMacroIcon == nil then
+		MogCompanionsSaved.DynamicMountMacroIcon = false;
+	end
+	if MogCompanionsSaved.DynamicPetMacroIcon == nil then
+		MogCompanionsSaved.DynamicPetMacroIcon = false;
+	end
 
 	-- ────────────────────────────────────────────────────────────────────────────
 
@@ -185,7 +226,7 @@ local function InitSettings()
 
 	local setting = Settings.RegisterAddOnSetting(category, variable, variableKey, variableTable, type(defaultValue), name, defaultValue);
 	Settings.CreateDropdown(category, setting, GetOptionsAquaticMount, tooltip);
-	setting:SetValueChangedCallback(OnSettingChanged);
+	setting:SetValueChangedCallback(OnMountMacroSettingChanged);
 
 	-- Default repair mount
 
@@ -203,7 +244,7 @@ local function InitSettings()
 
 	local setting = Settings.RegisterAddOnSetting(category, variable, variableKey, variableTable, type(defaultValue), name, defaultValue);
    	Settings.CreateDropdown(category, setting, GetOptionsRepairMount, tooltip);
-	setting:SetValueChangedCallback(OnSettingChanged);
+	setting:SetValueChangedCallback(OnMountMacroSettingChanged);
 
 	-- Random ground: allow flying mounts
 
@@ -232,6 +273,32 @@ local function InitSettings()
 	local setting = Settings.RegisterAddOnSetting(category, variable, variableKey, variableTable, type(defaultValue), name, defaultValue);
 	Settings.CreateCheckbox(category, setting, tooltip);
 	setting:SetValueChangedCallback(OnSettingChanged);
+
+	-- ── Macro icon behavior ──────────────────────────────────────────────────────
+
+	layout:AddInitializer(CreateSettingsListSectionHeaderInitializer(L["Settings Macros Section Title"], ''));
+
+	local variable = CreateSettingIdentifier("DynamicMountMacroIcon");
+	local defaultValue = false;
+	local name = L["Settings Dynamic Mount Macro Icon"];
+	local tooltip = L["Settings Dynamic Mount Macro Icon Tooltip"];
+	local variableKey = "DynamicMountMacroIcon";
+	local variableTable = MogCompanionsSaved;
+
+	local setting = Settings.RegisterAddOnSetting(category, variable, variableKey, variableTable, type(defaultValue), name, defaultValue);
+	Settings.CreateCheckbox(category, setting, tooltip);
+	setting:SetValueChangedCallback(OnMountMacroSettingChanged);
+
+	local variable = CreateSettingIdentifier("DynamicPetMacroIcon");
+	local defaultValue = false;
+	local name = L["Settings Dynamic Pet Macro Icon"];
+	local tooltip = L["Settings Dynamic Pet Macro Icon Tooltip"];
+	local variableKey = "DynamicPetMacroIcon";
+	local variableTable = MogCompanionsSaved;
+
+	local setting = Settings.RegisterAddOnSetting(category, variable, variableKey, variableTable, type(defaultValue), name, defaultValue);
+	Settings.CreateCheckbox(category, setting, tooltip);
+	setting:SetValueChangedCallback(OnPetDynamicMacroIconSettingChanged);
 
 	-- ── Mount Macro Modifier Keys ────────────────────────────────────────────────
 
@@ -278,6 +345,8 @@ local function InitSettings()
 				MountModDropdowns[i]:SetValue(missing);
 			end
 		end
+
+		SafeUpdateMountMacroExistingOnly();
 	end
 
 	local variable = CreateSettingIdentifier("MountMacroModFlyingOrGround");
@@ -526,6 +595,28 @@ local function InitSettings()
 	Settings.CreateCheckbox(category, setting, tooltip);
 	setting:SetValueChangedCallback(OnSettingChanged);
 
+	local variable = CreateSettingIdentifier("PetDismissInPvE");
+	local defaultValue = false;
+	local name = L["Settings Dismiss Pet In PvE"];
+	local tooltip = L["Settings Dismiss Pet In PvE Tooltip"];
+	local variableKey = "PetDismissInPvE";
+	local variableTable = MogCompanionsSaved;
+
+	local setting = Settings.RegisterAddOnSetting(category, variable, variableKey, variableTable, type(defaultValue), name, defaultValue);
+	Settings.CreateCheckbox(category, setting, tooltip);
+	setting:SetValueChangedCallback(OnSettingChanged);
+
+	local variable = CreateSettingIdentifier("PetDismissInPvP");
+	local defaultValue = false;
+	local name = L["Settings Dismiss Pet In PvP"];
+	local tooltip = L["Settings Dismiss Pet In PvP Tooltip"];
+	local variableKey = "PetDismissInPvP";
+	local variableTable = MogCompanionsSaved;
+
+	local setting = Settings.RegisterAddOnSetting(category, variable, variableKey, variableTable, type(defaultValue), name, defaultValue);
+	Settings.CreateCheckbox(category, setting, tooltip);
+	setting:SetValueChangedCallback(OnSettingChanged);
+
 	-- ────────────────────────────────────────────────────────────────────────────
 
 	Settings.RegisterAddOnCategory(category);
@@ -541,6 +632,16 @@ function MogCompanionsSettings:OnEvent(event, addOnName)
 
 		InitSettings();
 
+	elseif event == "PLAYER_REGEN_ENABLED" then
+		MogCompanionsSettings:UnregisterEvent("PLAYER_REGEN_ENABLED");
+		if pendingMountMacroUpdate then
+			pendingMountMacroUpdate = false;
+			MogCompanions:CreateMountMacro(nil, true);
+		end
+		if pendingPetMacroUpdate then
+			pendingPetMacroUpdate = false;
+			MogCompanions:CreatePetMacro(nil, true);
+		end
 	end
 end
 

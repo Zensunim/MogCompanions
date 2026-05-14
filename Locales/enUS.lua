@@ -34,6 +34,9 @@ L["Random Favorite Pet"] = "Random Favorite Pet";
 L["No Pet Tooltip"] = "Dismiss your current pet when this outfit becomes active.";
 L["Random Pet Tooltip"] = "Summon a random owned summonable pet when this outfit becomes active.";
 L["Random Favorite Pet Tooltip"] = "Summon a random owned favorite summonable pet when this outfit becomes active.";
+L["Pet Macro Tooltip Random"] = "Summon Random Pet";
+L["Pet Macro Tooltip Favorite"] = "Summon Random Favorite Pet";
+L["Pet Macro Tooltip None"] = "Dismiss Pet";
 
 -- Tab
 L["Companions Tab Title"] = "Companions";
@@ -122,12 +125,16 @@ L["Settings Summon Random Pet"] = "Summon Random Pet";
 L["Settings Summon Random Favorite Pet"] = "Summon Random Favorite Pet";
 L["Settings Dismiss Pet"] = "Dismiss Pet";
 L["Settings Pet Auto Summon Title"] = "Pet Auto-Summon";
-L["Settings Summon Pet On Outfit Change"] = "Summon Pet On Outfit Change";
+L["Settings Summon Pet On Outfit Change"] = "Summon Pet on Outfit Change";
 L["Settings Summon Pet On Outfit Change Tooltip"] = "When your active outfit changes, summon from that outfit's selected pet pool.\n\nDoes nothing if the outfit has no selected pets.";
-L["Settings Summon Pet On Mount"] = "Summon Pet On Mount/Dismount";
+L["Settings Summon Pet On Mount"] = "Summon Pet on Mount/Dismount";
 L["Settings Summon Pet On Mount Tooltip"] = "After using the mount/dismount action, summon from the active outfit's selected pet pool.\n\nDoes nothing if the outfit has no selected pets.";
-L["Settings Summon Pet On Login"] = "Summon Pet On Login";
-L["Settings Summon Pet On Login Tooltip"] = "When you log in or reload, summon from the active outfit's selected pet pool.\n\nDoes nothing if the outfit has no selected pets.";
+L["Settings Summon Pet On Login"] = "Summon Pet on Zone In";
+L["Settings Summon Pet On Login Tooltip"] = "Summon from the active outfit's selected pet pool when you log in, reload, change zones, resurrect or take a flight path.\n\nWhen a dismiss setting is active, entering that instance type will dismiss your pet. Leaving will restore it.\n\nDoes nothing if the outfit has no selected pets.";
+L["Settings Dismiss Pet In PvE"] = "Dismiss Pet in PvE Instances";
+L["Settings Dismiss Pet In PvE Tooltip"] = "When you enter a dungeon or raid, dismiss your active pet.\n\nAlso prevents auto-summon from placing a pet while you are inside a PvE instance.";
+L["Settings Dismiss Pet In PvP"] = "Dismiss Pet in PvP Instances";
+L["Settings Dismiss Pet In PvP Tooltip"] = "When you enter a battleground or arena, dismiss your active pet.\n\nAlso prevents auto-summon from placing a pet while you are inside a PvP instance.";
 
 -- Modifier Key Labels
 L["Settings CTRL"] = "CTRL";
@@ -144,3 +151,10 @@ L["Settings Random Ground Allow Flying"] = "Allow 'flying' ground mounts";
 L["Settings Random Ground Allow Flying Tooltip"] = "Turn this feature off to restrict random ground mounts to use non-flying mounts only.";
 L["Settings Clone Targeted Mount"] = "Clone targeted mount";
 L["Settings Clone Targeted Mount Tooltip"] = "When summoning a random mount, target a mounted player to summon the same mount, if you own it.";
+
+-- Macros section
+L["Settings Macros Section Title"] = "Macros";
+L["Settings Dynamic Mount Macro Icon"] = "Dynamically change mount icon";
+L["Settings Dynamic Mount Macro Icon Tooltip"] = "When enabled, the mount macro icon updates to match the current assigned mount when possible. When disabled, it always uses the mount placeholder icon.";
+L["Settings Dynamic Pet Macro Icon"] = "Dynamically change pet icon";
+L["Settings Dynamic Pet Macro Icon Tooltip"] = "When enabled, the pet macro icon updates to match the current selected pet when possible. When disabled, it always uses the pet placeholder icon.";
