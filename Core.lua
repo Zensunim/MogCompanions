@@ -198,6 +198,74 @@ function MogCompanions:SummonPet()
 	end
 end
 
+function MogCompanions:SummonAssignedOutfitPet()
+	if InCombatLockdown and InCombatLockdown() then
+		return;
+	end
+
+	local petJournal = C_PetJournal;
+	if petJournal == nil or petJournal.SummonPetByGUID == nil or petJournal.GetSummonedPetGUID == nil or petJournal.GetPetInfoByPetID == nil then
+		return;
+	end
+
+	local function IsValidOwnedPetGUID(petGUID)
+		if type(petGUID) ~= "string" or petGUID == "" then
+			return false;
+		end
+
+		local _, _, _, _, _, _, _, name, icon = petJournal.GetPetInfoByPetID(petGUID);
+		return name ~= nil and icon ~= nil;
+	end
+
+	local outfitData = MogCompanions:GetActiveOutfitTable();
+	if outfitData == nil then
+		return;
+	end
+
+	local selectedPetGUIDs = MogCompanions:GetValidSelectionPoolValues(outfitData, "Pets", function(_, petID)
+		return IsValidOwnedPetGUID(petID);
+	end);
+
+	-- Auto-summon only from this outfit's assigned pet pool.
+	if #selectedPetGUIDs == 0 then
+		return;
+	end
+
+	local activePetGUID = petJournal.GetSummonedPetGUID();
+	local activePetGUIDKey = activePetGUID ~= nil and tostring(activePetGUID) or "";
+	local summonPool = {};
+
+	for i = 1, #selectedPetGUIDs do
+		local candidatePetGUID = selectedPetGUIDs[i];
+		if type(candidatePetGUID) == "string" and candidatePetGUID ~= "" then
+			if activePetGUIDKey == "" or candidatePetGUID ~= activePetGUIDKey then
+				table.insert(summonPool, candidatePetGUID);
+			end
+		end
+	end
+
+	if #summonPool == 0 then
+		return;
+	end
+
+	local selectedPetGUID = summonPool[math.random(1, #summonPool)];
+	if selectedPetGUID ~= nil and selectedPetGUID ~= "" then
+		petJournal.SummonPetByGUID(selectedPetGUID);
+	end
+end
+
+function MogCompanions:HandleAutoPetSummon(settingKey)
+	if type(settingKey) ~= "string" or settingKey == "" then
+		return;
+	end
+
+	if MogCompanionsSaved == nil or MogCompanionsSaved[settingKey] ~= true then
+		return;
+	end
+
+	MogCompanions:SummonAssignedOutfitPet();
+end
+
 function MogCompanions:HandlePetAction()
 	if GetPetModKey("Dismiss") then
 		MogCompanions:DismissPet();
@@ -427,7 +495,25 @@ function MogCompanions:OnEvent(event, addOnName)
 			MogCompanionsSaved.CloneTargetedMount = false;
 		end
 
+		if MogCompanionsSaved.PetSummonOnChange == nil then
+			MogCompanionsSaved.PetSummonOnChange = true;
+		end
+
+		if MogCompanionsSaved.PetSummonOnMount == nil then
+			MogCompanionsSaved.PetSummonOnMount = true;
+		end
+
+		if MogCompanionsSaved.PetSummonOnLogin == nil then
+			MogCompanionsSaved.PetSummonOnLogin = true;
+		end
+
 		loaded = true;
+
+		if MogCompanionsSaved.PetSummonOnLogin then
+			C_Timer.After(0.1, function()
+				MogCompanions:HandleAutoPetSummon("PetSummonOnLogin");
+			end);
+		end
 	
 	end
 
@@ -435,6 +521,7 @@ function MogCompanions:OnEvent(event, addOnName)
 		MogCompanions:CreateEmptyOutfit(C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID());
 		MogCompanions:InitMountSlots(firstLoad);
 		InitTitles(firstLoad);
+		MogCompanions:HandleAutoPetSummon("PetSummonOnChange");
 
 		C_Timer.After(0.1, function()
 			if UpdateSelectedMountRow ~= nil then

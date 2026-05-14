@@ -115,6 +115,13 @@ L["Settings Summon Selected Pet"] = "Summon Selected Pet Pool";
 L["Settings Summon Random Pet"] = "Summon Random Pet";
 L["Settings Summon Random Favorite Pet"] = "Summon Random Favorite Pet";
 L["Settings Dismiss Pet"] = "Dismiss Pet";
+L["Settings Pet Auto Summon Title"] = "Pet Auto-Summon";
+L["Settings Summon Pet On Outfit Change"] = "Summon Pet On Outfit Change";
+L["Settings Summon Pet On Outfit Change Tooltip"] = "When your active outfit changes, summon from that outfit's selected pet pool.\n\nDoes nothing if the outfit has no selected pets.";
+L["Settings Summon Pet On Mount"] = "Summon Pet On Mount/Dismount";
+L["Settings Summon Pet On Mount Tooltip"] = "After using the mount/dismount action, summon from the active outfit's selected pet pool.\n\nDoes nothing if the outfit has no selected pets.";
+L["Settings Summon Pet On Login"] = "Summon Pet On Login";
+L["Settings Summon Pet On Login Tooltip"] = "When you log in or reload, summon from the active outfit's selected pet pool.\n\nDoes nothing if the outfit has no selected pets.";
 
 -- Modifier Key Labels
 L["Settings CTRL"] = "CTRL";

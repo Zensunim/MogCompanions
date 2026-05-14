@@ -39,4 +39,7 @@ No third-party code is knowingly included beyond the work credited above and cod
 
 ### 1.2
 * Added a MogMount to Mog Companions importer
-* Added a warning message if both addons are enabled at the same time
+* Added a warning dialog if both addons are enabled at the same time
+
+### 1.3
+* Added support for auto summoning/dismissing pets
