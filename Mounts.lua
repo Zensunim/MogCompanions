@@ -880,6 +880,7 @@ function MogCompanions:CreateMountMacro(parent)
 		end
 	end
 
+	local macroIcon = 656575;
 	local outfitData = MogCompanions:GetActiveOutfitTable();
 	local mountMods = MogCompanionsSaved and MogCompanionsSaved.MountMods or {};
 	local modTokens = { "ctrl", "shift", "alt" };
@@ -915,12 +916,14 @@ function MogCompanions:CreateMountMacro(parent)
 	if #tooltipParts > 0 then
 		macroBody = macroBody.." "..table.concat(tooltipParts, ";")..";";
 	end
-	macroBody = macroBody.."\n/run MogCompanionsSummon();";
+	macroBody = macroBody.."\n/mcomp mount";
 
+	-- TODO: Use 6841475 as the "random" or placeholder
+	-- TODO: Use 134400 if the mount is assigned via #showtooltip
 	if not macroId then
-		macroId = CreateMacro("MogComp Mount", 6841475, macroBody, nil);
+		macroId = CreateMacro("MogComp Mount", macroIcon, macroBody, nil);
 	else
-		EditMacro(macroId, "MogComp Mount", 6841475, macroBody, nil);
+		EditMacro(macroId, "MogComp Mount", macroIcon, macroBody, nil);
 	end
 
 	if MogCompanionsSaved ~= nil then
