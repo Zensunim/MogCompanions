@@ -611,17 +611,16 @@ local function CreatePetSlot()
 	UpdatePetSlot();
 	end
 
-function MogCompanions:CreatePetMacro(parent)
+function MogCompanions:CreatePetMacro(parent, options)
 	if InCombatLockdown and InCombatLockdown() then
 		print(L["Macro Combat Error"]);
 		return nil;
 	end
 
-	local macroId = false;
-	for i = 1, 120 do
-		if C_Macro.GetMacroName(i) == "MComp Pets" then
-			macroId = i;
-		end
+	local updateExistingOnly = options == true or (type(options) == "table" and options.updateExistingOnly == true);
+	local macroId = MogCompanions:FindMacroByExactName("MComp Pets");
+	if updateExistingOnly and macroId == nil then
+		return nil;
 	end
 
 	local macroIcon = 656575;
@@ -629,12 +628,14 @@ function MogCompanions:CreatePetMacro(parent)
 	local outfitData = MogCompanions:GetActiveOutfitTable();
 	local selectedPet = outfitData and GetPetDataByGUID(SyncLegacyPetSelection(outfitData));
 	if selectedPet ~= nil then
-		macroIcon = selectedPet.icon or macroIcon;
 		showTooltipLine = showTooltipLine .. " " .. selectedPet.name;
+	end
+	if MogCompanionsSaved ~= nil and MogCompanionsSaved.DynamicPetMacroIcon == true and selectedPet ~= nil then
+		macroIcon = 134400;
 	end
 
 	local macroBody = showTooltipLine.."\n/mcomp pet";
-	if not macroId then
+	if macroId == nil then
 		macroId = CreateMacro("MComp Pets", macroIcon, macroBody, nil);
 	else
 		EditMacro(macroId, "MComp Pets", macroIcon, macroBody, nil);

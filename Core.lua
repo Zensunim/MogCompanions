@@ -19,6 +19,7 @@ local transmogs = {};
 local loaded = false;
 local firstLoad = true;
 local lastPetAutoSummonChangeKey;
+local macroUpdateQueuedAfterCombat = false;
 
 local TitleDropdown;
 
@@ -75,6 +76,11 @@ end
 
 function MogCompanions:OpenSettings()
 	OpenSettingsToMogCompanions();
+end
+
+local function UpdateExistingMacrosForActiveOutfit()
+	MogCompanions:CreateMountMacro(nil, true);
+	MogCompanions:CreatePetMacro(nil, true);
 end
 
 -- Returns true if the modifier key configured for the pet macro action is held.
@@ -626,6 +632,12 @@ function MogCompanions:OnEvent(event, addOnName)
 		if MogCompanionsSaved.CloneTargetedMount == nil then
 			MogCompanionsSaved.CloneTargetedMount = false;
 		end
+		if MogCompanionsSaved.DynamicMountMacroIcon == nil then
+			MogCompanionsSaved.DynamicMountMacroIcon = false;
+		end
+		if MogCompanionsSaved.DynamicPetMacroIcon == nil then
+			MogCompanionsSaved.DynamicPetMacroIcon = false;
+		end
 
 		if MogCompanionsSaved.PetSummonOnChange == nil then
 			MogCompanionsSaved.PetSummonOnChange = true;
@@ -666,8 +678,21 @@ function MogCompanions:OnEvent(event, addOnName)
 	if event == "TRANSMOG_DISPLAYED_OUTFIT_CHANGED" then
 		C_Timer.After(0.1, function()
 			MogCompanions:HandleAutoPetSummon("PetSummonOnChange");
+			if InCombatLockdown and InCombatLockdown() then
+				macroUpdateQueuedAfterCombat = true;
+				return;
+			end
+
+			UpdateExistingMacrosForActiveOutfit();
 		end);
-	end		
+	end
+
+	if event == "PLAYER_REGEN_ENABLED" then
+		if macroUpdateQueuedAfterCombat then
+			macroUpdateQueuedAfterCombat = false;
+			UpdateExistingMacrosForActiveOutfit();
+		end
+	end
 
 	if event == "TRANSMOGRIFY_OPEN" then
 		C_Timer.After(0.1, function()
@@ -681,5 +706,6 @@ MogCompanions:RegisterEvent("PLAYER_ENTERING_WORLD")
 MogCompanions:RegisterEvent("TRANSMOGRIFY_OPEN")
 MogCompanions:RegisterEvent("VIEWED_TRANSMOG_OUTFIT_CHANGED")
 MogCompanions:RegisterEvent("TRANSMOG_DISPLAYED_OUTFIT_CHANGED")
+MogCompanions:RegisterEvent("PLAYER_REGEN_ENABLED")
 
 MogCompanions:SetScript("OnEvent", MogCompanions.OnEvent)
