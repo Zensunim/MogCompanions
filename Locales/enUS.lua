@@ -28,6 +28,12 @@ L["Random From Selected Hearthstones"] = "Random from %d selected hearthstones";
 L["More Selected Hearthstones"] = "+%d more";
 L["Random From Selected Pets"] = "Random from %d selected pets";
 L["More Selected Pets"] = "+%d more";
+L["No Pet"] = "No Pet";
+L["Random Pet"] = "Random Pet";
+L["Random Favorite Pet"] = "Random Favorite Pet";
+L["No Pet Tooltip"] = "Dismiss your current pet when this outfit becomes active.";
+L["Random Pet Tooltip"] = "Summon a random owned summonable pet when this outfit becomes active.";
+L["Random Favorite Pet Tooltip"] = "Summon a random owned favorite summonable pet when this outfit becomes active.";
 
 -- Tab
 L["Companions Tab Title"] = "Companions";
@@ -115,6 +121,13 @@ L["Settings Summon Selected Pet"] = "Summon Selected Pet Pool";
 L["Settings Summon Random Pet"] = "Summon Random Pet";
 L["Settings Summon Random Favorite Pet"] = "Summon Random Favorite Pet";
 L["Settings Dismiss Pet"] = "Dismiss Pet";
+L["Settings Pet Auto Summon Title"] = "Pet Auto-Summon";
+L["Settings Summon Pet On Outfit Change"] = "Summon Pet On Outfit Change";
+L["Settings Summon Pet On Outfit Change Tooltip"] = "When your active outfit changes, summon from that outfit's selected pet pool.\n\nDoes nothing if the outfit has no selected pets.";
+L["Settings Summon Pet On Mount"] = "Summon Pet On Mount/Dismount";
+L["Settings Summon Pet On Mount Tooltip"] = "After using the mount/dismount action, summon from the active outfit's selected pet pool.\n\nDoes nothing if the outfit has no selected pets.";
+L["Settings Summon Pet On Login"] = "Summon Pet On Login";
+L["Settings Summon Pet On Login Tooltip"] = "When you log in or reload, summon from the active outfit's selected pet pool.\n\nDoes nothing if the outfit has no selected pets.";
 
 -- Modifier Key Labels
 L["Settings CTRL"] = "CTRL";

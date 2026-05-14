@@ -151,6 +151,18 @@ local function InitSettings()
 		MogCompanionsSaved.PetMods.Dismiss = 3;        -- ALT dismisses the active pet
 	end
 
+	if MogCompanionsSaved.PetSummonOnChange == nil then
+		MogCompanionsSaved.PetSummonOnChange = true;
+	end
+
+	if MogCompanionsSaved.PetSummonOnMount == nil then
+		MogCompanionsSaved.PetSummonOnMount = true;
+	end
+
+	if MogCompanionsSaved.PetSummonOnLogin == nil then
+		MogCompanionsSaved.PetSummonOnLogin = true;
+	end
+
 	-- ────────────────────────────────────────────────────────────────────────────
 
 	layout:AddInitializer(CreateSettingsListSectionHeaderInitializer(L["Settings Default Section Title"], ''));
@@ -478,6 +490,41 @@ local function InitSettings()
 	Settings.CreateDropdown(category, setting, GetOptionsHearthstoneMods, false);
 	setting:SetValueChangedCallback(OnPetModSettingChanged);
 	tinsert(PetModDropdowns, setting);
+
+	layout:AddInitializer(CreateSettingsListSectionHeaderInitializer(L["Settings Pet Auto Summon Title"], ''));
+
+	local variable = CreateSettingIdentifier("PetSummonOnChange");
+	local defaultValue = true;
+	local name = L["Settings Summon Pet On Outfit Change"];
+	local tooltip = L["Settings Summon Pet On Outfit Change Tooltip"];
+	local variableKey = "PetSummonOnChange";
+	local variableTable = MogCompanionsSaved;
+
+	local setting = Settings.RegisterAddOnSetting(category, variable, variableKey, variableTable, type(defaultValue), name, defaultValue);
+	Settings.CreateCheckbox(category, setting, tooltip);
+	setting:SetValueChangedCallback(OnSettingChanged);
+
+	local variable = CreateSettingIdentifier("PetSummonOnMount");
+	local defaultValue = true;
+	local name = L["Settings Summon Pet On Mount"];
+	local tooltip = L["Settings Summon Pet On Mount Tooltip"];
+	local variableKey = "PetSummonOnMount";
+	local variableTable = MogCompanionsSaved;
+
+	local setting = Settings.RegisterAddOnSetting(category, variable, variableKey, variableTable, type(defaultValue), name, defaultValue);
+	Settings.CreateCheckbox(category, setting, tooltip);
+	setting:SetValueChangedCallback(OnSettingChanged);
+
+	local variable = CreateSettingIdentifier("PetSummonOnLogin");
+	local defaultValue = true;
+	local name = L["Settings Summon Pet On Login"];
+	local tooltip = L["Settings Summon Pet On Login Tooltip"];
+	local variableKey = "PetSummonOnLogin";
+	local variableTable = MogCompanionsSaved;
+
+	local setting = Settings.RegisterAddOnSetting(category, variable, variableKey, variableTable, type(defaultValue), name, defaultValue);
+	Settings.CreateCheckbox(category, setting, tooltip);
+	setting:SetValueChangedCallback(OnSettingChanged);
 
 	-- ────────────────────────────────────────────────────────────────────────────
 

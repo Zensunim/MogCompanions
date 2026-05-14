@@ -138,10 +138,37 @@ This is a maintained fork of MogCompanions with compatibility updates and new fu
 ## Packaging rules
 - Release zips are built by `.github/workflows/build.yml` when a tag is pushed.
 - The package root should remain `MogCompanions`.
-- Do not package `.git/` or `.github/`.
-- Do not package `AGENTS.md`.
+- Do not package `.git/` or `.github/` or `docs/`.
+- Do not package AI instruction sets like `AGENTS.md`.
 - Do not include generated zip files in the repository.
 - Keep the artifact naming pattern `MogCompanions-<tag>.zip` unless explicitly requested.
+
+## Transmog Outfit Events
+
+Use `VIEWED_TRANSMOG_OUTFIT_CHANGED` only for transmog UI refresh logic.
+
+This event means the player is viewing or selecting a different saved outfit in the transmog UI. It does not necessarily mean the character actually changed outfits.
+
+Good uses:
+- Refreshing displayed mount, pet, hearthstone, or title slots
+- Updating selected rows or checkmarks
+- Updating previews
+- Reading `C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID()`
+
+Do not use `VIEWED_TRANSMOG_OUTFIT_CHANGED` for gameplay behavior.
+
+Use `TRANSMOG_DISPLAYED_OUTFIT_CHANGED` for actual applied outfit changes.
+
+This event means the character's displayed outfit changed. Use it for behavior that should follow the active outfit, including:
+- Auto-summoning assigned pets
+- Updating active outfit hearthstone behavior
+- Applying active outfit side effects
+
+For active outfit behavior, use the active outfit ID, not the viewed outfit ID.
+
+Rule:
+- Viewed outfit = UI selection
+- Displayed outfit = actual character outfit
 
 ## Release, versioning, and documentation rules
 - This fork currently uses a visible `1.0` style version in `MogCompanions.toc` and `README.md`.

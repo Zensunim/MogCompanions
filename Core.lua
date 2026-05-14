@@ -18,6 +18,7 @@ local playerName = UnitName("player");
 local transmogs = {};
 local loaded = false;
 local firstLoad = true;
+local lastPetAutoSummonChangeKey;
 
 local TitleDropdown;
 
@@ -135,10 +136,28 @@ function MogCompanions:SummonRandomFavoritePet()
 	end
 
 	local activePetGUID = petJournal.GetSummonedPetGUID();
+
 	local randomPetGUID = MogCompanions:getRandomPet(activePetGUID, true);
+	if randomPetGUID == nil or randomPetGUID == "" then
+		randomPetGUID = MogCompanions:getRandomPet(activePetGUID, false);
+	end
+
 	if randomPetGUID ~= nil and randomPetGUID ~= "" then
 		petJournal.SummonPetByGUID(randomPetGUID);
 	end
+end
+
+local function GetNormalizedPetMode(outfitData)
+	if type(outfitData) ~= "table" then
+		return "Selected";
+	end
+
+	local mode = outfitData.PetMode;
+	if mode == "None" or mode == "Random" or mode == "Favorite" or mode == "Selected" then
+		return mode;
+	end
+
+	return "Selected";
 end
 
 function MogCompanions:SummonPet()
@@ -147,18 +166,45 @@ function MogCompanions:SummonPet()
 		return;
 	end
 
+	local outfitData = MogCompanions:GetActiveOutfitTable();
+	local petMode = GetNormalizedPetMode(outfitData);
+
+	if petMode == "None" then
+		MogCompanions:DismissPet();
+		return;
+	elseif petMode == "Random" then
+		local activePetGUID = petJournal.GetSummonedPetGUID();
+		local randomPetGUID = MogCompanions:getRandomPet(activePetGUID, false);
+		if randomPetGUID ~= nil and randomPetGUID ~= "" then
+			petJournal.SummonPetByGUID(randomPetGUID);
+		end
+		return;
+	elseif petMode == "Favorite" then
+		local activePetGUID = petJournal.GetSummonedPetGUID();
+		local randomFavoritePetGUID = MogCompanions:getRandomPet(activePetGUID, true);
+		if randomFavoritePetGUID ~= nil and randomFavoritePetGUID ~= "" then
+			petJournal.SummonPetByGUID(randomFavoritePetGUID);
+			return;
+		end
+
+		-- Fall back to random if no valid favorite pet is available.
+		local randomPetGUID = MogCompanions:getRandomPet(activePetGUID, false);
+		if randomPetGUID ~= nil and randomPetGUID ~= "" then
+			petJournal.SummonPetByGUID(randomPetGUID);
+		end
+		return;
+	end
+
 	local function IsValidOwnedPetGUID(petGUID)
-		if type(petGUID) ~= "string" or petGUID == "" or petJournal.GetPetInfoByPetID == nil then
+		if type(petGUID) ~= "string" or petGUID == "" then
 			return false;
 		end
 
-		local _, _, _, _, _, _, _, name, icon = petJournal.GetPetInfoByPetID(petGUID);
-		return name ~= nil and icon ~= nil;
+		return MogCompanions:IsPetSummonableOwned(petGUID);
 	end
 
 	local activePetGUID = petJournal.GetSummonedPetGUID();
 	local activePetGUIDKey = activePetGUID ~= nil and tostring(activePetGUID) or "";
-	local outfitData = MogCompanions:GetActiveOutfitTable();
 	local selectedPetGUIDs = {};
 
 	if outfitData ~= nil then
@@ -196,6 +242,159 @@ function MogCompanions:SummonPet()
 	if randomPetGUID ~= nil and randomPetGUID ~= "" then
 		petJournal.SummonPetByGUID(randomPetGUID);
 	end
+end
+
+function MogCompanions:SummonAssignedOutfitPet(options)
+	options = options or {};
+	local forceRandom = options.forceRandom == true;
+
+	if InCombatLockdown and InCombatLockdown() then
+		return false;
+	end
+
+	local petJournal = C_PetJournal;
+	if petJournal == nil or petJournal.SummonPetByGUID == nil or petJournal.GetSummonedPetGUID == nil then
+		return false;
+	end
+
+	local function IsValidOwnedPetGUID(petGUID)
+		if type(petGUID) ~= "string" or petGUID == "" then
+			return false;
+		end
+
+		return MogCompanions:IsPetSummonableOwned(petGUID);
+	end
+
+	local outfitData = MogCompanions:GetActiveOutfitTable();
+	if outfitData == nil then
+		return false;
+	end
+
+	local petMode = GetNormalizedPetMode(outfitData);
+	local activePetGUID = petJournal.GetSummonedPetGUID();
+
+	if petMode == "None" then
+		MogCompanions:DismissPet();
+		return true;
+	elseif petMode == "Random" then
+		if not forceRandom and IsValidOwnedPetGUID(activePetGUID) then
+			return true;
+		end
+
+		local randomPetGUID = MogCompanions:getRandomPet(activePetGUID, false);
+		if randomPetGUID ~= nil and randomPetGUID ~= "" and IsValidOwnedPetGUID(randomPetGUID) then
+			petJournal.SummonPetByGUID(randomPetGUID);
+			return true;
+		end
+
+		return false;
+	elseif petMode == "Favorite" then
+		local hasFavoritePet = MogCompanions:HasFavoritePet();
+
+		if not forceRandom then
+			if hasFavoritePet then
+				if IsValidOwnedPetGUID(activePetGUID) and MogCompanions:IsFavoritePet(activePetGUID) then
+					return true;
+				end
+			else
+				-- No favorites exist, so Favorite mode has fallen back to Random mode.
+				-- Random mode is satisfied by any valid currently summoned pet.
+				if IsValidOwnedPetGUID(activePetGUID) then
+					return true;
+				end
+			end
+		end
+
+		local randomFavoritePetGUID = MogCompanions:getRandomPet(activePetGUID, true);
+		if randomFavoritePetGUID ~= nil and randomFavoritePetGUID ~= "" and IsValidOwnedPetGUID(randomFavoritePetGUID) then
+			petJournal.SummonPetByGUID(randomFavoritePetGUID);
+			return true;
+		end
+
+		-- Fall back to random if no valid favorite pet is available.
+		local randomPetGUID = MogCompanions:getRandomPet(activePetGUID, false);
+		if randomPetGUID ~= nil and randomPetGUID ~= "" and IsValidOwnedPetGUID(randomPetGUID) then
+			petJournal.SummonPetByGUID(randomPetGUID);
+			return true;
+		end
+
+		return false;
+	end
+
+	local selectedPetGUIDs = MogCompanions:GetValidSelectionPoolValues(outfitData, "Pets", function(_, petID)
+		return IsValidOwnedPetGUID(petID);
+	end);
+
+	-- Auto-summon only from this outfit's assigned pet pool.
+	if #selectedPetGUIDs == 0 then
+		return true;
+	end
+
+	local activePetGUIDKey = activePetGUID ~= nil and tostring(activePetGUID) or "";
+
+	-- If the current pet is already one of the valid assigned pets, do nothing (idempotent).
+	if activePetGUIDKey ~= "" then
+		for i = 1, #selectedPetGUIDs do
+			if selectedPetGUIDs[i] == activePetGUIDKey then
+				return true;
+			end
+		end
+	end
+
+	-- Summon a random pet from the valid assigned outfit pet pool.
+	local selectedPetGUID = selectedPetGUIDs[math.random(1, #selectedPetGUIDs)];
+	if selectedPetGUID ~= nil and selectedPetGUID ~= "" and IsValidOwnedPetGUID(selectedPetGUID) then
+		petJournal.SummonPetByGUID(selectedPetGUID);
+		return true;
+	end
+
+	return false;
+end
+
+function MogCompanions:HandleAutoPetSummon(settingKey)
+	if type(settingKey) ~= "string" or settingKey == "" then
+		return;
+	end
+
+	if MogCompanionsSaved == nil or MogCompanionsSaved[settingKey] ~= true then
+		return;
+	end
+
+	local outfitData = MogCompanions:GetActiveOutfitTable();
+	if outfitData == nil then
+		return;
+	end
+
+	local petMode = GetNormalizedPetMode(outfitData);
+
+	if settingKey == "PetSummonOnChange" then
+		local activeOutfitID = MogCompanions:GetSafeActiveOutfitID();
+
+		if activeOutfitID ~= nil then
+			local autoKey = tostring(activeOutfitID) .. ":" .. petMode;
+
+			if lastPetAutoSummonChangeKey == autoKey then
+				return;
+			end
+
+			local forceReroll = (petMode == "Random" or petMode == "Favorite");
+			local handled = MogCompanions:SummonAssignedOutfitPet({
+				reason = settingKey,
+				forceRandom = forceReroll,
+			});
+
+			if handled then
+				lastPetAutoSummonChangeKey = autoKey;
+			end
+
+			return;
+		end
+	end
+
+	MogCompanions:SummonAssignedOutfitPet({
+		reason = settingKey,
+		forceRandom = false,
+	});
 end
 
 function MogCompanions:HandlePetAction()
@@ -387,6 +586,7 @@ end
 -- TRANSMOGRIFY_OPEN: defers mount tab creation by 0.1 s to allow Blizzard UI to settle.
 function MogCompanions:OnEvent(event, addOnName)
 	if event == "PLAYER_ENTERING_WORLD" and not loaded then
+		lastPetAutoSummonChangeKey = nil;
 		if MogCompanionsCharacterSaved == nil then
 			MogCompanionsCharacterSaved = {};
 		end
@@ -427,7 +627,25 @@ function MogCompanions:OnEvent(event, addOnName)
 			MogCompanionsSaved.CloneTargetedMount = false;
 		end
 
+		if MogCompanionsSaved.PetSummonOnChange == nil then
+			MogCompanionsSaved.PetSummonOnChange = true;
+		end
+
+		if MogCompanionsSaved.PetSummonOnMount == nil then
+			MogCompanionsSaved.PetSummonOnMount = true;
+		end
+
+		if MogCompanionsSaved.PetSummonOnLogin == nil then
+			MogCompanionsSaved.PetSummonOnLogin = true;
+		end
+
 		loaded = true;
+
+		if MogCompanionsSaved.PetSummonOnLogin then
+			C_Timer.After(0.1, function()
+				MogCompanions:HandleAutoPetSummon("PetSummonOnLogin");
+			end);
+		end
 	
 	end
 
@@ -443,6 +661,12 @@ function MogCompanions:OnEvent(event, addOnName)
 		end)
 
 		firstLoad = false;
+	end
+
+	if event == "TRANSMOG_DISPLAYED_OUTFIT_CHANGED" then
+		C_Timer.After(0.1, function()
+			MogCompanions:HandleAutoPetSummon("PetSummonOnChange");
+		end);
 	end		
 
 	if event == "TRANSMOGRIFY_OPEN" then
@@ -456,5 +680,6 @@ MogCompanions:RegisterEvent("ADDON_LOADED")
 MogCompanions:RegisterEvent("PLAYER_ENTERING_WORLD")
 MogCompanions:RegisterEvent("TRANSMOGRIFY_OPEN")
 MogCompanions:RegisterEvent("VIEWED_TRANSMOG_OUTFIT_CHANGED")
+MogCompanions:RegisterEvent("TRANSMOG_DISPLAYED_OUTFIT_CHANGED")
 
 MogCompanions:SetScript("OnEvent", MogCompanions.OnEvent)

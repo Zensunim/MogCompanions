@@ -39,4 +39,14 @@ No third-party code is knowingly included beyond the work credited above and cod
 
 ### 1.2
 * Added a MogMount to Mog Companions importer
-* Added a warning message if both addons are enabled at the same time
+* Added a warning dialog if both addons are enabled at the same time
+
+### 1.3
+* Added support for companion pet auto-summoning by outfit.
+* Added per-outfit pet modes:
+  * Selected Pets: summon from the pets assigned to the current outfit.
+  * No Pet: automatically dismiss the active pet when using that outfit.
+  * Random Pet: summon a random owned pet for that outfit.
+  * Random Favorite Pet: summon a random favorite pet, with fallback to random if no favorites are available.
+* Added pet auto-summon settings for outfit changes, login, and mount/dismount behavior.
+* Bug fixes on various pet summoning behav ior

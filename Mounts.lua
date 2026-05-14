@@ -528,6 +528,7 @@ function MogCompanionsSummon()
 	end
 
 	MogCompanions:UpdateTitle();
+	MogCompanions:HandleAutoPetSummon("PetSummonOnMount");
 end
 
 -- ── Mount Slot UI (CharacterPreview) ─────────────────────────────────────────

@@ -118,6 +118,23 @@ local function ImportMogMountSettingsInternal()
 		end
 	end
 
+	if type(MogMountSaved) == "table" then
+		if type(MogMountSaved.PetSummonOnChange) == "boolean" and MogCompanionsSaved.PetSummonOnChange ~= MogMountSaved.PetSummonOnChange then
+			MogCompanionsSaved.PetSummonOnChange = MogMountSaved.PetSummonOnChange;
+			importedAnything = true;
+		end
+
+		if type(MogMountSaved.PetSummonOnMount) == "boolean" and MogCompanionsSaved.PetSummonOnMount ~= MogMountSaved.PetSummonOnMount then
+			MogCompanionsSaved.PetSummonOnMount = MogMountSaved.PetSummonOnMount;
+			importedAnything = true;
+		end
+
+		if type(MogMountSaved.PetSummonOnLogin) == "boolean" and MogCompanionsSaved.PetSummonOnLogin ~= MogMountSaved.PetSummonOnLogin then
+			MogCompanionsSaved.PetSummonOnLogin = MogMountSaved.PetSummonOnLogin;
+			importedAnything = true;
+		end
+	end
+
 	-- Per-outfit settings
 	if type(MogMountCharacterSaved) == "table" then
 		for key, sourceOutfit in pairs(MogMountCharacterSaved) do

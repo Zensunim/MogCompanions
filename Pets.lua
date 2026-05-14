@@ -7,6 +7,9 @@ local MogCompanions = ns.MogCompanions;
 local L = MogCompanionsLocales;
 
 local PET_EMPTY_ICON = 656575;
+local PET_RANDOM_ICON = 1669485;
+local PET_NO_PET_ICON = 618980;
+local PET_RANDOM_FAVORITE_ICON = 6013777;
 
 local PetsFrame;
 local PetFrame;
@@ -33,6 +36,7 @@ local RefreshPetList;
 local PetDetailsCache = {};
 local LastClickedPetID;
 local ShowOnlySelectedPets = false;
+local PetModeButtons = {};
 
 MogCompanions.PetSearchString = "";
 
@@ -54,27 +58,36 @@ local function GetOutfitTable(outfitID)
 	return MogCompanionsCharacterSaved["Outfit"..outfitID];
 end
 
-local function GetPetJournalInfo(petID)
-	if petID == nil or petID == "" or C_PetJournal == nil or C_PetJournal.GetPetInfoByPetID == nil then
-		return nil;
+local function GetNormalizedPetMode(outfit)
+	if type(outfit) ~= "table" then
+		return "Selected";
 	end
 
-	if C_PetJournal.GetPetInfoTableByPetID ~= nil then
-		return C_PetJournal.GetPetInfoTableByPetID(petID);
+	local mode = outfit.PetMode;
+	if mode == "None" or mode == "Random" or mode == "Favorite" or mode == "Selected" then
+		return mode;
 	end
 
-	local speciesID, customName, level, xp, maxXp, displayID, favorite, name, icon = C_PetJournal.GetPetInfoByPetID(petID);
-	if name == nil or icon == nil then
-		return nil;
-	end
+	return "Selected";
+end
 
-	return {
-		speciesID = speciesID,
-		customName = customName,
-		displayID = displayID,
-		name = name,
-		icon = icon,
-	};
+local function UpdatePetModeButtonHighlights(outfit)
+	local mode = GetNormalizedPetMode(outfit);
+
+	for key, button in pairs(PetModeButtons) do
+		local selected = mode == key;
+		if button.selectedBorder ~= nil then
+			button.selectedBorder:SetShown(selected);
+		end
+
+		if selected then
+			button:SetAlpha(1);
+			button:LockHighlight();
+		else
+			button:SetAlpha(0.9);
+			button:UnlockHighlight();
+		end
+	end
 end
 
 local function GetPetDataByGUID(petID)
@@ -86,12 +99,12 @@ local function GetPetDataByGUID(petID)
 		return PetDetailsCache[petID];
 	end
 
-	local info = GetPetJournalInfo(petID);
-	if info == nil or info.name == nil or info.icon == nil then
+	if not MogCompanions:IsPetSummonableOwned(petID) then
 		return nil;
 	end
 
-	if info.isRevoked == true or info.canBattle == false then
+	local info = MogCompanions:GetPetInfoSafe(petID);
+	if info == nil or info.name == nil or info.icon == nil then
 		return nil;
 	end
 
@@ -116,7 +129,9 @@ local function GetPetDataByGUID(petID)
 end
 
 local function IsValidPetSelection(petID)
-	return type(petID) == "string" and petID ~= "" and GetPetDataByGUID(petID) ~= nil;
+	return type(petID) == "string"
+		and petID ~= ""
+		and MogCompanions:IsPetSummonableOwned(petID);
 end
 
 local function ValidatePetSelection(_, petID)
@@ -214,34 +229,51 @@ local function GetFilteredSelectedPets(outfit)
 	return filtered;
 end
 
-local function SetPetsSectionTitle(count)
+local function SetPetsSectionTitle(outfit)
 	if PetsSlotTitle == nil then
 		return;
 	end
-
-	if count > 0 then
-		PetsSlotTitle:SetText(L["Pets Tab Section Title"].." "..string.format(L["Selected Count Format"], count));
+	if type(outfit) ~= "table" then
+		outfit = nil;
+	end
+	local mode = GetNormalizedPetMode(outfit);
+	if mode == "None" then
+		PetsSlotTitle:SetText(L["Pets Tab Section Title"].." ("..(L["No Pet"] or "No Pet")..")");
+	elseif mode == "Random" then
+		PetsSlotTitle:SetText(L["Pets Tab Section Title"].." ("..(L["Random Pet"] or "Random Pet")..")");
+	elseif mode == "Favorite" then
+		PetsSlotTitle:SetText(L["Pets Tab Section Title"].." ("..(L["Random Favorite Pet"] or "Random Favorite Pet")..")");
 	else
-		PetsSlotTitle:SetText(L["Pets Tab Section Title"]);
+		local count = type(outfit) == "table" and #GetValidPetSelectionValues(outfit) or 0;
+		if count > 0 then
+			PetsSlotTitle:SetText(L["Pets Tab Section Title"].." "..string.format(L["Selected Count Format"], count));
+		else
+			PetsSlotTitle:SetText(L["Pets Tab Section Title"]);
+		end
 	end
 end
 
 local function GetPetTooltipLines(outfit)
+	if not outfit then return {}, 0; end
+	local mode = GetNormalizedPetMode(outfit);
+	if mode == "None" then
+		return {L["No Pet Tooltip"] or "No pet will be summoned for this outfit."}, 0;
+	elseif mode == "Random" then
+		return {L["Random Pet Tooltip"] or "A random owned summonable pet will be summoned for this outfit."}, 0;
+	elseif mode == "Favorite" then
+		return {L["Random Favorite Pet Tooltip"] or "A random owned favorite summonable pet will be summoned for this outfit."}, 0;
+	end
 	local pets = GetValidPetDataSelections(outfit);
 	local tooltipLines = {};
-
 	if #pets > 0 then
 		table.insert(tooltipLines, string.format(L["Random From Selected Pets"], #pets));
-
 		for i = 1, math.min(3, #pets) do
 			table.insert(tooltipLines, "|T"..pets[i].icon..":18|t "..pets[i].name);
 		end
-
 		if #pets > 3 then
 			table.insert(tooltipLines, string.format(L["More Selected Pets"], #pets - 3));
 		end
 	end
-
 	return tooltipLines, #pets;
 end
 
@@ -315,11 +347,47 @@ local function UpdatePetSlot()
 	if PetFrame == nil or PetTexture == nil then
 		return;
 	end
-
 	local outfit = GetOutfitTable(GetViewedOutfitID());
+	local mode = GetNormalizedPetMode(outfit);
+	if mode == "None" then
+		PetTexture:SetTexture(PET_NO_PET_ICON);
+		PetTexture:SetDesaturated(false);
+		PetTexture:SetVertexColor(1, 1, 1);
+		PetBorderTexture:SetAtlas("transmog-gearSlot-default");
+		PetBorderHighlightTexture:SetAtlas("transmog-gearSlot-default");
+		PetTexture:SetAllPoints(PetFrame);
+		PetFrame.texture = PetTexture;
+		SetPetsSectionTitle(outfit);
+		UpdatePetModeButtonHighlights(outfit);
+		UpdatePetPreview(nil);
+		return;
+	elseif mode == "Random" then
+		PetTexture:SetTexture(PET_RANDOM_ICON);
+		PetTexture:SetDesaturated(false);
+		PetTexture:SetVertexColor(1, 1, 1);
+		PetBorderTexture:SetAtlas("transmog-gearSlot-default");
+		PetBorderHighlightTexture:SetAtlas("transmog-gearSlot-default");
+		PetTexture:SetAllPoints(PetFrame);
+		PetFrame.texture = PetTexture;
+		SetPetsSectionTitle(outfit);
+		UpdatePetModeButtonHighlights(outfit);
+		UpdatePetPreview(nil);
+		return;
+	elseif mode == "Favorite" then
+		PetTexture:SetTexture(PET_RANDOM_FAVORITE_ICON);
+		PetTexture:SetDesaturated(false);
+		PetTexture:SetVertexColor(1, 1, 1);
+		PetBorderTexture:SetAtlas("transmog-gearSlot-default");
+		PetBorderHighlightTexture:SetAtlas("transmog-gearSlot-default");
+		PetTexture:SetAllPoints(PetFrame);
+		PetFrame.texture = PetTexture;
+		SetPetsSectionTitle(outfit);
+		UpdatePetModeButtonHighlights(outfit);
+		UpdatePetPreview(nil);
+		return;
+	end
 	local petID = SyncLegacyPetSelection(outfit);
 	local pet = GetPetDataByGUID(petID);
-
 	if pet ~= nil then
 		PetTexture:SetTexture(pet.icon);
 		PetTexture:SetDesaturated(false);
@@ -333,10 +401,10 @@ local function UpdatePetSlot()
 		PetBorderTexture:SetAtlas("transmog-gearSlot-default");
 		PetBorderHighlightTexture:SetAtlas("transmog-gearSlot-default");
 	end
-
 	PetTexture:SetAllPoints(PetFrame);
 	PetFrame.texture = PetTexture;
-	SetPetsSectionTitle(select(2, GetPetTooltipLines(outfit)));
+	SetPetsSectionTitle(outfit);
+	UpdatePetModeButtonHighlights(outfit);
 	UpdatePetPreview(GetValidPetSelection(outfit, false, LastClickedPetID));
 end
 
@@ -377,48 +445,46 @@ RefreshPetList = function(scrollToSelection)
 		end
 	end
 
-	SetPetsSectionTitle(selectedCount);
+	SetPetsSectionTitle(outfit);
 	MogCompanions:UpdateShowSelectedButton(PetShowSelectedButton, ShowOnlySelectedPets, selectedCount);
 	MogCompanions:UpdateNoResultsText(PetNoResultsText, PetsSearchBox, #pets);
 end
 
 local function SetSelectedPet(petID)
 	local outfit = GetOutfitTable(GetViewedOutfitID());
-
 	if outfit == nil then
 		return;
 	end
-
 	if petID == nil then
 		petID = "";
 	end
-
 	if petID ~= "" and not IsValidPetSelection(petID) then
 		return;
 	end
-
 	LastClickedPetID = petID;
-
+	-- Any click on a pet row switches to Selected mode and clears other modes
+	outfit.PetMode = "Selected";
 	if petID == "" then
 		MogCompanions:ClearSelectionPool(outfit, "Pets");
 	else
 		MogCompanions:ToggleSelectionPoolValue(outfit, "Pets", petID);
 	end
-
 	SyncLegacyPetSelection(outfit);
-
 	UpdatePetSlot();
 	UpdatePetPreview(GetValidPetSelection(outfit, false, LastClickedPetID));
 	RefreshPetList(false);
-
 	if PlaySound ~= nil and SOUNDKIT ~= nil and SOUNDKIT.UI_TRANSMOG_ITEM_CLICK ~= nil then
 		PlaySound(SOUNDKIT.UI_TRANSMOG_ITEM_CLICK);
 	end
-	end
+end
 
 local function ClearSelectedPet()
 	ShowOnlySelectedPets = false;
 	LastClickedPetID = nil;
+	local outfit = GetOutfitTable(GetViewedOutfitID());
+	if outfit then
+		outfit.PetMode = "Selected";
+	end
 	SetSelectedPet("");
 	if PetClear ~= nil then
 		PetClear:Hide();
@@ -506,14 +572,24 @@ local function CreatePetSlot()
 		GameTooltip:SetOwner(PetBorder, "ANCHOR_RIGHT");
 
 		local outfit = GetOutfitTable(GetViewedOutfitID());
+		local mode = GetNormalizedPetMode(outfit);
 		local tooltipLines, count = GetPetTooltipLines(outfit);
 
-		if count > 0 then
+		if #tooltipLines > 0 then
 			GameTooltip:AddLine(L["Item Slot Pet Title"]);
-			for i = 1, #tooltipLines do
-				GameTooltip:AddLine(tooltipLines[i], 1, 1, 1);
+			if mode == "None" then
+				GameTooltip:AddLine(L["No Pet"] or "No Pet", 1, 0.82, 0);
+			elseif mode == "Random" then
+				GameTooltip:AddLine(L["Random Pet"] or "Random Pet", 1, 0.82, 0);
+			elseif mode == "Favorite" then
+				GameTooltip:AddLine(L["Random Favorite Pet"] or "Random Favorite Pet", 1, 0.82, 0);
 			end
-			PetClear:Show();
+			for i = 1, #tooltipLines do
+				GameTooltip:AddLine(tooltipLines[i], 1, 1, 1, true);
+			end
+			if count > 0 or mode ~= "Selected" then
+				PetClear:Show();
+			end
 		else
 			GameTooltip:SetText(L["Item Slot Pet Title"]);
 		end
@@ -580,26 +656,21 @@ function MogCompanions:CreatePetsFrame(parent)
 	if parent == nil then
 		return nil;
 	end
-
 	if PetsFrame ~= nil then
 		if PetsFrame:GetParent() ~= parent then
 			PetsFrame:SetParent(parent);
 			PetsFrame:ClearAllPoints();
 			PetsFrame:SetAllPoints(parent);
 		end
-
 		return PetsFrame;
 	end
-
 	PetsFrame = CreateFrame("Frame", "MogCompanionsPetsFrame", parent);
 	PetsFrame:SetAllPoints(parent);
 	PetsFrame:Hide();
-
 	local topOffset = 26;
 	local listRightInset = 28;
 	local previewWidth = 308;
 	local previewInset = 12;
-
 	local PetsShortcuts = MogCompanions:CreateCompanionsShortcutMenu(PetsFrame, "MogCompanionsPetsShortcuts");
 	PetsShortcuts:SetPoint("TOPRIGHT", PetsFrame, "TOPRIGHT", -26, -50 + topOffset);
 
@@ -614,7 +685,6 @@ function MogCompanions:CreatePetsFrame(parent)
 		if SearchBoxTemplate_OnTextChanged ~= nil then
 			SearchBoxTemplate_OnTextChanged(self);
 		end
-
 		MogCompanions.PetSearchString = self:GetText() or "";
 		RefreshPetList(true);
 	end)
@@ -653,6 +723,60 @@ function MogCompanions:CreatePetsFrame(parent)
 	PetsList:SetPoint("BOTTOMRIGHT", PetsFrame, "BOTTOMRIGHT", -listRightInset, 42);
 	PetsList:SetFrameStrata("HIGH");
 
+	-- Pet mode buttons sit above the list contents (inside the list panel, not header UI).
+	local modeButtonWidth = 30;
+	local modeButtonHeight = 30;
+	local modeSpacing = 6;
+	PetModeButtons = {};
+	local modeDefs = {
+		{ key = "None", label = L["No Pet"] or "No Pet", icon = PET_NO_PET_ICON, tooltip = L["No Pet Tooltip"] or "No pet will be summoned for this outfit.", iconInset = 0 },
+		{ key = "Random", label = L["Random Pet"] or "Random Pet", icon = PET_RANDOM_ICON, tooltip = L["Random Pet Tooltip"] or "A random owned summonable pet will be summoned for this outfit.", iconInset = 0 },
+		{ key = "Favorite", label = L["Random Favorite Pet"] or "Random Favorite Pet", icon = PET_RANDOM_FAVORITE_ICON, tooltip = L["Random Favorite Pet Tooltip"] or "A random owned favorite summonable pet will be summoned for this outfit.", iconInset = -2 },
+	};
+	for i, def in ipairs(modeDefs) do
+		local btn = CreateFrame("Button", nil, PetsFrame, "UIPanelButtonTemplate");
+		btn:SetSize(modeButtonWidth, modeButtonHeight);
+		btn:SetPoint("BOTTOMLEFT", PetsList, "TOPLEFT", 12 + (i-1) * (modeButtonWidth + modeSpacing), 6);
+		btn:SetFrameStrata("HIGH");
+		btn:SetFrameLevel(PetsList:GetFrameLevel() + 5);
+		btn:SetHighlightTexture("Interface\\Buttons\\ButtonHilight-Square", "ADD");
+		btn.icon = btn:CreateTexture(nil, "ARTWORK");
+		btn.icon:SetPoint("TOPLEFT", btn, "TOPLEFT", def.iconInset, def.iconInset * -1);
+		btn.icon:SetPoint("BOTTOMRIGHT", btn, "BOTTOMRIGHT", def.iconInset * -1, def.iconInset);
+		btn.icon:SetTexture(def.icon);
+		btn.selectedBorder = btn:CreateTexture(nil, "OVERLAY");
+		btn.selectedBorder:SetTexture("Interface\\Buttons\\UI-ActionButton-Border");
+		btn.selectedBorder:SetBlendMode("ADD");
+		btn.selectedBorder:SetAlpha(0.9);
+		btn.selectedBorder:SetSize(modeButtonWidth + 18, modeButtonHeight + 18);
+		btn.selectedBorder:SetPoint("CENTER", btn, "CENTER", 0, 0);
+		btn.selectedBorder:Hide();
+		btn:SetScript("OnEnter", function(self)
+			GameTooltip:SetOwner(self, "ANCHOR_RIGHT");
+			GameTooltip:SetText(def.label);
+			if def.tooltip ~= nil and def.tooltip ~= "" then
+				GameTooltip:AddLine(def.tooltip, 1, 1, 1, true);
+			end
+			GameTooltip:Show();
+		end)
+		btn:SetScript("OnLeave", function()
+			GameTooltip:Hide();
+		end)
+		btn:SetScript("OnClick", function()
+			local outfit = GetOutfitTable(GetViewedOutfitID());
+			if outfit then
+				outfit.PetMode = def.key;
+				MogCompanions:ClearSelectionPool(outfit, "Pets");
+				LastClickedPetID = nil;
+				UpdatePetSlot();
+				RefreshPetList(false);
+			end
+		end)
+		PetModeButtons[def.key] = btn;
+	end
+
+	UpdatePetModeButtonHighlights(GetOutfitTable(GetViewedOutfitID()));
+
 	PetShowSelectedButton = CreateFrame("Button", nil, PetsFrame, "UIPanelButtonTemplate");
 	PetShowSelectedButton:SetSize(110, 22);
 	PetShowSelectedButton:SetPoint("BOTTOMRIGHT", PetsList, "TOPRIGHT", 0, 4);
@@ -688,19 +812,16 @@ function MogCompanions:CreatePetsFrame(parent)
 	PetsScrollView:SetElementInitializer("MogCompanionsMultiSelectListButtonTemplate", function(button, data)
 		local outfit = GetOutfitTable(GetViewedOutfitID());
 		local isSelected = outfit ~= nil and MogCompanions:IsInSelectionPool(outfit, "Pets", data.id);
-
 		button.Name:SetText("|T"..data.icon..":18|t "..data.name);
 		button:SetHighlightTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight");
 		if button.CheckboxCheck ~= nil then
 			button.CheckboxCheck:SetShown(isSelected);
 		end
-
 		if isSelected then
 			button:LockHighlight();
 		else
 			button:UnlockHighlight();
 		end
-
 		button:SetScript("OnEnter", function(self)
 			GameTooltip:SetOwner(self, "ANCHOR_RIGHT");
 			GameTooltip:AddLine(data.name);
@@ -720,7 +841,6 @@ function MogCompanions:CreatePetsFrame(parent)
 	PetsScrollView:SetElementExtent(22);
 	ScrollUtil.InitScrollBoxListWithScrollBar(PetsListScrollBox, PetsScrollBar, PetsScrollView);
 	PetsScrollView:SetDataProvider(PetsDataProvider);
-
 	return PetsFrame;
 end
 
