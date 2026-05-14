@@ -74,16 +74,41 @@ local function OnSettingChanged()
 	-- No side-effects needed; the Settings API variable binding handles persistence.
 end
 
+local pendingMountMacroUpdate = false;
+local pendingPetMacroUpdate = false;
+
+local function SafeUpdateMountMacroExistingOnly()
+	if InCombatLockdown and InCombatLockdown() then
+		pendingMountMacroUpdate = true;
+		MogCompanionsSettings:RegisterEvent("PLAYER_REGEN_ENABLED");
+	else
+		MogCompanions:CreateMountMacro(nil, true);
+	end
+end
+
+local function SafeUpdatePetMacroExistingOnly()
+	if InCombatLockdown and InCombatLockdown() then
+		pendingPetMacroUpdate = true;
+		MogCompanionsSettings:RegisterEvent("PLAYER_REGEN_ENABLED");
+	else
+		MogCompanions:CreatePetMacro(nil, true);
+	end
+end
+
 local function OnPetSettingChanged()
-	MogCompanions:CreatePetMacro(nil, true);
+	SafeUpdatePetMacroExistingOnly();
+end
+
+local function OnMountMacroSettingChanged()
+	SafeUpdateMountMacroExistingOnly();
 end
 
 local function OnMountDynamicMacroIconSettingChanged()
-	MogCompanions:CreateMountMacro(nil, true);
+	SafeUpdateMountMacroExistingOnly();
 end
 
 local function OnPetDynamicMacroIconSettingChanged()
-	MogCompanions:CreatePetMacro(nil, true);
+	SafeUpdatePetMacroExistingOnly();
 end
 
 -- ── Modifier Key Helpers ─────────────────────────────────────────────────────
@@ -199,7 +224,7 @@ local function InitSettings()
 
 	local setting = Settings.RegisterAddOnSetting(category, variable, variableKey, variableTable, type(defaultValue), name, defaultValue);
 	Settings.CreateDropdown(category, setting, GetOptionsAquaticMount, tooltip);
-	setting:SetValueChangedCallback(OnSettingChanged);
+	setting:SetValueChangedCallback(OnMountMacroSettingChanged);
 
 	-- Default repair mount
 
@@ -217,7 +242,7 @@ local function InitSettings()
 
 	local setting = Settings.RegisterAddOnSetting(category, variable, variableKey, variableTable, type(defaultValue), name, defaultValue);
    	Settings.CreateDropdown(category, setting, GetOptionsRepairMount, tooltip);
-	setting:SetValueChangedCallback(OnSettingChanged);
+	setting:SetValueChangedCallback(OnMountMacroSettingChanged);
 
 	-- Random ground: allow flying mounts
 
@@ -318,6 +343,8 @@ local function InitSettings()
 				MountModDropdowns[i]:SetValue(missing);
 			end
 		end
+
+		SafeUpdateMountMacroExistingOnly();
 	end
 
 	local variable = CreateSettingIdentifier("MountMacroModFlyingOrGround");
@@ -581,6 +608,16 @@ function MogCompanionsSettings:OnEvent(event, addOnName)
 
 		InitSettings();
 
+	elseif event == "PLAYER_REGEN_ENABLED" then
+		MogCompanionsSettings:UnregisterEvent("PLAYER_REGEN_ENABLED");
+		if pendingMountMacroUpdate then
+			pendingMountMacroUpdate = false;
+			MogCompanions:CreateMountMacro(nil, true);
+		end
+		if pendingPetMacroUpdate then
+			pendingPetMacroUpdate = false;
+			MogCompanions:CreatePetMacro(nil, true);
+		end
 	end
 end
 
