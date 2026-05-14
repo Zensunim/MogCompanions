@@ -178,13 +178,15 @@ function MogCompanions:SummonPet()
 		local activePetGUID = petJournal.GetSummonedPetGUID();
 		local randomFavoritePetGUID = MogCompanions:getRandomPet(activePetGUID, true);
 		if randomFavoritePetGUID ~= nil and randomFavoritePetGUID ~= "" then
-			petJournal.SummonPetByGUID(randomFavoritePetGUID);			return;
+			petJournal.SummonPetByGUID(randomFavoritePetGUID);
+			return;
 		end
 
 		-- Fall back to random if no valid favorite pet is available.
 		local randomPetGUID = MogCompanions:getRandomPet(activePetGUID, false);
-		if randomPetGUID ~= nil and randomPetGUID ~= \"\" then
-			petJournal.SummonPetByGUID(randomPetGUID);		end
+		if randomPetGUID ~= nil and randomPetGUID ~= "" then
+			petJournal.SummonPetByGUID(randomPetGUID);
+		end
 		return;
 	end
 
