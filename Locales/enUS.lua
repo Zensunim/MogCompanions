@@ -125,12 +125,16 @@ L["Settings Summon Random Pet"] = "Summon Random Pet";
 L["Settings Summon Random Favorite Pet"] = "Summon Random Favorite Pet";
 L["Settings Dismiss Pet"] = "Dismiss Pet";
 L["Settings Pet Auto Summon Title"] = "Pet Auto-Summon";
-L["Settings Summon Pet On Outfit Change"] = "Summon Pet On Outfit Change";
+L["Settings Summon Pet On Outfit Change"] = "Summon Pet on Outfit Change";
 L["Settings Summon Pet On Outfit Change Tooltip"] = "When your active outfit changes, summon from that outfit's selected pet pool.\n\nDoes nothing if the outfit has no selected pets.";
-L["Settings Summon Pet On Mount"] = "Summon Pet On Mount/Dismount";
+L["Settings Summon Pet On Mount"] = "Summon Pet on Mount/Dismount";
 L["Settings Summon Pet On Mount Tooltip"] = "After using the mount/dismount action, summon from the active outfit's selected pet pool.\n\nDoes nothing if the outfit has no selected pets.";
-L["Settings Summon Pet On Login"] = "Summon Pet On Login";
-L["Settings Summon Pet On Login Tooltip"] = "When you log in or reload, summon from the active outfit's selected pet pool.\n\nDoes nothing if the outfit has no selected pets.";
+L["Settings Summon Pet On Login"] = "Summon Pet on Zone In";
+L["Settings Summon Pet On Login Tooltip"] = "Summon from the active outfit's selected pet pool when you log in, reload, change zones, resurrect or take a flight path.\n\nWhen a dismiss setting is active, entering that instance type will dismiss your pet. Leaving will restore it.\n\nDoes nothing if the outfit has no selected pets.";
+L["Settings Dismiss Pet In PvE"] = "Dismiss Pet in PvE Instances";
+L["Settings Dismiss Pet In PvE Tooltip"] = "When you enter a dungeon or raid, dismiss your active pet.\n\nAlso prevents auto-summon from placing a pet while you are inside a PvE instance.";
+L["Settings Dismiss Pet In PvP"] = "Dismiss Pet in PvP Instances";
+L["Settings Dismiss Pet In PvP Tooltip"] = "When you enter a battleground or arena, dismiss your active pet.\n\nAlso prevents auto-summon from placing a pet while you are inside a PvP instance.";
 
 -- Modifier Key Labels
 L["Settings CTRL"] = "CTRL";

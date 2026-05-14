@@ -53,3 +53,5 @@ No third-party code is knowingly included beyond the work credited above and cod
 
 ### 1.4
 * Added dynamic icon support to macros
+* Added options to auto-dismiss pets in PvE/PvP
+* Improved auto-summon on login to include zone changes, resurrection, and flight path landing

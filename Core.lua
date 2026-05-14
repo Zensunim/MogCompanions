@@ -297,7 +297,10 @@ function MogCompanions:SummonAssignedOutfitPet(options)
 	local activePetGUID = petJournal.GetSummonedPetGUID();
 
 	if petMode == "None" then
-		MogCompanions:DismissPet();
+		-- Only dismiss on outfit change. On mount/login, leave manually summoned pets alone.
+		if options.reason == "PetSummonOnChange" then
+			MogCompanions:DismissPet();
+		end
 		return true;
 	elseif petMode == "Random" then
 		if not forceRandom and IsValidOwnedPetGUID(activePetGUID) then
@@ -374,12 +377,32 @@ function MogCompanions:SummonAssignedOutfitPet(options)
 	return false;
 end
 
+-- Returns true if the player is currently inside an instance type that is
+-- configured to dismiss/suppress pets (PvE or PvP).
+function MogCompanions:ShouldDismissPetForCurrentInstance()
+	if MogCompanionsSaved == nil then return false; end
+	if IsInInstance == nil then return false; end
+	local inInstance, instanceType = IsInInstance();
+	if not inInstance then return false; end
+	if (instanceType == "raid" or instanceType == "party" or instanceType == "scenario") and MogCompanionsSaved.PetDismissInPvE then
+		return true;
+	end
+	if (instanceType == "pvp" or instanceType == "arena") and MogCompanionsSaved.PetDismissInPvP then
+		return true;
+	end
+	return false;
+end
+
 function MogCompanions:HandleAutoPetSummon(settingKey)
 	if type(settingKey) ~= "string" or settingKey == "" then
 		return;
 	end
 
 	if MogCompanionsSaved == nil or MogCompanionsSaved[settingKey] ~= true then
+		return;
+	end
+
+	if MogCompanions:ShouldDismissPetForCurrentInstance() then
 		return;
 	end
 
@@ -608,74 +631,107 @@ end
 --   newly viewed outfit. firstLoad=true triggers full UI construction.
 -- TRANSMOGRIFY_OPEN: defers mount tab creation by 0.1 s to allow Blizzard UI to settle.
 function MogCompanions:OnEvent(event, addOnName)
-	if event == "PLAYER_ENTERING_WORLD" and not loaded then
-		lastPetAutoSummonChangeKey = nil;
-		if MogCompanionsCharacterSaved == nil then
-			MogCompanionsCharacterSaved = {};
-		end
+	if event == "PLAYER_ENTERING_WORLD" then
+		if not loaded then
+			lastPetAutoSummonChangeKey = nil;
 
-		if MogCompanionsCharacterSaved.Default == nil then
-			MogCompanionsCharacterSaved.Default = {};
-		end
+			if MogCompanionsCharacterSaved == nil then
+				MogCompanionsCharacterSaved = {};
+			end
 
-		if MogCompanionsCharacterSaved.Default.Aquatic == nil then
-			MogCompanionsCharacterSaved.Default.Aquatic = 0;
-		end
+			if MogCompanionsCharacterSaved.Default == nil then
+				MogCompanionsCharacterSaved.Default = {};
+			end
 
-		if MogCompanionsCharacterSaved.Default.Repair == nil then
-			MogCompanionsCharacterSaved.Default.Repair = 0;
-		end
+			if MogCompanionsCharacterSaved.Default.Aquatic == nil then
+				MogCompanionsCharacterSaved.Default.Aquatic = 0;
+			end
 
-		for t = 1, #C_TransmogOutfitInfo.GetOutfitsInfo() do
-			local outfitInfo = C_TransmogOutfitInfo.GetOutfitsInfo()[t];	
-			MogCompanions:CreateEmptyOutfit(outfitInfo.outfitID);
-		end		
+			if MogCompanionsCharacterSaved.Default.Repair == nil then
+				MogCompanionsCharacterSaved.Default.Repair = 0;
+			end
 
-		if MogCompanionsSaved == nil then
-			MogCompanionsSaved = {};
-			MogCompanionsSaved['MacroID'] = 0;
-			MogCompanionsSaved.ShowFlyingInGround = true;
-			MogCompanionsSaved.RandomGroundAllowFlying = true;
-		end
+			for t = 1, #C_TransmogOutfitInfo.GetOutfitsInfo() do
+				local outfitInfo = C_TransmogOutfitInfo.GetOutfitsInfo()[t];
+				MogCompanions:CreateEmptyOutfit(outfitInfo.outfitID);
+			end
 
-		if MogCompanionsSaved.ShowFlyingInGround == nil then
-			MogCompanionsSaved.ShowFlyingInGround = true;
-		end
+			if MogCompanionsSaved == nil then
+				MogCompanionsSaved = {};
+				MogCompanionsSaved['MacroID'] = 0;
+				MogCompanionsSaved.ShowFlyingInGround = true;
+				MogCompanionsSaved.RandomGroundAllowFlying = true;
+			end
 
-		if MogCompanionsSaved.RandomGroundAllowFlying == nil then
-			MogCompanionsSaved.RandomGroundAllowFlying = true;
-		end
+			if MogCompanionsSaved.ShowFlyingInGround == nil then
+				MogCompanionsSaved.ShowFlyingInGround = true;
+			end
 
-		if MogCompanionsSaved.CloneTargetedMount == nil then
-			MogCompanionsSaved.CloneTargetedMount = false;
-		end
-		if MogCompanionsSaved.DynamicMountMacroIcon == nil then
-			MogCompanionsSaved.DynamicMountMacroIcon = false;
-		end
-		if MogCompanionsSaved.DynamicPetMacroIcon == nil then
-			MogCompanionsSaved.DynamicPetMacroIcon = false;
-		end
+			if MogCompanionsSaved.RandomGroundAllowFlying == nil then
+				MogCompanionsSaved.RandomGroundAllowFlying = true;
+			end
 
-		if MogCompanionsSaved.PetSummonOnChange == nil then
-			MogCompanionsSaved.PetSummonOnChange = true;
-		end
+			if MogCompanionsSaved.CloneTargetedMount == nil then
+				MogCompanionsSaved.CloneTargetedMount = false;
+			end
+			if MogCompanionsSaved.DynamicMountMacroIcon == nil then
+				MogCompanionsSaved.DynamicMountMacroIcon = false;
+			end
+			if MogCompanionsSaved.DynamicPetMacroIcon == nil then
+				MogCompanionsSaved.DynamicPetMacroIcon = false;
+			end
 
-		if MogCompanionsSaved.PetSummonOnMount == nil then
-			MogCompanionsSaved.PetSummonOnMount = true;
-		end
+			if MogCompanionsSaved.PetSummonOnChange == nil then
+				MogCompanionsSaved.PetSummonOnChange = true;
+			end
 
-		if MogCompanionsSaved.PetSummonOnLogin == nil then
-			MogCompanionsSaved.PetSummonOnLogin = true;
-		end
+			if MogCompanionsSaved.PetSummonOnMount == nil then
+				MogCompanionsSaved.PetSummonOnMount = true;
+			end
 
-		loaded = true;
+			if MogCompanionsSaved.PetSummonOnLogin == nil then
+				MogCompanionsSaved.PetSummonOnLogin = true;
+			end
 
-		if MogCompanionsSaved.PetSummonOnLogin then
+			if MogCompanionsSaved.PetDismissInPvE == nil then
+				MogCompanionsSaved.PetDismissInPvE = false;
+			end
+
+			if MogCompanionsSaved.PetDismissInPvP == nil then
+				MogCompanionsSaved.PetDismissInPvP = false;
+			end
+
+			loaded = true;
+
 			C_Timer.After(0.1, function()
+				if MogCompanionsSaved.DynamicMountMacroIcon or MogCompanionsSaved.DynamicPetMacroIcon then
+					UpdateExistingMacrosForActiveOutfit();
+				end
+				if MogCompanionsSaved.PetSummonOnLogin then
+					MogCompanions:HandleAutoPetSummon("PetSummonOnLogin");
+				end
+			end);
+
+		else
+			-- Zone/instance change after initial load.
+			if MogCompanions:ShouldDismissPetForCurrentInstance() then
+				C_Timer.After(0.5, function()
+					MogCompanions:DismissPet();
+				end);
+			else
+				C_Timer.After(0.5, function()
+					MogCompanions:HandleAutoPetSummon("PetSummonOnLogin");
+				end);
+			end
+		end
+	end
+
+	if event == "PLAYER_ALIVE" then
+		if loaded then
+			C_Timer.After(0.5, function()
 				MogCompanions:HandleAutoPetSummon("PetSummonOnLogin");
 			end);
 		end
-	
 	end
 
 	if event == "VIEWED_TRANSMOG_OUTFIT_CHANGED" then
@@ -720,6 +776,7 @@ end
 
 MogCompanions:RegisterEvent("ADDON_LOADED")
 MogCompanions:RegisterEvent("PLAYER_ENTERING_WORLD")
+MogCompanions:RegisterEvent("PLAYER_ALIVE")
 MogCompanions:RegisterEvent("TRANSMOGRIFY_OPEN")
 MogCompanions:RegisterEvent("VIEWED_TRANSMOG_OUTFIT_CHANGED")
 MogCompanions:RegisterEvent("TRANSMOG_DISPLAYED_OUTFIT_CHANGED")

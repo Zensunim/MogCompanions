@@ -191,6 +191,12 @@ local function InitSettings()
 	if MogCompanionsSaved.PetSummonOnLogin == nil then
 		MogCompanionsSaved.PetSummonOnLogin = true;
 	end
+	if MogCompanionsSaved.PetDismissInPvE == nil then
+		MogCompanionsSaved.PetDismissInPvE = false;
+	end
+	if MogCompanionsSaved.PetDismissInPvP == nil then
+		MogCompanionsSaved.PetDismissInPvP = false;
+	end
 	if MogCompanionsSaved.DynamicMountMacroIcon == nil then
 		MogCompanionsSaved.DynamicMountMacroIcon = false;
 	end
@@ -583,6 +589,28 @@ local function InitSettings()
 	local name = L["Settings Summon Pet On Login"];
 	local tooltip = L["Settings Summon Pet On Login Tooltip"];
 	local variableKey = "PetSummonOnLogin";
+	local variableTable = MogCompanionsSaved;
+
+	local setting = Settings.RegisterAddOnSetting(category, variable, variableKey, variableTable, type(defaultValue), name, defaultValue);
+	Settings.CreateCheckbox(category, setting, tooltip);
+	setting:SetValueChangedCallback(OnSettingChanged);
+
+	local variable = CreateSettingIdentifier("PetDismissInPvE");
+	local defaultValue = false;
+	local name = L["Settings Dismiss Pet In PvE"];
+	local tooltip = L["Settings Dismiss Pet In PvE Tooltip"];
+	local variableKey = "PetDismissInPvE";
+	local variableTable = MogCompanionsSaved;
+
+	local setting = Settings.RegisterAddOnSetting(category, variable, variableKey, variableTable, type(defaultValue), name, defaultValue);
+	Settings.CreateCheckbox(category, setting, tooltip);
+	setting:SetValueChangedCallback(OnSettingChanged);
+
+	local variable = CreateSettingIdentifier("PetDismissInPvP");
+	local defaultValue = false;
+	local name = L["Settings Dismiss Pet In PvP"];
+	local tooltip = L["Settings Dismiss Pet In PvP Tooltip"];
+	local variableKey = "PetDismissInPvP";
 	local variableTable = MogCompanionsSaved;
 
 	local setting = Settings.RegisterAddOnSetting(category, variable, variableKey, variableTable, type(defaultValue), name, defaultValue);
