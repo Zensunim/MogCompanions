@@ -233,23 +233,19 @@ function MogCompanions:SummonAssignedOutfitPet()
 
 	local activePetGUID = petJournal.GetSummonedPetGUID();
 	local activePetGUIDKey = activePetGUID ~= nil and tostring(activePetGUID) or "";
-	local summonPool = {};
 
-	for i = 1, #selectedPetGUIDs do
-		local candidatePetGUID = selectedPetGUIDs[i];
-		if type(candidatePetGUID) == "string" and candidatePetGUID ~= "" then
-			if activePetGUIDKey == "" or candidatePetGUID ~= activePetGUIDKey then
-				table.insert(summonPool, candidatePetGUID);
+	-- If the current pet is already one of the valid assigned pets, do nothing (idempotent).
+	if activePetGUIDKey ~= "" then
+		for i = 1, #selectedPetGUIDs do
+			if selectedPetGUIDs[i] == activePetGUIDKey then
+				return;
 			end
 		end
 	end
 
-	if #summonPool == 0 then
-		return;
-	end
-
-	local selectedPetGUID = summonPool[math.random(1, #summonPool)];
-	if selectedPetGUID ~= nil and selectedPetGUID ~= "" then
+	-- Summon a random pet from the valid assigned outfit pet pool.
+	local selectedPetGUID = selectedPetGUIDs[math.random(1, #selectedPetGUIDs)];
+	if selectedPetGUID ~= nil and selectedPetGUID ~= "" and IsValidOwnedPetGUID(selectedPetGUID) then
 		petJournal.SummonPetByGUID(selectedPetGUID);
 	end
 end
@@ -521,7 +517,6 @@ function MogCompanions:OnEvent(event, addOnName)
 		MogCompanions:CreateEmptyOutfit(C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID());
 		MogCompanions:InitMountSlots(firstLoad);
 		InitTitles(firstLoad);
-		MogCompanions:HandleAutoPetSummon("PetSummonOnChange");
 
 		C_Timer.After(0.1, function()
 			if UpdateSelectedMountRow ~= nil then
@@ -530,6 +525,12 @@ function MogCompanions:OnEvent(event, addOnName)
 		end)
 
 		firstLoad = false;
+	end
+
+	if event == "TRANSMOG_DISPLAYED_OUTFIT_CHANGED" then
+		C_Timer.After(0.1, function()
+			MogCompanions:HandleAutoPetSummon("PetSummonOnChange");
+		end);
 	end		
 
 	if event == "TRANSMOGRIFY_OPEN" then
@@ -543,5 +544,4 @@ MogCompanions:RegisterEvent("ADDON_LOADED")
 MogCompanions:RegisterEvent("PLAYER_ENTERING_WORLD")
 MogCompanions:RegisterEvent("TRANSMOGRIFY_OPEN")
 MogCompanions:RegisterEvent("VIEWED_TRANSMOG_OUTFIT_CHANGED")
-
-MogCompanions:SetScript("OnEvent", MogCompanions.OnEvent)
+MogCompanions:RegisterEvent("TRANSMOG_DISPLAYED_OUTFIT_CHANGED")
