@@ -34,6 +34,9 @@ L["Random Favorite Pet"] = "Random Favorite Pet";
 L["No Pet Tooltip"] = "Dismiss your current pet when this outfit becomes active.";
 L["Random Pet Tooltip"] = "Summon a random owned summonable pet when this outfit becomes active.";
 L["Random Favorite Pet Tooltip"] = "Summon a random owned favorite summonable pet when this outfit becomes active.";
+L["Pet Macro Tooltip Random"] = "Summon Random Pet";
+L["Pet Macro Tooltip Favorite"] = "Summon Random Favorite Pet";
+L["Pet Macro Tooltip None"] = "Dismiss Pet";
 
 -- Tab
 L["Companions Tab Title"] = "Companions";

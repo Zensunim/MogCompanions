@@ -103,10 +103,6 @@ local function OnMountMacroSettingChanged()
 	SafeUpdateMountMacroExistingOnly();
 end
 
-local function OnMountDynamicMacroIconSettingChanged()
-	SafeUpdateMountMacroExistingOnly();
-end
-
 local function OnPetDynamicMacroIconSettingChanged()
 	SafeUpdatePetMacroExistingOnly();
 end
@@ -285,7 +281,7 @@ local function InitSettings()
 
 	local setting = Settings.RegisterAddOnSetting(category, variable, variableKey, variableTable, type(defaultValue), name, defaultValue);
 	Settings.CreateCheckbox(category, setting, tooltip);
-	setting:SetValueChangedCallback(OnMountDynamicMacroIconSettingChanged);
+	setting:SetValueChangedCallback(OnMountMacroSettingChanged);
 
 	local variable = CreateSettingIdentifier("DynamicPetMacroIcon");
 	local defaultValue = false;
