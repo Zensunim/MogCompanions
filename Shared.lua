@@ -977,6 +977,10 @@ function MogCompanions:CreateEmptyOutfit(id)
 		end
 	end
 
+	if outfit.PetMode == nil or (outfit.PetMode ~= "Selected" and outfit.PetMode ~= "None" and outfit.PetMode ~= "Random" and outfit.PetMode ~= "Favorite") then
+		outfit.PetMode = "Selected";
+	end
+
 	if outfit.Title == nil then
 		outfit.Title = 0;
 	end

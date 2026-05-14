@@ -28,6 +28,12 @@ L["Random From Selected Hearthstones"] = "Random from %d selected hearthstones";
 L["More Selected Hearthstones"] = "+%d more";
 L["Random From Selected Pets"] = "Random from %d selected pets";
 L["More Selected Pets"] = "+%d more";
+L["No Pet"] = "No Pet";
+L["Random Pet"] = "Random Pet";
+L["Random Favorite Pet"] = "Random Favorite Pet";
+L["No Pet Tooltip"] = "Dismiss your current pet when this outfit becomes active.";
+L["Random Pet Tooltip"] = "Summon a random owned summonable pet when this outfit becomes active.";
+L["Random Favorite Pet Tooltip"] = "Summon a random owned favorite summonable pet when this outfit becomes active.";
 
 -- Tab
 L["Companions Tab Title"] = "Companions";
