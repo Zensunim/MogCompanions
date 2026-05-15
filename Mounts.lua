@@ -139,6 +139,8 @@ local function getEmptyMountIcon()
 	return emptyFlyingMountIcon, emptyGroundMountIcon;
 end
 
+-- Nil-safe accessor for the currently viewed outfit ID in the transmog UI.
+-- Guards against the frame not existing yet (e.g. before TRANSMOGRIFY_OPEN fires).
 local function GetViewedOutfitID()
 	if C_TransmogOutfitInfo == nil or C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID == nil then
 		return nil;
@@ -147,6 +149,9 @@ local function GetViewedOutfitID()
 	return C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID();
 end
 
+-- Returns the saved-variable table for the viewed outfit, creating an empty entry
+-- if it doesn't exist yet. Centralizing CreateEmptyOutfit here avoids every caller
+-- needing to guard against a missing outfit table.
 local function GetViewedOutfitData()
 	local outfitID = GetViewedOutfitID();
 	if outfitID == nil then
@@ -162,6 +167,9 @@ local function GetViewedOutfitData()
 	return MogCompanionsCharacterSaved["Outfit"..outfitID];
 end
 
+-- Resets all MogCompanionsSelectedMount[type] fields to nil.
+-- All fields must be cleared together so tooltip / preview code never reads
+-- stale icon or spellID data from a mount that is no longer selected.
 local function ClearSelectedMountDetails(type)
 	MogCompanionsSelectedMount[type].name = nil;
 	MogCompanionsSelectedMount[type].spellID = nil;
@@ -171,6 +179,11 @@ local function ClearSelectedMountDetails(type)
 	MogCompanionsSelectedMount[type].type = nil;
 end
 
+-- Returns the best mount ID to display in the preview model.
+-- preferredMountID lets the last-clicked mount stay in the preview even when the
+-- pool has multiple entries, giving the user immediate visual feedback on click.
+-- preferLast=true is used on UI refresh to keep the most recently added mount visible.
+-- Returns 1 when the pool is empty or no valid mount is found (sentinel for "none").
 local function GetValidPoolMountSelection(outfit, poolKey, category, preferLast, preferredMountID)
 	if outfit == nil then
 		return 1;
@@ -206,6 +219,9 @@ local function GetValidPoolMountSelection(outfit, poolKey, category, preferLast,
 	return 1;
 end
 
+-- Writes the first valid pool mount back into the legacy scalar key (outfit.Flying /
+-- outfit.Ground). This keeps the legacy key in sync so old macros and saved-variable
+-- readers that predate the pool feature continue to work correctly.
 local function SyncLegacyMountSelection(outfit, legacyKey, poolKey, category)
 	if outfit == nil then
 		return 1;
@@ -221,10 +237,14 @@ local function SyncLegacyMountSelection(outfit, legacyKey, poolKey, category)
 	return 1;
 end
 
+-- Returns the number of currently valid (collected + usable) mounts in the pool.
+-- Used to decide the section title text: "Flying Mounts (3)" vs. "Flying Mounts".
 local function GetValidMountSelectionCount(outfit, poolKey, category)
 	return #MogCompanions:GetValidMountPoolInfos(outfit, poolKey, category);
 end
 
+-- Updates the section header to show the selection count when count > 0.
+-- When count is 0 the header shows the plain label to avoid confusing "(0)" clutter.
 local function SetMountSectionTitle(titleFontString, baseText, count)
 	if titleFontString == nil then
 		return;
@@ -237,6 +257,9 @@ local function SetMountSectionTitle(titleFontString, baseText, count)
 	end
 end
 
+-- Adapter functions that match the isValidFunc(self, mountID) callback signature
+-- expected by GetValidSelectionPoolValues. Delegates to IsMountUsableForCategory
+-- so validation logic stays centralized in Shared.lua.
 local function ValidateFlyingMountSelection(_, mountID)
 	return MogCompanions:IsMountUsableForCategory(mountID, "flying");
 end
@@ -245,6 +268,9 @@ local function ValidateGroundMountSelection(_, mountID)
 	return MogCompanions:IsMountUsableForCategory(mountID, "ground");
 end
 
+-- Returns valid mounts from the pool that also match the current search string.
+-- Applied only in the "Show Selected" view; the normal list is filtered by the
+-- scroll view's own search path so this avoids double-filtering in that case.
 local function GetFilteredSelectedMountInfos(outfit, poolKey, category)
 	local mounts = MogCompanions:GetValidMountPoolInfos(outfit, poolKey, category);
 	if MogCompanions.MountSearchString == nil or MogCompanions.MountSearchString == "" then
@@ -261,6 +287,9 @@ local function GetFilteredSelectedMountInfos(outfit, poolKey, category)
 	return filtered;
 end
 
+-- Updates the 3D model preview for a mount slot.
+-- Sets alpha=0 rather than hiding the frame when there is no valid mount, so the
+-- frame still occupies space and the layout does not shift around.
 local function UpdateMountPreviewModel(modelFrame, previewControls, mountID)
 	if modelFrame == nil then
 		return;
@@ -286,6 +315,9 @@ local function UpdateMountPreviewModel(modelFrame, previewControls, mountID)
 	end
 end
 
+-- Builds tooltip lines for the mount slot hover, capped at 3 previewed names
+-- plus an overflow line. Callers use the returned count to decide whether to show
+-- the tooltip at all (empty pool = no tooltip).
 local function GetMountTooltipLines(outfit, poolKey, category)
 	local mounts = MogCompanions:GetValidMountPoolInfos(outfit, poolKey, category);
 	local tooltipLines = {};
@@ -305,6 +337,9 @@ local function GetMountTooltipLines(outfit, poolKey, category)
 	return tooltipLines, #mounts;
 end
 
+-- Refreshes one mount slot icon and its preview model for the currently viewed outfit.
+-- Parameterized so flying and ground slots share a single implementation; all
+-- slot-specific state (textures, frame refs, pool keys) is passed by the caller.
 local function UpdateMountSlot(type, legacyKey, poolKey, category, texture, frame, borderTexture, borderHighlightTexture, previewModel, previewControls, emptyIcon)
 	if texture == nil or frame == nil or borderTexture == nil or borderHighlightTexture == nil then
 		return;
@@ -348,6 +383,9 @@ local function UpdateMountSlot(type, legacyKey, poolKey, category, texture, fram
 	end
 end
 
+-- Refreshes both mount slots and their section title counts for the viewed outfit.
+-- Called after any selection change and on VIEWED_TRANSMOG_OUTFIT_CHANGED so the
+-- panel always reflects the current outfit's pool state.
 RefreshMountSlots = function()
 	local outfit = GetViewedOutfitData();
 	if outfit == nil then
@@ -391,6 +429,9 @@ function MogCompanionsSummonGround()
 	end
 end
 
+-- Summons the aquatic mount for this character.
+-- Falls back to a random aquatic mount when no default is saved (value <= 1).
+-- Aquatic mounts are matched by mountTypeID (231, 232, 254, 407, 436) in Shared.lua.
 function MogCompanionsSummonAquatic()
 	if MogCompanionsCharacterSaved.Default.Aquatic <= 1 then
 		local randomMount = MogCompanions:getRandomMount("aquatic");
@@ -400,6 +441,9 @@ function MogCompanionsSummonAquatic()
 	end
 end
 
+-- Summons the repair/vendor mount for this character.
+-- Falls back to a random repair mount when no default is saved (value <= 1).
+-- Repair mounts are matched by hardcoded mount IDs in Shared.lua (repairMountIDs).
 function MogCompanionsSummonRepair()
 	if MogCompanionsCharacterSaved.Default.Repair <= 1 then
 		local randomMount = MogCompanions:getRandomMount("repair");
@@ -409,6 +453,9 @@ function MogCompanionsSummonRepair()
 	end
 end
 
+-- Summons a random mount. Picks flying when in a flyable area, ground otherwise.
+-- Ignores per-outfit pool assignments entirely — the Random modifier is meant to
+-- break out of the outfit's curated selection and pull from the full collection.
 function MogCompanionsSummonRandom()
 	local randomMount;
 	if IsFlyableArea() then

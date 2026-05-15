@@ -39,6 +39,9 @@ function MogCompanionsSortAlphabetical(a, b)
 	return a.name:lower() < b.name:lower();
 end
 
+-- Scans the full macro list by exact name to find a macro created by the addon.
+-- Limited to 120 because that is the per-character macro cap in Retail WoW;
+-- the global macro cap (18) is not relevant here since addon macros are character-scoped.
 function MogCompanions:FindMacroByExactName(macroName)
 	if macroName == nil or macroName == "" then
 		return nil;
@@ -63,6 +66,11 @@ local function Clamp(value, minValue, maxValue)
 	return value;
 end
 
+-- Attaches shared orbit / zoom / drag controls to a model preview frame.
+-- Reused by the flying mount, ground mount, and pet preview panels so that
+-- all three behave identically without duplicating the OnMouseDown/OnUpdate logic.
+-- Returns an "attachedControls" table with .reset(), .apply(), and .state.
+-- The caller is responsible for positioning the returned controls widget.
 function MogCompanions:AttachPreviewModelControls(previewFrame, modelFrame, defaults)
 	if previewFrame == nil or modelFrame == nil then
 		return nil;
@@ -232,6 +240,9 @@ end
 
 local sortedPetsCache = nil;
 
+-- Clears the sorted pet cache so it is rebuilt on the next GetSortedPets call.
+-- Pets change infrequently (journal updates), so the cache is valid for the entire
+-- session between PET_JOURNAL_LIST_UPDATE events.
 function MogCompanions:InvalidateSortedPetsCache()
 	sortedPetsCache = nil;
 end
@@ -240,6 +251,10 @@ local function IsTrueOrOne(value)
 	return value == true or value == 1;
 end
 
+-- Normalizes the two historical C_PetJournal APIs into a single return shape.
+-- GetPetInfoTableByPetID (added in a later Retail patch) is preferred; the tuple
+-- form (GetPetInfoByPetID) is used as a fallback so the addon works on older clients.
+-- Returns nil when the API is unavailable or the pet is unrecognized.
 function MogCompanions:GetPetInfoSafe(petGUID)
 	if type(petGUID) ~= "string" or petGUID == "" or C_PetJournal == nil then
 		return nil;
@@ -282,6 +297,10 @@ function MogCompanions:GetPetInfoSafe(petGUID)
 	return nil;
 end
 
+-- Returns true when the given pet GUID refers to an owned, summonable pet.
+-- Only checks that name and icon are non-nil — those are the minimum fields needed
+-- to display the pet in the UI and pass to SummonPetByGUID. A GUID that fails this
+-- test has been released or is otherwise gone and must be pruned from the saved pool.
 function MogCompanions:IsPetSummonableOwned(petGUID)
 	local info = MogCompanions:GetPetInfoSafe(petGUID);
 	if info == nil then
@@ -295,6 +314,8 @@ function MogCompanions:IsPetSummonableOwned(petGUID)
 	return true;
 end
 
+-- Returns true when the pet is marked as a favorite in the journal.
+-- Wraps GetPetInfoSafe so callers don't need to inspect the info table themselves.
 function MogCompanions:IsFavoritePet(petGUID)
 	local info = MogCompanions:GetPetInfoSafe(petGUID);
 	return info ~= nil and IsTrueOrOne(info.isFavorite);
@@ -582,6 +603,9 @@ function MogCompanions:GetOutfitSelectionPool(outfit, poolKey)
 	return outfit[poolKey];
 end
 
+-- Returns true if 'id' is currently in the saved selection pool for the given key.
+-- Thin wrapper that centralizes the "is this checked?" question used by scroll rows,
+-- so UI code does not need to reach into the pool table directly.
 function MogCompanions:IsInSelectionPool(outfit, poolKey, id)
 	local pool = MogCompanions:GetOutfitSelectionPool(outfit, poolKey);
 	if pool == nil or id == nil then
@@ -610,6 +634,9 @@ function MogCompanions:ToggleSelectionPoolValue(outfit, poolKey, id)
 	return true;
 end
 
+-- Empties the entire selection pool in-place by iterating backwards.
+-- Backwards iteration avoids index-shifting issues when removing from a Lua array.
+-- Used when the user clicks the "clear" button (itemID ≤1) on a slot.
 function MogCompanions:ClearSelectionPool(outfit, poolKey)
 	local pool = MogCompanions:GetOutfitSelectionPool(outfit, poolKey);
 	if pool == nil then
@@ -621,6 +648,10 @@ function MogCompanions:ClearSelectionPool(outfit, poolKey)
 	end
 end
 
+-- Returns a random element from the raw saved pool without any category filtering.
+-- Used for preview hover effects where any pool entry is acceptable.
+-- Do NOT use this for summon logic — use GetValidMountPoolInfos or
+-- GetValidSelectionPoolValues which filter out uncollected / unusable entries.
 function MogCompanions:GetRandomFromSelectionPool(outfit, poolKey)
 	local pool = MogCompanions:GetOutfitSelectionPool(outfit, poolKey);
 	if pool == nil or #pool == 0 then
@@ -630,6 +661,9 @@ function MogCompanions:GetRandomFromSelectionPool(outfit, poolKey)
 	return pool[math.random(1, #pool)];
 end
 
+-- Returns the raw count of entries in the saved pool, including potentially stale ones.
+-- Use GetValidMountPoolInfos (for mounts) or GetValidSelectionPoolValues (for others)
+-- when you need only currently owned / usable entries.
 function MogCompanions:GetSelectionPoolCount(outfit, poolKey)
 	local pool = MogCompanions:GetOutfitSelectionPool(outfit, poolKey);
 	if pool == nil then
@@ -639,6 +673,9 @@ function MogCompanions:GetSelectionPoolCount(outfit, poolKey)
 	return #pool;
 end
 
+-- Filters a pool down to only entries that pass isValidFunc, returning a de-duped array.
+-- isValidFunc receives (self, value) so it can be passed as a method reference, e.g.
+-- MogCompanions.IsHearthstoneToyCollected. Does not mutate the saved pool.
 function MogCompanions:GetValidSelectionPoolValues(outfit, poolKey, isValidFunc)
 	local pool = MogCompanions:GetOutfitSelectionPool(outfit, poolKey);
 	if pool == nil or type(isValidFunc) ~= "function" then
@@ -656,6 +693,9 @@ function MogCompanions:GetValidSelectionPoolValues(outfit, poolKey, isValidFunc)
 	return validValues;
 end
 
+-- Removes entries that no longer pass isValidFunc from the saved pool in-place.
+-- Called before displaying the list so the saved variable stays clean over time
+-- (e.g. after a pet is released or a toy is lost). Returns the remaining pool size.
 function MogCompanions:PruneInvalidSelectionPool(outfit, poolKey, isValidFunc)
 	local pool = MogCompanions:GetOutfitSelectionPool(outfit, poolKey);
 	if pool == nil or type(isValidFunc) ~= "function" then
@@ -681,6 +721,9 @@ function MogCompanions:PruneInvalidSelectionPool(outfit, poolKey, isValidFunc)
 	return #pool;
 end
 
+-- Filters 'items' to only those whose .id is present in the saved pool.
+-- Used by the "Show Selected" toggle to restrict the visible list without
+-- rebuilding the underlying data provider from a different source.
 function MogCompanions:FilterSelectedOnly(items, outfit, poolKey)
 	local filtered = {};
 
@@ -697,6 +740,9 @@ function MogCompanions:FilterSelectedOnly(items, outfit, poolKey)
 	return filtered;
 end
 
+-- Toggles the button label and visibility based on current selection state.
+-- Hides entirely when selectedCount == 0 because "Show Selected" is meaningless
+-- with an empty pool — hiding is cleaner than showing a greyed-out button.
 function MogCompanions:UpdateShowSelectedButton(button, showOnlySelected, selectedCount)
 	if button == nil then
 		return;
@@ -716,6 +762,9 @@ function MogCompanions:UpdateShowSelectedButton(button, showOnlySelected, select
 	button:Show();
 end
 
+-- Shows a "no results" message only when a search is active AND returns nothing.
+-- Does NOT show when the list is naturally empty (no mounts collected, etc.) —
+-- that case is handled by section titles and placeholder UI, not an error message.
 function MogCompanions:UpdateNoResultsText(textFrame, searchBox, itemCount)
 	if textFrame == nil then
 		return;

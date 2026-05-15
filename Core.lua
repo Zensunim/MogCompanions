@@ -78,6 +78,10 @@ function MogCompanions:OpenSettings()
 	OpenSettingsToMogCompanions();
 end
 
+-- Updates only already-existing macros for the active outfit.
+-- The second argument (true) means "update existing only" — it will NOT create a new
+-- macro if the user has never made one. Auto-update on login or outfit change should
+-- never silently create macros the user did not request.
 local function UpdateExistingMacrosForActiveOutfit()
 	MogCompanions:CreateMountMacro(nil, true);
 	MogCompanions:CreatePetMacro(nil, true);
@@ -110,6 +114,9 @@ local function GetPetModKey(modType)
 	return false;
 end
 
+-- Dismisses the currently summoned companion pet by summoning it a second time.
+-- SummonPetByGUID toggles: calling it with the already-active GUID dismisses the pet.
+-- This avoids a separate C_PetJournal.DismissPet call that doesn't exist in all API versions.
 function MogCompanions:DismissPet()
 	local petJournal = C_PetJournal;
 	if petJournal == nil or petJournal.SummonPetByGUID == nil or petJournal.GetSummonedPetGUID == nil then
@@ -122,6 +129,9 @@ function MogCompanions:DismissPet()
 	end
 end
 
+-- Ignores the active outfit's pet mode and summons a fully random pet.
+-- Called when the user presses the Random modifier key — bypasses per-outfit selection
+-- so the modifier always guarantees randomness regardless of how the outfit is configured.
 function MogCompanions:SummonRandomPet()
 	local petJournal = C_PetJournal;
 	if petJournal == nil or petJournal.SummonPetByGUID == nil or petJournal.GetSummonedPetGUID == nil then
@@ -135,6 +145,9 @@ function MogCompanions:SummonRandomPet()
 	end
 end
 
+-- Summons a random favorite pet when the Favorite modifier key is held.
+-- Falls back to any random pet if the player has no favorites, so the modifier
+-- never silently fails — the player always gets a pet even without favorites set.
 function MogCompanions:SummonRandomFavoritePet()
 	local petJournal = C_PetJournal;
 	if petJournal == nil or petJournal.SummonPetByGUID == nil or petJournal.GetSummonedPetGUID == nil then
@@ -153,6 +166,9 @@ function MogCompanions:SummonRandomFavoritePet()
 	end
 end
 
+-- Normalizes the PetMode field from saved variables into a known-good string.
+-- Treats missing, nil, or unrecognized values as "Selected" (the safest default),
+-- so stale saved data from older versions never causes unhandled nil paths downstream.
 local function GetNormalizedPetMode(outfitData)
 	if type(outfitData) ~= "table" then
 		return "Selected";
@@ -183,6 +199,11 @@ function MogCompanions:GetEffectivePetMode(outfitData)
 	return GetNormalizedPetMode(outfitData);
 end
 
+-- User-triggered pet summon (macro / keybind, no modifier held).
+-- Respects the active outfit's PetMode: None dismisses, Random/Favorite pick randomly,
+-- Selected picks a random pet from the outfit's assigned pool.
+-- Unlike SummonAssignedOutfitPet, this is NOT idempotent — it always re-rolls
+-- so pressing the macro again cycles to a different pet.
 function MogCompanions:SummonPet()
 	local petJournal = C_PetJournal;
 	if petJournal == nil or petJournal.SummonPetByGUID == nil or petJournal.GetSummonedPetGUID == nil then
@@ -267,6 +288,11 @@ function MogCompanions:SummonPet()
 	end
 end
 
+-- Auto-summon the outfit's assigned pet on login, mount, or outfit change.
+-- Unlike SummonPet (user-triggered), this is idempotent: if the correct pet is already
+-- summoned it does nothing. forceRandom re-rolls even when the current pet is valid,
+-- which is used when the outfit changes so the pet visually matches the new outfit.
+-- options.reason controls which setting gate is checked (PetSummonOnChange, etc.).
 function MogCompanions:SummonAssignedOutfitPet(options)
 	options = options or {};
 	local forceRandom = options.forceRandom == true;
@@ -393,6 +419,11 @@ function MogCompanions:ShouldDismissPetForCurrentInstance()
 	return false;
 end
 
+-- Dispatches an auto-summon for the given setting trigger (PetSummonOnMount,
+-- PetSummonOnLogin, PetSummonOnChange). Bails early if the corresponding setting
+-- is off or if the current instance type suppresses pets.
+-- For PetSummonOnChange, lastPetAutoSummonChangeKey deduplicates rapid outfit-change
+-- events so the same outfit+mode combination never fires twice in a row.
 function MogCompanions:HandleAutoPetSummon(settingKey)
 	if type(settingKey) ~= "string" or settingKey == "" then
 		return;
@@ -500,6 +531,10 @@ local function tryCloneTargetedPet()
 	return nil;
 end
 
+-- Top-level user-facing pet action (macro / keybind).
+-- Priority: clone target pet first (so /click always mirrors what you're targeting),
+-- then modifier keys (Dismiss > Favorite > Random), then the outfit's configured mode.
+-- This priority must mirror GetEffectivePetMode's logic.
 function MogCompanions:HandlePetAction()
 	local cloneGUID = tryCloneTargetedPet();
 	if cloneGUID then
@@ -549,6 +584,10 @@ SlashCmdList["MOGCOMPANIONS_MOUNT"] = function()
 end
 
 -- ── Transmog Title Dropdown UI ──────────────────────────────────────────────
+-- Persists a per-character Settings API value to MogCompanionsCharacterSaved.
+-- The Settings API binds to the variable table directly; this callback exists so
+-- any future side-effects (e.g. UI refresh) can be added without changing each
+-- individual setting registration.
 local function OnSettingChanged(setting, value)
 	MogCompanionsCharacterSaved[setting:GetVariable()] = value;
 end

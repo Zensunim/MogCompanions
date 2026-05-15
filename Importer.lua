@@ -17,6 +17,8 @@ local PANEL_BACKDROP = {
 	},
 };
 
+-- Compatibility shim for pre-10.x (IsAddOnLoaded) and post-10.x (C_AddOns.IsAddOnLoaded).
+-- The C_AddOns namespace was introduced in 10.0 when Blizzard reorganized addon APIs.
 local function IsAddonLoadedForCharacter(addonName)
 	if C_AddOns and C_AddOns.IsAddOnLoaded then
 		return C_AddOns.IsAddOnLoaded(addonName);
@@ -27,6 +29,9 @@ local function IsAddonLoadedForCharacter(addonName)
 	return false;
 end
 
+-- Disables the addon only for the current character (per-character scope).
+-- A UI reload is always required after this call to take effect, which is why
+-- the conflict resolver shows a reload button instead of acting immediately.
 local function DisableAddonForCurrentCharacter(addonName)
 	local playerName = UnitName("player");
 
@@ -43,6 +48,7 @@ local function DisableAddonForCurrentCharacter(addonName)
 	end
 end
 
+-- Compatibility shim: C_UI.Reload is preferred in 10.x+; ReloadUI() works on all versions.
 local function ReloadUIFromClick()
 	if C_UI and C_UI.Reload then
 		C_UI.Reload();
@@ -51,6 +57,9 @@ local function ReloadUIFromClick()
 	end
 end
 
+-- Inserts 'value' into 'pool' only when it is not already present.
+-- Returns true when something was added so callers can track whether the import
+-- actually changed any data (to decide whether to show the "imported" confirmation).
 local function AddUniqueValue(pool, value)
 	if type(pool) ~= "table" or value == nil or value == "" then
 		return false;
@@ -66,10 +75,16 @@ local function AddUniqueValue(pool, value)
 	return true;
 end
 
+-- Validates a modifier index against the 1–3 range (CTRL=1, SHIFT=2, ALT=3).
+-- Rejects anything outside that range so corrupted MogMount saved data cannot
+-- write an out-of-bounds modifier index into MogCompanionsSaved.MountMods.
 local function IsValidModifierValue(value)
 	return type(value) == "number" and value >= 1 and value <= 3;
 end
 
+-- Creates the minimum saved-variable structure before writing import data.
+-- Called before any import write so the code never needs to check for nil tables
+-- mid-import, keeping the import logic easier to follow.
 local function EnsureDestinationSavedVariables()
 	if MogCompanionsSaved == nil then
 		MogCompanionsSaved = {};
@@ -84,6 +99,11 @@ local function EnsureDestinationSavedVariables()
 	end
 end
 
+-- Raw import logic for MogMount → MogCompanions migration.
+-- Only imports values that are still at their defaults on the destination side,
+-- so a player who has already configured MogCompanions will not have their settings
+-- overwritten by an old MogMount save. Returns (true) on any successful import,
+-- or (false, key) with a localization key explaining why nothing was imported.
 local function ImportMogMountSettingsInternal()
 	if MogCompanions == nil or MogCompanions.CreateEmptyOutfit == nil then
 		return false, "MogMount Import Failed";
@@ -273,6 +293,8 @@ local function ImportMogMountSettingsInternal()
 	return true;
 end
 
+-- pcall wrapper around ImportMogMountSettingsInternal so any Lua error inside
+-- the import logic is caught and surfaced as a clean failure rather than an addon error.
 local function ImportMogMountSettings()
 	local ok, success, failureKey = pcall(ImportMogMountSettingsInternal);
 

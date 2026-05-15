@@ -40,6 +40,8 @@ local PetModeButtons = {};
 
 MogCompanions.PetSearchString = "";
 
+-- Nil-safe accessor for the viewed outfit ID. Mirrors the same guard in Mounts.lua
+-- to avoid a dependency on C_TransmogOutfitInfo being initialized before pets UI loads.
 local function GetViewedOutfitID()
 	if C_TransmogOutfitInfo and C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID then
 		return C_TransmogOutfitInfo.GetCurrentlyViewedOutfitID();
@@ -48,6 +50,9 @@ local function GetViewedOutfitID()
 	return nil;
 end
 
+-- Returns the saved-variable table for the given outfit, creating it if missing.
+-- Calling CreateEmptyOutfit here means UI code never needs to guard against a nil
+-- outfit table before reading PetMode or the Pets pool.
 local function GetOutfitTable(outfitID)
 	if outfitID == nil or MogCompanionsCharacterSaved == nil then
 		return nil;
@@ -58,6 +63,9 @@ local function GetOutfitTable(outfitID)
 	return MogCompanionsCharacterSaved["Outfit"..outfitID];
 end
 
+-- Local mirror of Core.lua's GetNormalizedPetMode, used only for UI display decisions.
+-- Keeping it local avoids a cross-file call for purely UI-side checks like slot icon
+-- and section title — the UI module should not depend on Core.lua's internal helpers.
 local function GetNormalizedPetMode(outfit)
 	if type(outfit) ~= "table" then
 		return "Selected";
@@ -71,6 +79,9 @@ local function GetNormalizedPetMode(outfit)
 	return "Selected";
 end
 
+-- Highlights only the button matching the active mode.
+-- LockHighlight is used instead of just SetAlpha so the button stays visually
+-- "pressed" even when the mouse is hovering over it.
 local function UpdatePetModeButtonHighlights(outfit)
 	local mode = GetNormalizedPetMode(outfit);
 
@@ -90,6 +101,10 @@ local function UpdatePetModeButtonHighlights(outfit)
 	end
 end
 
+-- Resolves and caches display data for a pet GUID.
+-- C_PetJournal calls are relatively expensive during scroll; PetDetailsCache avoids
+-- repeated lookups for the same GUID while the scroll list is being built or refreshed.
+-- Cache is not invalidated per outfit — it lives for the session since GUIDs are stable.
 local function GetPetDataByGUID(petID)
 	if petID == nil or petID == "" then
 		return nil;
@@ -128,20 +143,29 @@ local function GetPetDataByGUID(petID)
 	return PetDetailsCache[petID];
 end
 
+-- Returns true only when the GUID refers to a pet the player currently owns.
+-- GUIDs can become invalid after a pet is caged, traded, or released, so we validate
+-- at display time rather than trusting the saved pool to always be current.
 local function IsValidPetSelection(petID)
 	return type(petID) == "string"
 		and petID ~= ""
 		and MogCompanions:IsPetSummonableOwned(petID);
 end
 
+-- Adapter that matches the (self, value) callback signature expected by
+-- GetValidSelectionPoolValues, forwarding to the simpler IsValidPetSelection check.
 local function ValidatePetSelection(_, petID)
 	return IsValidPetSelection(petID);
 end
 
+-- Returns the subset of the outfit's Pets pool that are currently valid (owned + summonable).
 local function GetValidPetSelectionValues(outfit)
 	return MogCompanions:GetValidSelectionPoolValues(outfit, "Pets", ValidatePetSelection);
 end
 
+-- Returns the GUID of the pet to use for this outfit.
+-- preferredPetID gives immediate visual feedback when the user clicks a list row.
+-- preferLast makes the scroll view snap to the most recently added pet.
 local function GetValidPetSelection(outfit, preferLast, preferredPetID)
 	if outfit == nil then
 		return "";
@@ -163,6 +187,8 @@ local function GetValidPetSelection(outfit, preferLast, preferredPetID)
 	return validSelections[1];
 end
 
+-- Writes the first valid pool GUID back into the legacy scalar key (outfit.Pet).
+-- Keeps the scalar in sync for macros and any legacy code reading outfit.Pet directly.
 local function SyncLegacyPetSelection(outfit)
 	if outfit == nil then
 		return "";
@@ -173,6 +199,9 @@ local function SyncLegacyPetSelection(outfit)
 	return petID;
 end
 
+-- Resolves the full display data for all valid pool entries, sorted alphabetically.
+-- Sorting here (not at cache time) ensures the order matches the list after the user
+-- adds or removes pets — the sort is cheap because selected pet pools are small.
 local function GetValidPetDataSelections(outfit)
 	local validSelections = GetValidPetSelectionValues(outfit);
 	local pets = {};
@@ -189,6 +218,9 @@ local function GetValidPetDataSelections(outfit)
 	return pets;
 end
 
+-- Returns true when the pet's display name or species name matches the search string.
+-- Both are checked because users may search by the custom name they gave a pet OR
+-- by the original species name, and both should produce a result.
 local function PetMatchesSearch(pet)
 	local searchString = MogCompanions.PetSearchString;
 	if searchString == nil or searchString == "" then
@@ -203,6 +235,9 @@ local function PetMatchesSearch(pet)
 		or string.find(speciesName:lower(), lowered, 1, true) ~= nil;
 end
 
+-- Returns all owned summonable pets that match the current search string.
+-- Filters out pet GUIDs that have become invalid (released, etc.) so the list
+-- never shows a pet the user can no longer summon.
 local function GetFilteredNormalPets()
 	local pets = MogCompanions:GetSortedPets();
 	local filtered = {};
@@ -216,6 +251,9 @@ local function GetFilteredNormalPets()
 	return filtered;
 end
 
+-- Returns only the currently selected valid pets that match the search string.
+-- Used by the "Show Selected" toggle; operates on resolved data tables (not raw GUIDs)
+-- so the search can match on the display name.
 local function GetFilteredSelectedPets(outfit)
 	local pets = GetValidPetDataSelections(outfit);
 	local filtered = {};
@@ -229,6 +267,9 @@ local function GetFilteredSelectedPets(outfit)
 	return filtered;
 end
 
+-- Updates the section header text to reflect the current pet mode or selection count.
+-- Shows the mode name (None / Random / Favorite) instead of a number because those
+-- modes are not "selected pets" — displaying a count for them would be misleading.
 local function SetPetsSectionTitle(outfit)
 	if PetsSlotTitle == nil then
 		return;
@@ -253,6 +294,9 @@ local function SetPetsSectionTitle(outfit)
 	end
 end
 
+-- Builds mode-aware tooltip lines for the pet slot. The None/Random/Favorite modes
+-- produce a single descriptive line rather than a pet list, because the actual pet
+-- chosen at summon time is not known ahead of time for those modes.
 local function GetPetTooltipLines(outfit)
 	if not outfit then return {}, 0; end
 	local mode = GetNormalizedPetMode(outfit);
@@ -277,6 +321,9 @@ local function GetPetTooltipLines(outfit)
 	return tooltipLines, #pets;
 end
 
+-- Returns the resolved display data for the first valid pet assigned to outfitID.
+-- Returns nil when no valid pet is assigned so the slot icon code can show the
+-- empty placeholder without needing to know about the pool structure.
 local function GetSelectedPet(outfitID)
 	local outfit = GetOutfitTable(outfitID);
 	local petID = GetValidPetSelection(outfit, false);
@@ -288,6 +335,9 @@ local function GetSelectedPet(outfitID)
 	return GetPetDataByGUID(petID);
 end
 
+-- Creates the pet preview model frame lazily on first use.
+-- The model is deferred because it is not needed until the user actually opens the
+-- Pets tab, and creating it at startup would consume resources unnecessarily.
 local function EnsurePetModel()
 	if PetPreview == nil then
 		return nil;
@@ -316,6 +366,9 @@ local function EnsurePetModel()
 	return PetModel;
 end
 
+-- Updates the pet preview model for the given pet.
+-- Accepts either a GUID string or a resolved data table so callers from both
+-- scroll-row click handlers (have a GUID) and slot refresh code (have a table) work.
 local function UpdatePetPreview(pet)
 	if type(pet) ~= "table" then
 		pet = GetPetDataByGUID(pet);
@@ -343,6 +396,9 @@ local function UpdatePetPreview(pet)
 	end
 end
 
+-- Refreshes the pet slot icon for the currently viewed outfit.
+-- The icon differs by mode: a special icon for None/Random/Favorite avoids the
+-- ambiguity of showing an empty placeholder when a mode is intentionally set.
 local function UpdatePetSlot()
 	if PetFrame == nil or PetTexture == nil then
 		return;

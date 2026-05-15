@@ -64,6 +64,14 @@ This is a maintained fork of MogMount with compatibility updates and new functio
 - Do not add debug output unless explicitly requested or gated behind a clear debug flag.
 - When a request spans multiple risk areas, split the work into small reviewable stages instead of making one broad cross-file change. Examples of separate risk areas include settings UI, saved-variable migrations, macro behavior, combat lockdown handling, event timing, and release packaging.
 
+## Code comment rules
+- Add a comment block above every non-trivial function when implementing new features or making significant changes.
+- Comments must explain **why** the code is written the way it is, not just **what** it does. Explain design constraints, fallback reasons, WoW API quirks, sentinel-value meanings, and non-obvious ordering decisions.
+- Comments are optimized for AI-assisted development: they should give enough context for a future AI agent (or human) to understand the decision without reading the surrounding code.
+- Do **not** write comments that just restate the function name or the obvious mechanics (e.g. `-- calls SummonPetByGUID`).
+- Use a short leading comment block (1–4 lines) directly above the `function` keyword, not inline at every line.
+- When modifying an existing function in a meaningful way, update or add its comment to reflect the new behavior or constraint introduced.
+
 ## Lua style and namespacing rules
 - Prefer `local` variables and functions unless a global is required by XML, bindings, slash commands, macros, or saved-variable compatibility.
 - Prefer methods on `MogCompanions` for shared addon behavior, for example `function MogCompanions:CreateEmptyOutfit(id)`.

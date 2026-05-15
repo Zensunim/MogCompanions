@@ -46,6 +46,10 @@ local function GetOptionsAquaticMount()
 	return container:GetData();
 end
 
+-- Returns dropdown entries for the repair/vendor mount setting.
+-- Entry 0 = "Random" (pick a random repair mount at summon time).
+-- Shows a "no mounts" fallback when the player hasn't collected any repair mounts
+-- so the dropdown is never empty.
 local function GetOptionsRepairMount()
 	local container = Settings.CreateControlTextContainer();
 	local mounts = MogCompanions:getSortedRepairMounts();
@@ -77,6 +81,10 @@ end
 local pendingMountMacroUpdate = false;
 local pendingPetMacroUpdate = false;
 
+-- Defers the mount macro update until after combat to avoid modifying macros during
+-- combat lockdown. Registers PLAYER_REGEN_ENABLED to apply the update when safe.
+-- Only updates existing macros (existingOnly=true) so the setting change never
+-- silently creates a macro the user did not request.
 local function SafeUpdateMountMacroExistingOnly()
 	if InCombatLockdown and InCombatLockdown() then
 		pendingMountMacroUpdate = true;
@@ -86,6 +94,8 @@ local function SafeUpdateMountMacroExistingOnly()
 	end
 end
 
+-- Same combat-safe deferral pattern as SafeUpdateMountMacroExistingOnly,
+-- applied to the pet macro which also encodes modifier-key behavior in its body.
 local function SafeUpdatePetMacroExistingOnly()
 	if InCombatLockdown and InCombatLockdown() then
 		pendingPetMacroUpdate = true;
@@ -95,14 +105,22 @@ local function SafeUpdatePetMacroExistingOnly()
 	end
 end
 
+-- Triggers a macro body refresh when a pet-related setting changes.
+-- The pet macro body encodes the configured modifier keys, so it must be
+-- regenerated whenever the modifier mapping changes.
 local function OnPetSettingChanged()
 	SafeUpdatePetMacroExistingOnly();
 end
 
+-- Triggers a mount macro body refresh when mount modifier settings change.
+-- The mount macro encodes which modifier key summons the repair/ground/random mount.
 local function OnMountMacroSettingChanged()
 	SafeUpdateMountMacroExistingOnly();
 end
 
+-- Triggers a pet macro refresh when the dynamic icon setting changes.
+-- Keeps the same callback shape as OnPetSettingChanged for consistency,
+-- even though only the icon regeneration is strictly needed here.
 local function OnPetDynamicMacroIconSettingChanged()
 	SafeUpdatePetMacroExistingOnly();
 end
