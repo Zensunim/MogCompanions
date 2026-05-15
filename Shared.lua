@@ -1143,6 +1143,14 @@ function MogCompanions:CreateEmptyOutfit(id)
 		outfit.PetMode = "Selected";
 	end
 
+	if outfit.FlyingMountMode == nil or (outfit.FlyingMountMode ~= "Selected" and outfit.FlyingMountMode ~= "Favorite") then
+		outfit.FlyingMountMode = "Selected";
+	end
+
+	if outfit.GroundMountMode == nil or (outfit.GroundMountMode ~= "Selected" and outfit.GroundMountMode ~= "Favorite") then
+		outfit.GroundMountMode = "Selected";
+	end
+
 	if outfit.Title == nil then
 		outfit.Title = 0;
 	end
