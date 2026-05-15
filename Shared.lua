@@ -16,8 +16,30 @@ MogCompanions.TransmogSlotOffsets = {
 
 local playerName = UnitName("player");
 
-local aquaticMountTypeIDs = {231, 232, 254, 407, 436};
-local repairMountIDs = {460, 280, 284, 273, 274, 1039, 2237};
+local aquaticMountTypeIDs = {
+	231,  -- Vashj'ir Swimming
+	232,  -- Vashj'ir Flying
+	254,  -- Underwater Flying
+	407,  -- Water Flying
+	436,  -- Aquatic
+};
+local repairMountIDs = {
+	460,   -- Traveler's Tundra Mammoth
+	280,   -- Repair Mount (Old)
+	284,   -- Horde Repair Mount
+	273,   -- Alliance Chopper
+	274,   -- Horde Chopper
+	1039,  -- Mighty Caravan Brutosaur
+	2237,  -- Grand Expedition Yak
+};
+
+-- Spell IDs of unusually slow ground mounts (60% run speed) that are jarring when
+-- summoned by pure random. Excluded from the random ground pool so the player only
+-- gets these intentionally (selected, favorited, or via the aquatic slot).
+local slowGroundMountSpellIDs = {
+	30174, -- Riding Turtle
+	64731, -- Sea Turtle
+};
 
 -- Spell IDs of passenger-capable flying mounts (both players can fly together).
 -- Matched against the spellID field of GetMountInfoByID. Update when Blizzard adds new
@@ -622,13 +644,16 @@ end
 -- Builds the pool of ground mounts used by random ground selection.
 -- Ignores the UI search filter and the ShowFlyingInGround display toggle.
 -- Includes flying mounts only when MogCompanionsSaved.RandomGroundAllowFlying is true.
+-- Slow ground mounts (Riding Turtle, Sea Turtle) are excluded — they are aquatic/low-speed
+-- mounts that would be unpleasant to summon by accident; players can still pick them manually.
 local function buildRandomGroundPool()
 	local mountsRaw = MogCompanions:sortMounts(MogCompanions:GetCollectedMounts());
 	local mounts = {};
 
 	for i = 1, #mountsRaw do
 		local mount = mountsRaw[i];
-		if mount.mountTypeID == 230 or MogCompanionsSaved.RandomGroundAllowFlying then
+		if (mount.mountTypeID == 230 or MogCompanionsSaved.RandomGroundAllowFlying)
+				and not MogCompanions:hasValue(slowGroundMountSpellIDs, mount.spellID) then
 			table.insert(mounts, mount);
 		end
 	end
