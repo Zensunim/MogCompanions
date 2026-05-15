@@ -546,6 +546,26 @@ function MogCompanionsSummonFavoriteMount()
 	C_MountJournal.SummonByID(0);
 end
 
+-- Summons a random passenger-capable mount appropriate for the current zone.
+-- In flyable areas, prefers flying passenger mounts (e.g. Sandstone Drake, Obsidian
+-- Nightwing, Skychaser) so both players can fly together. Falls back to ground
+-- passenger mounts when no flying passenger mount is available or collected.
+-- In non-flyable areas, only ground passenger mounts are candidates.
+function MogCompanionsSummonPassenger()
+	local mount;
+	if IsFlyableArea() then
+		mount = MogCompanions:getRandomMount("passenger_flying");
+		if not mount then
+			mount = MogCompanions:getRandomMount("passenger_ground");
+		end
+	else
+		mount = MogCompanions:getRandomMount("passenger_ground");
+	end
+	if mount then
+		C_MountJournal.SummonByID(mount.id);
+	end
+end
+
 -- Cache: spellID → mountID for all collected, usable mounts owned by this character.
 -- nil means the cache has not been built yet (or was invalidated).
 -- Rebuilt lazily on the next tryCloneTargetedMount call.

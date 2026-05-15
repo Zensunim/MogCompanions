@@ -64,7 +64,7 @@ end
 local function PrintSlashHelp()
 	print("|cFF00CCFFMogCompanions commands:|r");
 	print("|cFFFFFFFF/mcomp mount|r - "..L["Slash Help Mount Base"]);
-	print("|cFFFFFFFF/mcomp mount [flying/ground/aquatic/repair/random/favorite]|r - "..L["Slash Help Mount"]);
+	print("|cFFFFFFFF/mcomp mount [flying/ground/aquatic/repair/random/favorite/passenger]|r - "..L["Slash Help Mount"]);
 	print("|cFFFFFFFF/mcomp pet|r - "..L["Slash Help Pet Base"]);
 	print("|cFFFFFFFF/mcomp pet [random/favorite/dismiss]|r - "..L["Slash Help Pet"]);
 	print("|cFFFFFFFF/mcomp options|r - "..L["Slash Help Options"]);
@@ -582,6 +582,8 @@ SlashCmdList["MOGCOMPANIONS"] = function(msg)
 			MogCompanionsSummonRandom();
 		elseif sub == "favorite" then
 			MogCompanionsSummonFavoriteMount();
+		elseif sub == "passenger" then
+			MogCompanionsSummonPassenger();
 		else
 			MogCompanionsSummon();
 		end

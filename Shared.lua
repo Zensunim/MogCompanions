@@ -19,6 +19,49 @@ local playerName = UnitName("player");
 local aquaticMountTypeIDs = {231, 232, 254, 407, 436};
 local repairMountIDs = {460, 280, 284, 273, 274, 1039, 2237};
 
+-- Spell IDs of passenger-capable flying mounts (both players can fly together).
+-- Matched against the spellID field of GetMountInfoByID. Update when Blizzard adds new
+-- multi-seat flying mounts. Source: RandomCompanion MountIDs.lua passengerflying list.
+local passengerFlyingMountSpellIDs = {
+	75973,   -- X-53 Touring Rocket
+	93326,   -- Sandstone Drake
+	121820,  -- Obsidian Nightwing
+	245723,  -- Stormwind Skychaser
+	245725,  -- Orgrimmar Interceptor
+	360954,  -- Highland Drake
+	368893,  -- Winding Slitherdrake
+	368896,  -- Renewed Proto-Drake
+	368899,  -- Windborne Velocidrake
+	368901,  -- Cliffside Wylderdrake
+	412088,  -- Grotto Netherwing Drake
+	417888,  -- Algarian Stormrider
+	418286,  -- Auspicious Arborwyrm
+	424484,  -- Anu'relos, Flame's Guidance
+	425338,  -- Flourishing Whimsydrake
+	437162,  -- Polly Roger
+	439138,  -- Voyaging Wilderling
+	446052,  -- Delver's Dirigible
+	466133,  -- Delver's Got-Trotter
+	1224048, -- Delver's Mana-Skimmer
+};
+
+-- Spell IDs of passenger-capable ground mounts (vendor mammoth, chopper, etc.).
+-- Matched against the spellID field of GetMountInfoByID. Update when Blizzard adds new
+-- multi-seat ground mounts. Source: RandomCompanion MountIDs.lua passengerground list.
+local passengerGroundMountSpellIDs = {
+	55531,  -- Mechano-Hog
+	60424,  -- Mekgineer's Chopper
+	61425,  -- Traveler's Tundra Mammoth (H)
+	61447,  -- Traveler's Tundra Mammoth (A)
+	61465,  -- Grand Black War Mammoth (A)
+	61467,  -- Grand Black War Mammoth (H)
+	61469,  -- Grand Ice Mammoth (A)
+	61470,  -- Grand Ice Mammoth (H)
+	75973,  -- X-53 Touring Rocket
+	122708, -- Grand Expedition Yak
+	264058, -- Mighty Caravan Brutosaur
+};
+
 local function addUniquePoolValue(pool, value)
 	if value == nil or value == "" then
 		return;
@@ -221,6 +264,7 @@ function MogCompanions:sortMounts(mountsRaw)
 		
 		local temp = {};
 		temp["name"] = name;
+		temp["spellID"] = spellID;
 		temp["icon"] = icon;
 		temp["nameAndIcon"] = "|T"..icon..":18|t "..name;
 		temp["id"] = mountID;
@@ -549,6 +593,32 @@ function MogCompanions:getSortedRandomMounts()
 	return mounts;
 end
 
+-- Returns collected passenger-capable mounts the character owns.
+-- category: "flying" = flying passenger mounts only; "ground" = ground passenger mounts only;
+-- nil = all passenger mounts. Uses the spellID field stored in sortMounts() to match against
+-- the hardcoded passenger spell ID tables. No search filter is applied so the pool is always
+-- the full category regardless of any open UI search.
+function MogCompanions:getSortedPassengerMounts(category)
+	local mountsRaw = MogCompanions:sortMounts(MogCompanions:GetCollectedMounts());
+	local mounts = {};
+
+	for i = 1, #mountsRaw do
+		local mount = mountsRaw[i];
+		local isFlying = MogCompanions:hasValue(passengerFlyingMountSpellIDs, mount.spellID);
+		local isGround = MogCompanions:hasValue(passengerGroundMountSpellIDs, mount.spellID);
+
+		if category == "flying" then
+			if isFlying then table.insert(mounts, mount); end
+		elseif category == "ground" then
+			if isGround then table.insert(mounts, mount); end
+		else
+			if isFlying or isGround then table.insert(mounts, mount); end
+		end
+	end
+
+	return mounts;
+end
+
 -- Builds the pool of ground mounts used by random ground selection.
 -- Ignores the UI search filter and the ShowFlyingInGround display toggle.
 -- Includes flying mounts only when MogCompanionsSaved.RandomGroundAllowFlying is true.
@@ -843,6 +913,10 @@ function MogCompanions:getRandomMount(type)
 		mounts = MogCompanions:getSortedRepairMounts();
 	elseif type == "random" then
 		mounts = MogCompanions:getSortedRandomMounts();
+	elseif type == "passenger_flying" then
+		mounts = MogCompanions:getSortedPassengerMounts("flying");
+	elseif type == "passenger_ground" then
+		mounts = MogCompanions:getSortedPassengerMounts("ground");
 	else
 		mounts = MogCompanions:getSortedFlyingMounts();
 	end
