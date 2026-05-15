@@ -26,16 +26,6 @@ local aquaticMountTypeIDs = {
 };
 
 local repairMountIDs = {
-	460,   -- Traveler's Tundra Mammoth
-	280,   -- Repair Mount (Old)
-	284,   -- Horde Repair Mount
-	273,   -- Alliance Chopper
-	274,   -- Horde Chopper
-	1039,  -- Mighty Caravan Brutosaur
-	2237,  -- Grand Expedition Yak
-};
-
-local repairMountIDs = {
 	273,   -- Grand Caravan Mammoth (Alliance)
 	274,   -- Grand Caravan Mammoth (Horde)
 	280,   -- Traveler's Tundra Mammoth (Alliance)
