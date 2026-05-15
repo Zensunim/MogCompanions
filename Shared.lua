@@ -35,55 +35,54 @@ local repairMountIDs = {
 	2237,  -- Grizzly Hills Packmaster
 };
 
--- Spell IDs of unusually slow ground mounts (60% run speed) that are jarring when
+-- Mount IDs of unusually slow ground mounts (60% run speed) that are jarring when
 -- summoned by pure random. Excluded from the random ground pool so the player only
 -- gets these intentionally (selected, favorited, or via the aquatic slot).
-local slowGroundMountSpellIDs = {
-	30174, -- Riding Turtle
-	64731, -- Sea Turtle
+local slowGroundMountIDs = {
+	125, -- Riding Turtle
+	312, -- Sea Turtle
 };
 
--- Spell IDs of passenger-capable flying mounts (both players can fly together).
--- Matched against the spellID field of GetMountInfoByID. Update when Blizzard adds new
--- multi-seat flying mounts. Source: RandomCompanion MountIDs.lua passengerflying list.
-local passengerFlyingMountSpellIDs = {
-	75973,   -- X-53 Touring Rocket
-	93326,   -- Sandstone Drake
-	121820,  -- Obsidian Nightwing
-	245723,  -- Stormwind Skychaser
-	245725,  -- Orgrimmar Interceptor
-	360954,  -- Highland Drake
-	368893,  -- Winding Slitherdrake
-	368896,  -- Renewed Proto-Drake
-	368899,  -- Windborne Velocidrake
-	368901,  -- Cliffside Wylderdrake
-	412088,  -- Grotto Netherwing Drake
-	417888,  -- Algarian Stormrider
-	418286,  -- Auspicious Arborwyrm
-	424484,  -- Anu'relos, Flame's Guidance
-	425338,  -- Flourishing Whimsydrake
-	437162,  -- Polly Roger
-	439138,  -- Voyaging Wilderling
-	446052,  -- Delver's Dirigible
-	466133,  -- Delver's Got-Trotter
-	1224048, -- Delver's Mana-Skimmer
+-- Mount IDs of passenger-capable flying mounts (both players can fly together).
+-- Matched against the mountID returned by GetMountInfoByID. Update when Blizzard adds new
+-- multi-seat flying mounts.
+local passengerFlyingMountIDs = {
+	382,  -- X-53 Touring Rocket
+	407,  -- Sandstone Drake
+	455,  -- Obsidian Nightwing
+	959,  -- Stormwind Skychaser
+	960,  -- Orgrimmar Interceptor
+	1563, -- Highland Drake
+	1588, -- Winding Slitherdrake
+	1589, -- Renewed Proto-Drake
+	1590, -- Windborne Velocidrake
+	1591, -- Cliffside Wylderdrake
+	1744, -- Grotto Netherwing Drake
+	1792, -- Algarian Stormrider
+	1795, -- Auspicious Arborwyrm
+	1818, -- Anu'relos, Flame's Guidance
+	1830, -- Flourishing Whimsydrake
+	2090, -- Polly Roger
+	2091, -- Voyaging Wilderling
+	2144, -- Delver's Dirigible
+	2296, -- Delver's Gob-Trotter
+	2512, -- Delver's Mana-Skimmer
 };
 
--- Spell IDs of passenger-capable ground mounts (vendor mammoth, chopper, etc.).
--- Matched against the spellID field of GetMountInfoByID. Update when Blizzard adds new
--- multi-seat ground mounts. Source: RandomCompanion MountIDs.lua passengerground list.
-local passengerGroundMountSpellIDs = {
-	55531,  -- Mechano-Hog
-	60424,  -- Mekgineer's Chopper
-	61425,  -- Traveler's Tundra Mammoth (H)
-	61447,  -- Traveler's Tundra Mammoth (A)
-	61465,  -- Grand Black War Mammoth (A)
-	61467,  -- Grand Black War Mammoth (H)
-	61469,  -- Grand Ice Mammoth (A)
-	61470,  -- Grand Ice Mammoth (H)
-	75973,  -- X-53 Touring Rocket
-	122708, -- Grand Expedition Yak
-	264058, -- Mighty Caravan Brutosaur
+-- Mount IDs of passenger-capable ground mounts (vendor mammoth, chopper, etc.).
+-- Matched against the mountID returned by GetMountInfoByID. Update when Blizzard adds new
+-- multi-seat ground mounts.
+local passengerGroundMountIDs = {
+	240,  -- Mechano-Hog
+	275,  -- Mekgineer's Chopper
+	280,  -- Traveler's Tundra Mammoth
+	284,  -- Traveler's Tundra Mammoth
+	286,  -- Grand Black War Mammoth
+	287,  -- Grand Black War Mammoth
+	288,  -- Grand Ice Mammoth
+	289,  -- Grand Ice Mammoth
+	460,  -- Grand Expedition Yak
+	1039, -- Mighty Caravan Brutosaur
 };
 
 local function addUniquePoolValue(pool, value)
@@ -619,8 +618,8 @@ end
 
 -- Returns collected passenger-capable mounts the character owns.
 -- category: "flying" = flying passenger mounts only; "ground" = ground passenger mounts only;
--- nil = all passenger mounts. Uses the spellID field stored in sortMounts() to match against
--- the hardcoded passenger spell ID tables. No search filter is applied so the pool is always
+-- nil = all passenger mounts. Uses the mountID field stored in sortMounts() to match against
+-- the hardcoded passenger mount ID tables. No search filter is applied so the pool is always
 -- the full category regardless of any open UI search.
 function MogCompanions:getSortedPassengerMounts(category)
 	local mountsRaw = MogCompanions:sortMounts(MogCompanions:GetCollectedMounts());
@@ -628,8 +627,8 @@ function MogCompanions:getSortedPassengerMounts(category)
 
 	for i = 1, #mountsRaw do
 		local mount = mountsRaw[i];
-		local isFlying = MogCompanions:hasValue(passengerFlyingMountSpellIDs, mount.spellID);
-		local isGround = MogCompanions:hasValue(passengerGroundMountSpellIDs, mount.spellID);
+		local isFlying = MogCompanions:hasValue(passengerFlyingMountIDs, mount.id);
+		local isGround = MogCompanions:hasValue(passengerGroundMountIDs, mount.id);
 
 		if category == "flying" then
 			if isFlying then table.insert(mounts, mount); end
@@ -655,7 +654,7 @@ local function buildRandomGroundPool()
 	for i = 1, #mountsRaw do
 		local mount = mountsRaw[i];
 		if (mount.mountTypeID == 230 or MogCompanionsSaved.RandomGroundAllowFlying)
-				and not MogCompanions:hasValue(slowGroundMountSpellIDs, mount.spellID) then
+				and not MogCompanions:hasValue(slowGroundMountIDs, mount.id) then
 			table.insert(mounts, mount);
 		end
 	end
