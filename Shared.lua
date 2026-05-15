@@ -24,7 +24,6 @@ local aquaticMountTypeIDs = {
 	[254] = true, -- Poseidus, Brinedeep Bottom-Feeder, Fathom Dweller
 	[407] = true, -- Deepstar Polyp, Otter
 	[412] = true, -- Dragonflight Otters
-	[436] = true, -- Wondrous Wavewhisker
 };
 
 -- Mount IDs of repair/vendor/utility mounts.
@@ -45,6 +44,11 @@ local repairMountIDs = {
 local slowGroundMountIDs = {
 	[125] = true, -- Riding Turtle
 	[312] = true, -- Sea Turtle
+	[1582] = true, -- Savage Green Battle Turtle
+	[2039] = true, -- Savage Blue Battle Turtle
+	[2232] = true, -- Savage Ebony Battle Turtle
+	[2347] = true, -- Savage Alabaster Battle Turtle
+	[2823] = true, -- Savage Crimson Battle Turtle
 };
 
 -- Mount IDs of passenger-capable flying mounts (both players can fly together).
