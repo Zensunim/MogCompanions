@@ -16,74 +16,100 @@ MogCompanions.TransmogSlotOffsets = {
 
 local playerName = UnitName("player");
 
+-- Mount type IDs that identify aquatic mounts.
+-- Source: https://wago.tools/db2/Mount
 local aquaticMountTypeIDs = {
-	231,  -- Turtles
-	232,  -- Vashj'ir Seahorse
-	254,  -- Poseidus, Brinedeep Bottom-Feeder, Fathom Dweller
-	407,  -- Deepstar Polyp, Otter
-	412,  -- Dragonflight Otters
-	436,  -- Wondrous Wavewhisker
+	[231] = true, -- Turtles
+	[232] = true, -- Vashj'ir Seahorse
+	[254] = true, -- Poseidus, Brinedeep Bottom-Feeder, Fathom Dweller
+	[407] = true, -- Deepstar Polyp, Otter
+	[412] = true, -- Dragonflight Otters
+	[436] = true, -- Wondrous Wavewhisker
 };
 
+-- Mount IDs of repair/vendor/utility mounts.
+-- Update when Blizzard adds new vendor mounts.
 local repairMountIDs = {
-	273,   -- Grand Caravan Mammoth (Alliance)
-	274,   -- Grand Caravan Mammoth (Horde)
-	280,   -- Traveler's Tundra Mammoth (Alliance)
-	284,   -- Traveler's Tundra Mammoth (Horde)
-	460,   -- Grand Expedition Yak
-	1039,  -- Mighty Caravan Brutosaur
-	2237,  -- Grizzly Hills Packmaster
+	[273]  = true, -- Grand Caravan Mammoth (Alliance)
+	[274]  = true, -- Grand Caravan Mammoth (Horde)
+	[280]  = true, -- Traveler's Tundra Mammoth (Alliance)
+	[284]  = true, -- Traveler's Tundra Mammoth (Horde)
+	[460]  = true, -- Grand Expedition Yak
+	[1039] = true, -- Mighty Caravan Brutosaur
+	[2237] = true, -- Grizzly Hills Packmaster
 };
 
 -- Mount IDs of unusually slow ground mounts (60% run speed) that are jarring when
 -- summoned by pure random. Excluded from the random ground pool so the player only
 -- gets these intentionally (selected, favorited, or via the aquatic slot).
 local slowGroundMountIDs = {
-	125, -- Riding Turtle
-	312, -- Sea Turtle
+	[125] = true, -- Riding Turtle
+	[312] = true, -- Sea Turtle
 };
 
 -- Mount IDs of passenger-capable flying mounts (both players can fly together).
--- Matched against the mountID returned by GetMountInfoByID. Update when Blizzard adds new
--- multi-seat flying mounts.
+-- Update when Blizzard adds new multi-seat flying mounts.
 local passengerFlyingMountIDs = {
-	382,  -- X-53 Touring Rocket
-	407,  -- Sandstone Drake
-	455,  -- Obsidian Nightwing
-	959,  -- Stormwind Skychaser
-	960,  -- Orgrimmar Interceptor
-	1563, -- Highland Drake
-	1588, -- Winding Slitherdrake
-	1589, -- Renewed Proto-Drake
-	1590, -- Windborne Velocidrake
-	1591, -- Cliffside Wylderdrake
-	1744, -- Grotto Netherwing Drake
-	1792, -- Algarian Stormrider
-	1795, -- Auspicious Arborwyrm
-	1818, -- Anu'relos, Flame's Guidance
-	1830, -- Flourishing Whimsydrake
-	2090, -- Polly Roger
-	2091, -- Voyaging Wilderling
-	2144, -- Delver's Dirigible
-	2296, -- Delver's Gob-Trotter
-	2512, -- Delver's Mana-Skimmer
+	[382]  = true, -- X-53 Touring Rocket
+	[407]  = true, -- Sandstone Drake
+	[455]  = true, -- Obsidian Nightwing
+	[959]  = true, -- Stormwind Skychaser
+	[960]  = true, -- Orgrimmar Interceptor
+	[1563] = true, -- Highland Drake
+	[1588] = true, -- Winding Slitherdrake
+	[1589] = true, -- Renewed Proto-Drake
+	[1590] = true, -- Windborne Velocidrake
+	[1591] = true, -- Cliffside Wylderdrake
+	[1744] = true, -- Grotto Netherwing Drake
+	[1792] = true, -- Algarian Stormrider
+	[1795] = true, -- Auspicious Arborwyrm
+	[1818] = true, -- Anu'relos, Flame's Guidance
+	[1830] = true, -- Flourishing Whimsydrake
+	[2090] = true, -- Polly Roger
+	[2091] = true, -- Voyaging Wilderling
+	[2144] = true, -- Delver's Dirigible
+	[2296] = true, -- Delver's Gob-Trotter
+	[2512] = true, -- Delver's Mana-Skimmer
 };
 
 -- Mount IDs of passenger-capable ground mounts (vendor mammoth, chopper, etc.).
--- Matched against the mountID returned by GetMountInfoByID. Update when Blizzard adds new
--- multi-seat ground mounts.
+-- Update when Blizzard adds new multi-seat ground mounts.
 local passengerGroundMountIDs = {
-	240,  -- Mechano-Hog
-	275,  -- Mekgineer's Chopper
-	280,  -- Traveler's Tundra Mammoth
-	284,  -- Traveler's Tundra Mammoth
-	286,  -- Grand Black War Mammoth
-	287,  -- Grand Black War Mammoth
-	288,  -- Grand Ice Mammoth
-	289,  -- Grand Ice Mammoth
-	460,  -- Grand Expedition Yak
-	1039, -- Mighty Caravan Brutosaur
+	[240]  = true, -- Mechano-Hog
+	[275]  = true, -- Mekgineer's Chopper
+	[280]  = true, -- Traveler's Tundra Mammoth
+	[284]  = true, -- Traveler's Tundra Mammoth
+	[286]  = true, -- Grand Black War Mammoth
+	[287]  = true, -- Grand Black War Mammoth
+	[288]  = true, -- Grand Ice Mammoth
+	[289]  = true, -- Grand Ice Mammoth
+	[460]  = true, -- Grand Expedition Yak
+	[1039] = true, -- Mighty Caravan Brutosaur
 };
+
+local function IsAquaticMountType(mountTypeID)
+	return mountTypeID ~= nil and aquaticMountTypeIDs[mountTypeID] == true;
+end
+
+local function IsRepairMount(mountID)
+	return mountID ~= nil and repairMountIDs[mountID] == true;
+end
+
+local function IsSlowGroundMount(mountID)
+	return mountID ~= nil and slowGroundMountIDs[mountID] == true;
+end
+
+local function IsPassengerFlyingMount(mountID)
+	return mountID ~= nil and passengerFlyingMountIDs[mountID] == true;
+end
+
+local function IsPassengerGroundMount(mountID)
+	return mountID ~= nil and passengerGroundMountIDs[mountID] == true;
+end
+
+local function IsPassengerMount(mountID)
+	return IsPassengerFlyingMount(mountID) or IsPassengerGroundMount(mountID);
+end
 
 local function addUniquePoolValue(pool, value)
 	if value == nil or value == "" then
@@ -560,7 +586,7 @@ function MogCompanions:getSortedAquaticMounts()
 
 	for i = 1, #mountsRaw do
 		local mount = mountsRaw[i];
-		if MogCompanions:hasValue(aquaticMountTypeIDs, mount.mountTypeID) then
+		if IsAquaticMountType(mount.mountTypeID) then
 			table.insert(mounts, mount);
 		end
 	end
@@ -577,7 +603,7 @@ function MogCompanions:getSortedRepairMounts()
 
 	for i = 1, #mountsRaw do
 		local mount = mountsRaw[i];
-		if MogCompanions:hasValue(repairMountIDs, mount.id) then
+		if IsRepairMount(mount.id) then
 			table.insert(mounts, mount);
 		end
 	end
@@ -627,8 +653,8 @@ function MogCompanions:getSortedPassengerMounts(category)
 
 	for i = 1, #mountsRaw do
 		local mount = mountsRaw[i];
-		local isFlying = MogCompanions:hasValue(passengerFlyingMountIDs, mount.id);
-		local isGround = MogCompanions:hasValue(passengerGroundMountIDs, mount.id);
+		local isFlying = IsPassengerFlyingMount(mount.id);
+		local isGround = IsPassengerGroundMount(mount.id);
 
 		if category == "flying" then
 			if isFlying then table.insert(mounts, mount); end
@@ -654,7 +680,7 @@ local function buildRandomGroundPool()
 	for i = 1, #mountsRaw do
 		local mount = mountsRaw[i];
 		if (mount.mountTypeID == 230 or MogCompanionsSaved.RandomGroundAllowFlying)
-				and not MogCompanions:hasValue(slowGroundMountIDs, mount.id) then
+				and not IsSlowGroundMount(mount.id) then
 			table.insert(mounts, mount);
 		end
 	end
@@ -682,9 +708,9 @@ function MogCompanions:IsMountUsableForCategory(mountID, category)
 	elseif category == "ground" then
 		return mountTypeID == 230 or MogCompanionsSaved.RandomGroundAllowFlying;
 	elseif category == "aquatic" then
-		return MogCompanions:hasValue(aquaticMountTypeIDs, mountTypeID);
+		return IsAquaticMountType(mountTypeID);
 	elseif category == "repair" then
-		return MogCompanions:hasValue(repairMountIDs, mountID);
+		return IsRepairMount(mountID);
 	elseif category == "random" then
 		return true;
 	end
@@ -961,42 +987,46 @@ end
 -- ── Hearthstone Toy Helpers ──────────────────────────────────────────────────
 -- Fallback icon (plain Hearthstone) shown when no toy info is available yet.
 MogCompanions.EmptyHearthstoneIcon = 134414;
+
+-- The full list of hearthstone toy itemIDs to check for collection status.
+-- Source: https://warcraft.wiki.gg/wiki/Hearthstone#Hearthstone_equivalents
 MogCompanions.HearthstoneToyItemIDs = {
-    64488,  -- The Innkeeper's Daughter
-    93672,  -- Dark Portal
-    142542, -- Tome of Town Portal
-    162973, -- Greatfather Winter's Hearthstone
-    163045, -- Headless Horseman's Hearthstone
-    165669, -- Lunar Elder's Hearthstone
-    165670, -- Peddlefeet's Lovely Hearthstone
-    165802, -- Noble Gardener's Hearthstone
-    166746, -- Fire Eater's Hearthstone
-    166747, -- Brewfest Reveler's Hearthstone
-    168907, -- Holographic Digitalization Hearthstone
-    172179, -- Eternal Traveler's Hearthstone
-    180290, -- Night Fae Hearthstone
-    182773, -- Necrolord Hearthstone
-    183716, -- Venthyr Sinstone
-    184353, -- Kyrian Hearthstone
-    188952, -- Dominated Hearthstone
-    190196, -- Enlightened Hearthstone
-    190237, -- Broker Translocation Matrix
-    193588, -- Timewalker's Hearthstone
-    200630, -- Ohn'ir Windsage's Hearthstone
-    206195, -- Path of the Naaru
-    208704, -- Deepdweller's Earthen Hearthstone
-    209035, -- Hearthstone of the Flame
-    210455, -- Draenic Hologem
-    212337, -- Stone of the Hearth
-    228940, -- Notorious Thread's Hearthstone
-    235016, -- Redeployment Module
-    236687, -- Explosive Hearthstone
-    245970, -- P.O.S.T. Master's Express Hearthstone
-    246565, -- Cosmic Hearthstone
-    257736, -- Lightcalled Hearthstone
-    263489, -- Naaru's Enfold
-    263933, -- Preyseeker's Hearthstone
-    265100, -- Corewarden's Hearthstone
+	54452,  -- Ethereal Portal
+	64488,  -- The Innkeeper's Daughter
+	93672,  -- Dark Portal
+	142542, -- Tome of Town Portal
+	162973, -- Greatfather Winter's Hearthstone
+	163045, -- Headless Horseman's Hearthstone
+	165669, -- Lunar Elder's Hearthstone
+	165670, -- Peddlefeet's Lovely Hearthstone
+	165802, -- Noble Gardener's Hearthstone
+	166746, -- Fire Eater's Hearthstone
+	166747, -- Brewfest Reveler's Hearthstone
+	168907, -- Holographic Digitalization Hearthstone
+	172179, -- Eternal Traveler's Hearthstone
+	180290, -- Night Fae Hearthstone
+	182773, -- Necrolord Hearthstone
+	183716, -- Venthyr Sinstone
+	184353, -- Kyrian Hearthstone
+	188952, -- Dominated Hearthstone
+	190196, -- Enlightened Hearthstone
+	190237, -- Broker Translocation Matrix
+	193588, -- Timewalker's Hearthstone
+	200630, -- Ohn'ir Windsage's Hearthstone
+	206195, -- Path of the Naaru
+	208704, -- Deepdweller's Earthen Hearthstone
+	209035, -- Hearthstone of the Flame
+	210455, -- Draenic Hologem
+	212337, -- Stone of the Hearth
+	228940, -- Notorious Thread's Hearthstone
+	235016, -- Redeployment Module
+	236687, -- Explosive Hearthstone
+	245970, -- P.O.S.T. Master's Express Hearthstone
+	246565, -- Cosmic Hearthstone
+	257736, -- Lightcalled Hearthstone
+	263489, -- Naaru's Enfold
+	263933, -- Preyseeker's Hearthstone
+	265100, -- Corewarden's Hearthstone
 };
 
 -- Returns true if the toy name contains HearthstoneSearchString (case-insensitive),
