@@ -141,6 +141,27 @@ local function arrayToMap(array)
 	return map;
 end
 
+-- Adds a button row to the Settings layout using CreateSettingsButtonInitializer.
+-- The 5th argument (true) is required by current Retail builds to avoid assertion errors.
+-- Guards against the API being absent in case of future Blizzard changes.
+local function AddSettingsButton(layout, name, buttonText, tooltip, onClick)
+	if type(CreateSettingsButtonInitializer) ~= "function" then
+		return;
+	end
+
+	local initializer = CreateSettingsButtonInitializer(
+		name,
+		buttonText,
+		function()
+			onClick(UIParent);
+		end,
+		tooltip,
+		true
+	);
+
+	layout:AddInitializer(initializer);
+end
+
 -- Registers all MogCompanions settings and creates the Settings panel layout.
 -- Called once from PLAYER_ENTERING_WORLD after saved variables are loaded.
 local function InitSettings()
@@ -311,6 +332,16 @@ local function InitSettings()
 
 	layout:AddInitializer(CreateSettingsListSectionHeaderInitializer(L["Settings Mount Macro Title"], ''));
 
+	AddSettingsButton(
+		layout,
+		L["Settings Create Mount Macro"],
+		L["Settings Create Mount Macro"],
+		L["Settings Create Mount Macro Tooltip"],
+		function(parent)
+			MogCompanions:CreateMountMacro(parent);
+		end
+	);
+
 	local variable = CreateSettingIdentifier("DynamicMountMacroIcon");
 	local defaultValue = false;
 	local name = L["Settings Dynamic Mount Macro Icon"];
@@ -455,6 +486,16 @@ local function InitSettings()
 
 	layout:AddInitializer(CreateSettingsListSectionHeaderInitializer(L["Settings Hearthstone Macro Title"], ''));
 
+	AddSettingsButton(
+		layout,
+		L["Settings Create Hearthstone Macro"],
+		L["Settings Create Hearthstone Macro"],
+		L["Settings Create Hearthstone Macro Tooltip"],
+		function(parent)
+			MogCompanions:CreateHearthstoneMacro(parent);
+		end
+	);
+
 	local variable = CreateSettingIdentifier("HearthstoneModSelected");
 	local defaultValue = 1;
 	local name = L["Settings Use Selected Hearthstone"];
@@ -532,6 +573,16 @@ local function InitSettings()
 	end
 
 	layout:AddInitializer(CreateSettingsListSectionHeaderInitializer(L["Settings Pet Macro Title"], ''));
+
+	AddSettingsButton(
+		layout,
+		L["Settings Create Pet Macro"],
+		L["Settings Create Pet Macro"],
+		L["Settings Create Pet Macro Tooltip"],
+		function(parent)
+			MogCompanions:CreatePetMacro(parent);
+		end
+	);
 
 	local variable = CreateSettingIdentifier("DynamicPetMacroIcon");
 	local defaultValue = false;

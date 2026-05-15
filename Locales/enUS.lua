@@ -162,7 +162,12 @@ L["Settings Clone Targeted Pet"] = "Clone targeted pet";
 L["Settings Clone Targeted Pet Tooltip"] = "When using the pet macro or keybind, target a player's companion pet to summon the same pet, if you own it.";
 
 -- Macros section
-L["Settings Macros Section Title"] = "Macros";
+L["Settings Create Mount Macro"] = "Create Mount Macro";
+L["Settings Create Mount Macro Tooltip"] = "Creates or updates the Mog Companions mount macro and puts it on your cursor.";
+L["Settings Create Hearthstone Macro"] = "Create Hearthstone Macro";
+L["Settings Create Hearthstone Macro Tooltip"] = "Creates or updates the Mog Companions hearthstone macro and puts it on your cursor.";
+L["Settings Create Pet Macro"] = "Create Pet Macro";
+L["Settings Create Pet Macro Tooltip"] = "Creates or updates the Mog Companions pet macro and puts it on your cursor.";
 L["Settings Dynamic Mount Macro Icon"] = "Dynamically change mount icon";
 L["Settings Dynamic Mount Macro Icon Tooltip"] = "When enabled, the mount macro icon updates to match the current assigned mount when possible. When disabled, it always uses the mount placeholder icon.";
 L["Settings Dynamic Pet Macro Icon"] = "Dynamically change pet icon";
