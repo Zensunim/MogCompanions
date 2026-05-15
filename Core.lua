@@ -63,8 +63,10 @@ end
 -- ── Slash Commands ────────────────────────────────────────────────────────────
 local function PrintSlashHelp()
 	print("|cFF00CCFFMogCompanions commands:|r");
-	print("|cFFFFFFFF/mcomp mount|r - "..L["Slash Help Mount"]);
-	print("|cFFFFFFFF/mcomp pet|r - "..L["Slash Help Pet"]);
+	print("|cFFFFFFFF/mcomp mount|r - "..L["Slash Help Mount Base"]);
+	print("|cFFFFFFFF/mcomp mount [flying/ground/aquatic/repair/random/favorite]|r - "..L["Slash Help Mount"]);
+	print("|cFFFFFFFF/mcomp pet|r - "..L["Slash Help Pet Base"]);
+	print("|cFFFFFFFF/mcomp pet [random/favorite/dismiss]|r - "..L["Slash Help Pet"]);
 	print("|cFFFFFFFF/mcomp options|r - "..L["Slash Help Options"]);
 end
 
@@ -557,18 +559,43 @@ end
 
 SLASH_MOGCOMPANIONS1 = "/mcomp";
 SlashCmdList["MOGCOMPANIONS"] = function(msg)
-	local command = string.lower(string.match(msg or "", "^%s*(.-)%s*$"));
+	local trimmed = string.lower(string.match(msg or "", "^%s*(.-)%s*$"));
+	local cmd = string.match(trimmed, "^(%S+)") or "";
+	-- Strip optional square brackets so "/mcomp mount [flying]" works like "/mcomp mount flying".
+	local sub = string.gsub(string.match(trimmed, "^%S+%s+(%S+)") or "", "[%[%]]", "");
 
-	if command == "" or command == "help" then
+	if cmd == "" or cmd == "help" then
 		if MogCompanions.ShowConflictResolver ~= nil then
 			MogCompanions:ShowConflictResolver();
 		end
 		PrintSlashHelp();
-	elseif command == "mount" then
-		MogCompanionsSummon();
-	elseif command == "pet" then
-		MogCompanions:HandlePetAction();
-	elseif command == "options" then
+	elseif cmd == "mount" then
+		if sub == "flying" then
+			MogCompanionsSummonFlying();
+		elseif sub == "ground" then
+			MogCompanionsSummonGround();
+		elseif sub == "repair" then
+			MogCompanionsSummonRepair();
+		elseif sub == "aquatic" then
+			MogCompanionsSummonAquatic();
+		elseif sub == "random" then
+			MogCompanionsSummonRandom();
+		elseif sub == "favorite" then
+			MogCompanionsSummonFavoriteMount();
+		else
+			MogCompanionsSummon();
+		end
+	elseif cmd == "pet" then
+		if sub == "random" then
+			MogCompanions:SummonRandomPet();
+		elseif sub == "favorite" then
+			MogCompanions:SummonRandomFavoritePet();
+		elseif sub == "dismiss" then
+			MogCompanions:DismissPet();
+		else
+			MogCompanions:HandlePetAction();
+		end
+	elseif cmd == "options" then
 		OpenSettingsToMogCompanions();
 	else
 		if MogCompanions.ShowConflictResolver ~= nil then

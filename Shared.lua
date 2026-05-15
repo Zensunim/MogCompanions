@@ -518,6 +518,23 @@ function MogCompanions:getSortedRepairMounts()
 	return mounts;
 end
 
+-- Returns collected mounts the player has starred as favorites in the Mount Journal.
+-- Filters by isFavorite field from GetMountInfoByID. No search filter applied so
+-- /mcomp mount favorite always draws from the full favorites list, not any open UI search.
+function MogCompanions:getSortedFavoriteMounts()
+	local mountsRaw = MogCompanions:sortMounts(MogCompanions:GetCollectedMounts());
+	local mounts = {};
+
+	for i = 1, #mountsRaw do
+		local mount = mountsRaw[i];
+		if mount.isFavorite then
+			table.insert(mounts, mount);
+		end
+	end
+
+	return mounts;
+end
+
 -- Returns all collected mounts (no category filter, no search filter).
 -- Used for the random mount slot — the player can assign anything here.
 function MogCompanions:getSortedRandomMounts()

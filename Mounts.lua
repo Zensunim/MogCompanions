@@ -466,6 +466,25 @@ function MogCompanionsSummonRandom()
 	if randomMount then C_MountJournal.SummonByID(randomMount.id); end
 end
 
+-- Summons a random mount from the player's favorited mounts in the Mount Journal.
+-- Falls back to a full random (flying when flyable, ground otherwise) if no favorites
+-- exist, so the command never silently fails when favorites are empty or unavailable.
+function MogCompanionsSummonFavoriteMount()
+	local favoriteMounts = MogCompanions:getSortedFavoriteMounts();
+	if #favoriteMounts > 0 then
+		local selectedMount = favoriteMounts[math.random(1, #favoriteMounts)];
+		C_MountJournal.SummonByID(selectedMount.id);
+	else
+		local randomMount;
+		if IsFlyableArea() then
+			randomMount = MogCompanions:getRandomMount("flying");
+		else
+			randomMount = MogCompanions:getRandomMount("ground");
+		end
+		if randomMount then C_MountJournal.SummonByID(randomMount.id); end
+	end
+end
+
 -- Cache: spellID → mountID for all collected, usable mounts owned by this character.
 -- nil means the cache has not been built yet (or was invalidated).
 -- Rebuilt lazily on the next tryCloneTargetedMount call.
