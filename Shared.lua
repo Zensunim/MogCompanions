@@ -17,12 +17,14 @@ MogCompanions.TransmogSlotOffsets = {
 local playerName = UnitName("player");
 
 local aquaticMountTypeIDs = {
-	231,  -- Vashj'ir Swimming
-	232,  -- Vashj'ir Flying
-	254,  -- Underwater Flying
-	407,  -- Water Flying
-	436,  -- Aquatic
+	231,  -- Turtles
+	232,  -- Vashj'ir Seahorse
+	254,  -- Poseidus, Brinedeep Bottom-Feeder, Fathom Dweller
+	407,  -- Deepstar Polyp, Otter
+	412,  -- Dragonflight Otters
+	436,  -- Wondrous Wavewhisker
 };
+
 local repairMountIDs = {
 	460,   -- Traveler's Tundra Mammoth
 	280,   -- Repair Mount (Old)
@@ -31,6 +33,16 @@ local repairMountIDs = {
 	274,   -- Horde Chopper
 	1039,  -- Mighty Caravan Brutosaur
 	2237,  -- Grand Expedition Yak
+};
+
+local repairMountIDs = {
+	273,   -- Grand Caravan Mammoth (Alliance)
+	274,   -- Grand Caravan Mammoth (Horde)
+	280,   -- Traveler's Tundra Mammoth (Alliance)
+	284,   -- Traveler's Tundra Mammoth (Horde)
+	460,   -- Grand Expedition Yak
+	1039,  -- Mighty Caravan Brutosaur
+	2237,  -- Grizzly Hills Packmaster
 };
 
 -- Spell IDs of unusually slow ground mounts (60% run speed) that are jarring when
