@@ -443,7 +443,72 @@ function MogCompanions:HandleAutoPetSummon(settingKey)
 	});
 end
 
+-- Cache: lowercase name → pet GUID for all owned summonable pets.
+-- Indexes both species name and custom name for matching.
+-- nil means not built yet (or was invalidated).
+local petCloneCache = nil;
+
+local function buildPetCloneCache()
+	petCloneCache = {};
+	if C_PetJournal == nil or C_PetJournal.GetOwnedPetIDs == nil then
+		return;
+	end
+
+	local petsRaw = C_PetJournal.GetOwnedPetIDs();
+	for i = 1, #petsRaw do
+		local petID = petsRaw[i];
+		if MogCompanions:IsPetSummonableOwned(petID) then
+			local info = MogCompanions:GetPetInfoSafe(petID);
+			if info ~= nil and info.name ~= nil then
+				local speciesKey = info.name:lower();
+				if petCloneCache[speciesKey] == nil then
+					petCloneCache[speciesKey] = petID;
+				end
+				if info.customName ~= nil and info.customName ~= "" then
+					local customKey = info.customName:lower();
+					if petCloneCache[customKey] == nil then
+						petCloneCache[customKey] = petID;
+					end
+				end
+			end
+		end
+	end
+end
+
+-- Invalidate the cache when pet collection changes.
+local PetCloneCacheFrame = CreateFrame("Frame");
+PetCloneCacheFrame:RegisterEvent("PET_JOURNAL_LIST_UPDATE");
+PetCloneCacheFrame:SetScript("OnEvent", function() petCloneCache = nil; end);
+
+-- Returns the pet GUID of a companion pet the target unit matches, if the local
+-- player also has that pet owned and summonable. Returns nil otherwise.
+-- Only called from HandlePetAction (macro/keybind press), never from auto-summon.
+local function tryCloneTargetedPet()
+	if not MogCompanionsSaved or not MogCompanionsSaved.CloneTargetedPet then return nil; end
+	if not UnitExists("target") then return nil; end
+
+	if not petCloneCache then
+		buildPetCloneCache();
+	end
+
+	local targetName = UnitName("target");
+	if targetName then
+		local guid = petCloneCache[targetName:lower()];
+		if guid then return guid; end
+	end
+
+	return nil;
+end
+
 function MogCompanions:HandlePetAction()
+	local cloneGUID = tryCloneTargetedPet();
+	if cloneGUID then
+		if C_PetJournal and C_PetJournal.SummonPetByGUID then
+			C_PetJournal.SummonPetByGUID(cloneGUID);
+		end
+		return;
+	end
+
 	if GetPetModKey("Dismiss") then
 		MogCompanions:DismissPet();
 	elseif GetPetModKey("Favorite") then
@@ -673,6 +738,9 @@ function MogCompanions:OnEvent(event, addOnName)
 
 			if MogCompanionsSaved.CloneTargetedMount == nil then
 				MogCompanionsSaved.CloneTargetedMount = false;
+			end
+			if MogCompanionsSaved.CloneTargetedPet == nil then
+				MogCompanionsSaved.CloneTargetedPet = false;
 			end
 			if MogCompanionsSaved.DynamicMountMacroIcon == nil then
 				MogCompanionsSaved.DynamicMountMacroIcon = false;

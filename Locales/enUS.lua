@@ -152,6 +152,11 @@ L["Settings Random Ground Allow Flying Tooltip"] = "Turn this feature off to res
 L["Settings Clone Targeted Mount"] = "Clone targeted mount";
 L["Settings Clone Targeted Mount Tooltip"] = "When summoning a random mount, target a mounted player to summon the same mount, if you own it.";
 
+-- Random pet selection section
+L["Settings Random Pet Section Title"] = "Random Pet Selection";
+L["Settings Clone Targeted Pet"] = "Clone targeted pet";
+L["Settings Clone Targeted Pet Tooltip"] = "When using the pet macro or keybind, target a player's companion pet to summon the same pet, if you own it.";
+
 -- Macros section
 L["Settings Macros Section Title"] = "Macros";
 L["Settings Dynamic Mount Macro Icon"] = "Dynamically change mount icon";

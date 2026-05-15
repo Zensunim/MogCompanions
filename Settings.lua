@@ -274,6 +274,21 @@ local function InitSettings()
 	Settings.CreateCheckbox(category, setting, tooltip);
 	setting:SetValueChangedCallback(OnSettingChanged);
 
+	-- Random pet selection
+
+	layout:AddInitializer(CreateSettingsListSectionHeaderInitializer(L["Settings Random Pet Section Title"], ''));
+
+	local variable = CreateSettingIdentifier("CloneTargetedPet");
+	local defaultValue = false;
+	local name = L["Settings Clone Targeted Pet"];
+	local tooltip = L["Settings Clone Targeted Pet Tooltip"];
+	local variableKey = "CloneTargetedPet";
+	local variableTable = MogCompanionsSaved;
+
+	local setting = Settings.RegisterAddOnSetting(category, variable, variableKey, variableTable, type(defaultValue), name, defaultValue);
+	Settings.CreateCheckbox(category, setting, tooltip);
+	setting:SetValueChangedCallback(OnSettingChanged);
+
 	-- ── Macro icon behavior ──────────────────────────────────────────────────────
 
 	layout:AddInitializer(CreateSettingsListSectionHeaderInitializer(L["Settings Macros Section Title"], ''));
