@@ -307,9 +307,9 @@ local function InitSettings()
 	Settings.CreateCheckbox(category, setting, tooltip);
 	setting:SetValueChangedCallback(OnSettingChanged);
 
-	-- ── Macro icon behavior ──────────────────────────────────────────────────────
+	-- ── Mount Macro Modifier Keys ────────────────────────────────────────────────
 
-	layout:AddInitializer(CreateSettingsListSectionHeaderInitializer(L["Settings Macros Section Title"], ''));
+	layout:AddInitializer(CreateSettingsListSectionHeaderInitializer(L["Settings Mount Macro Title"], ''));
 
 	local variable = CreateSettingIdentifier("DynamicMountMacroIcon");
 	local defaultValue = false;
@@ -321,21 +321,6 @@ local function InitSettings()
 	local setting = Settings.RegisterAddOnSetting(category, variable, variableKey, variableTable, type(defaultValue), name, defaultValue);
 	Settings.CreateCheckbox(category, setting, tooltip);
 	setting:SetValueChangedCallback(OnMountMacroSettingChanged);
-
-	local variable = CreateSettingIdentifier("DynamicPetMacroIcon");
-	local defaultValue = false;
-	local name = L["Settings Dynamic Pet Macro Icon"];
-	local tooltip = L["Settings Dynamic Pet Macro Icon Tooltip"];
-	local variableKey = "DynamicPetMacroIcon";
-	local variableTable = MogCompanionsSaved;
-
-	local setting = Settings.RegisterAddOnSetting(category, variable, variableKey, variableTable, type(defaultValue), name, defaultValue);
-	Settings.CreateCheckbox(category, setting, tooltip);
-	setting:SetValueChangedCallback(OnPetDynamicMacroIconSettingChanged);
-
-	-- ── Mount Macro Modifier Keys ────────────────────────────────────────────────
-
-	layout:AddInitializer(CreateSettingsListSectionHeaderInitializer(L["Settings Mount Macro Title"], ''));
 
 	local function GetOptionsMountMods()
 		local container = Settings.CreateControlTextContainer();
@@ -547,6 +532,17 @@ local function InitSettings()
 	end
 
 	layout:AddInitializer(CreateSettingsListSectionHeaderInitializer(L["Settings Pet Macro Title"], ''));
+
+	local variable = CreateSettingIdentifier("DynamicPetMacroIcon");
+	local defaultValue = false;
+	local name = L["Settings Dynamic Pet Macro Icon"];
+	local tooltip = L["Settings Dynamic Pet Macro Icon Tooltip"];
+	local variableKey = "DynamicPetMacroIcon";
+	local variableTable = MogCompanionsSaved;
+
+	local setting = Settings.RegisterAddOnSetting(category, variable, variableKey, variableTable, type(defaultValue), name, defaultValue);
+	Settings.CreateCheckbox(category, setting, tooltip);
+	setting:SetValueChangedCallback(OnPetDynamicMacroIconSettingChanged);
 
 	local variable = CreateSettingIdentifier("PetModSelected");
 	local defaultValue = 1;
