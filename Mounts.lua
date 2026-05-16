@@ -517,10 +517,19 @@ function MogCompanionsSummonGround()
 		return;
 	end
 	if outfitData ~= nil and GetNormalizedMountMode(outfitData, "GroundMountMode") == "Passenger" then
-		-- Passenger mode on the ground slot always picks a ground-capable passenger
-		-- mount. MogCompanionsSummonPassenger handles the area check internally.
+		-- Prefer a ground-capable passenger mount, but fall back to a normal ground
+		-- mount if the player does not own any passenger mounts. Without the fallback
+		-- the binding silently does nothing, which is confusing.
 		local mount = MogCompanions:getRandomMount("passenger_ground");
-		if mount then C_MountJournal.SummonByID(mount.id); end
+
+		if not mount then
+			mount = MogCompanions:getRandomMount("ground");
+		end
+
+		if mount then
+			C_MountJournal.SummonByID(mount.id);
+		end
+
 		return;
 	end
 	local validMounts = MogCompanions:GetValidMountPoolInfos(outfitData, "GroundMounts", "ground");
@@ -1350,6 +1359,7 @@ function MogCompanions:InitMountTab()
 			if outfit then
 				outfit.FlyingMountMode = "Favorite";
 				MogCompanions:ClearSelectionPool(outfit, "FlyingMounts");
+				outfit.Flying = 1;
 				LastClickedFlyingMountID = nil;
 				RefreshMountSlots();
 				if RefreshFlyingMountList ~= nil then
@@ -1394,6 +1404,7 @@ function MogCompanions:InitMountTab()
 			if outfit then
 				outfit.FlyingMountMode = "Passenger";
 				MogCompanions:ClearSelectionPool(outfit, "FlyingMounts");
+				outfit.Flying = 1;
 				LastClickedFlyingMountID = nil;
 				RefreshMountSlots();
 				if RefreshFlyingMountList ~= nil then
@@ -1632,6 +1643,7 @@ function MogCompanions:InitMountTab()
 			if outfit then
 				outfit.GroundMountMode = "Favorite";
 				MogCompanions:ClearSelectionPool(outfit, "GroundMounts");
+				outfit.Ground = 1;
 				LastClickedGroundMountID = nil;
 				RefreshMountSlots();
 				if RefreshGroundMountList ~= nil then
@@ -1674,6 +1686,7 @@ function MogCompanions:InitMountTab()
 			if outfit then
 				outfit.GroundMountMode = "Passenger";
 				MogCompanions:ClearSelectionPool(outfit, "GroundMounts");
+				outfit.Ground = 1;
 				LastClickedGroundMountID = nil;
 				RefreshMountSlots();
 				if RefreshGroundMountList ~= nil then
