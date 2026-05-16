@@ -16,8 +16,104 @@ MogCompanions.TransmogSlotOffsets = {
 
 local playerName = UnitName("player");
 
-local aquaticMountTypeIDs = {231, 232, 254, 407, 436};
-local repairMountIDs = {460, 280, 284, 273, 274, 1039, 2237};
+-- Mount type IDs that identify aquatic mounts.
+-- Source: https://wago.tools/db2/Mount
+local aquaticMountTypeIDs = {
+	[231] = true, -- Turtles
+	[232] = true, -- Vashj'ir Seahorse
+	[254] = true, -- Poseidus, Brinedeep Bottom-Feeder, Fathom Dweller
+	[407] = true, -- Deepstar Polyp, Otter
+	[412] = true, -- Dragonflight Otters
+};
+
+-- Mount IDs of repair/vendor/utility mounts.
+-- Update when Blizzard adds new vendor mounts.
+local repairMountIDs = {
+	[273]  = true, -- Grand Caravan Mammoth (Alliance)
+	[274]  = true, -- Grand Caravan Mammoth (Horde)
+	[280]  = true, -- Traveler's Tundra Mammoth (Alliance)
+	[284]  = true, -- Traveler's Tundra Mammoth (Horde)
+	[460]  = true, -- Grand Expedition Yak
+	[1039] = true, -- Mighty Caravan Brutosaur
+	[2237] = true, -- Grizzly Hills Packmaster
+};
+
+-- Mount IDs of unusually slow ground mounts (60% run speed) that are jarring when
+-- summoned by pure random. Excluded from the random ground pool so the player only
+-- gets these intentionally (selected, favorited, or via the aquatic slot).
+local slowGroundMountIDs = {
+	[125] = true, -- Riding Turtle
+	[312] = true, -- Sea Turtle
+	[1582] = true, -- Savage Green Battle Turtle
+	[2039] = true, -- Savage Blue Battle Turtle
+	[2232] = true, -- Savage Ebony Battle Turtle
+	[2347] = true, -- Savage Alabaster Battle Turtle
+	[2823] = true, -- Savage Crimson Battle Turtle
+};
+
+-- Mount IDs of passenger-capable flying mounts (both players can fly together).
+-- Update when Blizzard adds new multi-seat flying mounts.
+local passengerFlyingMountIDs = {
+	[382]  = true, -- X-53 Touring Rocket
+	[407]  = true, -- Sandstone Drake
+	[455]  = true, -- Obsidian Nightwing
+	[959]  = true, -- Stormwind Skychaser
+	[960]  = true, -- Orgrimmar Interceptor
+	[1563] = true, -- Highland Drake
+	[1588] = true, -- Winding Slitherdrake
+	[1589] = true, -- Renewed Proto-Drake
+	[1590] = true, -- Windborne Velocidrake
+	[1591] = true, -- Cliffside Wylderdrake
+	[1744] = true, -- Grotto Netherwing Drake
+	[1792] = true, -- Algarian Stormrider
+	[1795] = true, -- Auspicious Arborwyrm
+	[1818] = true, -- Anu'relos, Flame's Guidance
+	[1830] = true, -- Flourishing Whimsydrake
+	[2090] = true, -- Polly Roger
+	[2091] = true, -- Voyaging Wilderling
+	[2144] = true, -- Delver's Dirigible
+	[2296] = true, -- Delver's Gob-Trotter
+	[2512] = true, -- Delver's Mana-Skimmer
+};
+
+-- Mount IDs of passenger-capable ground mounts (vendor mammoth, chopper, etc.).
+-- Update when Blizzard adds new multi-seat ground mounts.
+local passengerGroundMountIDs = {
+	[240]  = true, -- Mechano-Hog
+	[275]  = true, -- Mekgineer's Chopper
+	[280]  = true, -- Traveler's Tundra Mammoth
+	[284]  = true, -- Traveler's Tundra Mammoth
+	[286]  = true, -- Grand Black War Mammoth
+	[287]  = true, -- Grand Black War Mammoth
+	[288]  = true, -- Grand Ice Mammoth
+	[289]  = true, -- Grand Ice Mammoth
+	[460]  = true, -- Grand Expedition Yak
+	[1039] = true, -- Mighty Caravan Brutosaur
+};
+
+local function IsAquaticMountType(mountTypeID)
+	return mountTypeID ~= nil and aquaticMountTypeIDs[mountTypeID] == true;
+end
+
+local function IsRepairMount(mountID)
+	return mountID ~= nil and repairMountIDs[mountID] == true;
+end
+
+local function IsSlowGroundMount(mountID)
+	return mountID ~= nil and slowGroundMountIDs[mountID] == true;
+end
+
+local function IsPassengerFlyingMount(mountID)
+	return mountID ~= nil and passengerFlyingMountIDs[mountID] == true;
+end
+
+local function IsPassengerGroundMount(mountID)
+	return mountID ~= nil and passengerGroundMountIDs[mountID] == true;
+end
+
+local function IsPassengerMount(mountID)
+	return IsPassengerFlyingMount(mountID) or IsPassengerGroundMount(mountID);
+end
 
 local function addUniquePoolValue(pool, value)
 	if value == nil or value == "" then
@@ -39,6 +135,9 @@ function MogCompanionsSortAlphabetical(a, b)
 	return a.name:lower() < b.name:lower();
 end
 
+-- Scans the full macro list by exact name to find a macro created by the addon.
+-- Limited to 120 because that is the per-character macro cap in Retail WoW;
+-- the global macro cap (18) is not relevant here since addon macros are character-scoped.
 function MogCompanions:FindMacroByExactName(macroName)
 	if macroName == nil or macroName == "" then
 		return nil;
@@ -63,6 +162,11 @@ local function Clamp(value, minValue, maxValue)
 	return value;
 end
 
+-- Attaches shared orbit / zoom / drag controls to a model preview frame.
+-- Reused by the flying mount, ground mount, and pet preview panels so that
+-- all three behave identically without duplicating the OnMouseDown/OnUpdate logic.
+-- Returns an "attachedControls" table with .reset(), .apply(), and .state.
+-- The caller is responsible for positioning the returned controls widget.
 function MogCompanions:AttachPreviewModelControls(previewFrame, modelFrame, defaults)
 	if previewFrame == nil or modelFrame == nil then
 		return nil;
@@ -213,11 +317,13 @@ function MogCompanions:sortMounts(mountsRaw)
 		
 		local temp = {};
 		temp["name"] = name;
+		temp["spellID"] = spellID;
 		temp["icon"] = icon;
 		temp["nameAndIcon"] = "|T"..icon..":18|t "..name;
 		temp["id"] = mountID;
 		temp["model"] = creatureDisplayInfoID;
 		temp["mountTypeID"] = mountTypeID;
+		temp["isFavorite"] = isFavorite;
 		
 		if isCollected and not shouldHideOnChar and isUsable then
 			table.insert(mounts, temp);
@@ -232,6 +338,9 @@ end
 
 local sortedPetsCache = nil;
 
+-- Clears the sorted pet cache so it is rebuilt on the next GetSortedPets call.
+-- Pets change infrequently (journal updates), so the cache is valid for the entire
+-- session between PET_JOURNAL_LIST_UPDATE events.
 function MogCompanions:InvalidateSortedPetsCache()
 	sortedPetsCache = nil;
 end
@@ -240,6 +349,10 @@ local function IsTrueOrOne(value)
 	return value == true or value == 1;
 end
 
+-- Normalizes the two historical C_PetJournal APIs into a single return shape.
+-- GetPetInfoTableByPetID (added in a later Retail patch) is preferred; the tuple
+-- form (GetPetInfoByPetID) is used as a fallback so the addon works on older clients.
+-- Returns nil when the API is unavailable or the pet is unrecognized.
 function MogCompanions:GetPetInfoSafe(petGUID)
 	if type(petGUID) ~= "string" or petGUID == "" or C_PetJournal == nil then
 		return nil;
@@ -282,6 +395,10 @@ function MogCompanions:GetPetInfoSafe(petGUID)
 	return nil;
 end
 
+-- Returns true when the given pet GUID refers to an owned, summonable pet.
+-- Only checks that name and icon are non-nil — those are the minimum fields needed
+-- to display the pet in the UI and pass to SummonPetByGUID. A GUID that fails this
+-- test has been released or is otherwise gone and must be pruned from the saved pool.
 function MogCompanions:IsPetSummonableOwned(petGUID)
 	local info = MogCompanions:GetPetInfoSafe(petGUID);
 	if info == nil then
@@ -295,6 +412,8 @@ function MogCompanions:IsPetSummonableOwned(petGUID)
 	return true;
 end
 
+-- Returns true when the pet is marked as a favorite in the journal.
+-- Wraps GetPetInfoSafe so callers don't need to inspect the info table themselves.
 function MogCompanions:IsFavoritePet(petGUID)
 	local info = MogCompanions:GetPetInfoSafe(petGUID);
 	return info ~= nil and IsTrueOrOne(info.isFavorite);
@@ -472,7 +591,7 @@ function MogCompanions:getSortedAquaticMounts()
 
 	for i = 1, #mountsRaw do
 		local mount = mountsRaw[i];
-		if MogCompanions:hasValue(aquaticMountTypeIDs, mount.mountTypeID) then
+		if IsAquaticMountType(mount.mountTypeID) then
 			table.insert(mounts, mount);
 		end
 	end
@@ -489,7 +608,24 @@ function MogCompanions:getSortedRepairMounts()
 
 	for i = 1, #mountsRaw do
 		local mount = mountsRaw[i];
-		if MogCompanions:hasValue(repairMountIDs, mount.id) then
+		if IsRepairMount(mount.id) then
+			table.insert(mounts, mount);
+		end
+	end
+
+	return mounts;
+end
+
+-- Returns collected mounts the player has starred as favorites in the Mount Journal.
+-- Filters by isFavorite field from GetMountInfoByID. No search filter applied so
+-- /mcomp mount favorite always draws from the full favorites list, not any open UI search.
+function MogCompanions:getSortedFavoriteMounts()
+	local mountsRaw = MogCompanions:sortMounts(MogCompanions:GetCollectedMounts());
+	local mounts = {};
+
+	for i = 1, #mountsRaw do
+		local mount = mountsRaw[i];
+		if mount.isFavorite then
 			table.insert(mounts, mount);
 		end
 	end
@@ -511,16 +647,45 @@ function MogCompanions:getSortedRandomMounts()
 	return mounts;
 end
 
+-- Returns collected passenger-capable mounts the character owns.
+-- category: "flying" = flying passenger mounts only; "ground" = ground passenger mounts only;
+-- nil = all passenger mounts. Uses the mountID field stored in sortMounts() to match against
+-- the hardcoded passenger mount ID tables. No search filter is applied so the pool is always
+-- the full category regardless of any open UI search.
+function MogCompanions:getSortedPassengerMounts(category)
+	local mountsRaw = MogCompanions:sortMounts(MogCompanions:GetCollectedMounts());
+	local mounts = {};
+
+	for i = 1, #mountsRaw do
+		local mount = mountsRaw[i];
+		local isFlying = IsPassengerFlyingMount(mount.id);
+		local isGround = IsPassengerGroundMount(mount.id);
+
+		if category == "flying" then
+			if isFlying then table.insert(mounts, mount); end
+		elseif category == "ground" then
+			if isGround then table.insert(mounts, mount); end
+		else
+			if isFlying or isGround then table.insert(mounts, mount); end
+		end
+	end
+
+	return mounts;
+end
+
 -- Builds the pool of ground mounts used by random ground selection.
 -- Ignores the UI search filter and the ShowFlyingInGround display toggle.
 -- Includes flying mounts only when MogCompanionsSaved.RandomGroundAllowFlying is true.
+-- Slow ground mounts (Riding Turtle, Sea Turtle) are excluded — they are aquatic/low-speed
+-- mounts that would be unpleasant to summon by accident; players can still pick them manually.
 local function buildRandomGroundPool()
 	local mountsRaw = MogCompanions:sortMounts(MogCompanions:GetCollectedMounts());
 	local mounts = {};
 
 	for i = 1, #mountsRaw do
 		local mount = mountsRaw[i];
-		if mount.mountTypeID == 230 or MogCompanionsSaved.RandomGroundAllowFlying then
+		if (mount.mountTypeID == 230 or MogCompanionsSaved.RandomGroundAllowFlying)
+				and not IsSlowGroundMount(mount.id) then
 			table.insert(mounts, mount);
 		end
 	end
@@ -548,9 +713,9 @@ function MogCompanions:IsMountUsableForCategory(mountID, category)
 	elseif category == "ground" then
 		return mountTypeID == 230 or MogCompanionsSaved.RandomGroundAllowFlying;
 	elseif category == "aquatic" then
-		return MogCompanions:hasValue(aquaticMountTypeIDs, mountTypeID);
+		return IsAquaticMountType(mountTypeID);
 	elseif category == "repair" then
-		return MogCompanions:hasValue(repairMountIDs, mountID);
+		return IsRepairMount(mountID);
 	elseif category == "random" then
 		return true;
 	end
@@ -582,6 +747,9 @@ function MogCompanions:GetOutfitSelectionPool(outfit, poolKey)
 	return outfit[poolKey];
 end
 
+-- Returns true if 'id' is currently in the saved selection pool for the given key.
+-- Thin wrapper that centralizes the "is this checked?" question used by scroll rows,
+-- so UI code does not need to reach into the pool table directly.
 function MogCompanions:IsInSelectionPool(outfit, poolKey, id)
 	local pool = MogCompanions:GetOutfitSelectionPool(outfit, poolKey);
 	if pool == nil or id == nil then
@@ -610,6 +778,9 @@ function MogCompanions:ToggleSelectionPoolValue(outfit, poolKey, id)
 	return true;
 end
 
+-- Empties the entire selection pool in-place by iterating backwards.
+-- Backwards iteration avoids index-shifting issues when removing from a Lua array.
+-- Used when the user clicks the "clear" button (itemID ≤1) on a slot.
 function MogCompanions:ClearSelectionPool(outfit, poolKey)
 	local pool = MogCompanions:GetOutfitSelectionPool(outfit, poolKey);
 	if pool == nil then
@@ -621,6 +792,10 @@ function MogCompanions:ClearSelectionPool(outfit, poolKey)
 	end
 end
 
+-- Returns a random element from the raw saved pool without any category filtering.
+-- Used for preview hover effects where any pool entry is acceptable.
+-- Do NOT use this for summon logic — use GetValidMountPoolInfos or
+-- GetValidSelectionPoolValues which filter out uncollected / unusable entries.
 function MogCompanions:GetRandomFromSelectionPool(outfit, poolKey)
 	local pool = MogCompanions:GetOutfitSelectionPool(outfit, poolKey);
 	if pool == nil or #pool == 0 then
@@ -630,6 +805,9 @@ function MogCompanions:GetRandomFromSelectionPool(outfit, poolKey)
 	return pool[math.random(1, #pool)];
 end
 
+-- Returns the raw count of entries in the saved pool, including potentially stale ones.
+-- Use GetValidMountPoolInfos (for mounts) or GetValidSelectionPoolValues (for others)
+-- when you need only currently owned / usable entries.
 function MogCompanions:GetSelectionPoolCount(outfit, poolKey)
 	local pool = MogCompanions:GetOutfitSelectionPool(outfit, poolKey);
 	if pool == nil then
@@ -639,6 +817,9 @@ function MogCompanions:GetSelectionPoolCount(outfit, poolKey)
 	return #pool;
 end
 
+-- Filters a pool down to only entries that pass isValidFunc, returning a de-duped array.
+-- isValidFunc receives (self, value) so it can be passed as a method reference, e.g.
+-- MogCompanions.IsHearthstoneToyCollected. Does not mutate the saved pool.
 function MogCompanions:GetValidSelectionPoolValues(outfit, poolKey, isValidFunc)
 	local pool = MogCompanions:GetOutfitSelectionPool(outfit, poolKey);
 	if pool == nil or type(isValidFunc) ~= "function" then
@@ -656,6 +837,9 @@ function MogCompanions:GetValidSelectionPoolValues(outfit, poolKey, isValidFunc)
 	return validValues;
 end
 
+-- Removes entries that no longer pass isValidFunc from the saved pool in-place.
+-- Called before displaying the list so the saved variable stays clean over time
+-- (e.g. after a pet is released or a toy is lost). Returns the remaining pool size.
 function MogCompanions:PruneInvalidSelectionPool(outfit, poolKey, isValidFunc)
 	local pool = MogCompanions:GetOutfitSelectionPool(outfit, poolKey);
 	if pool == nil or type(isValidFunc) ~= "function" then
@@ -681,6 +865,9 @@ function MogCompanions:PruneInvalidSelectionPool(outfit, poolKey, isValidFunc)
 	return #pool;
 end
 
+-- Filters 'items' to only those whose .id is present in the saved pool.
+-- Used by the "Show Selected" toggle to restrict the visible list without
+-- rebuilding the underlying data provider from a different source.
 function MogCompanions:FilterSelectedOnly(items, outfit, poolKey)
 	local filtered = {};
 
@@ -697,6 +884,9 @@ function MogCompanions:FilterSelectedOnly(items, outfit, poolKey)
 	return filtered;
 end
 
+-- Toggles the button label and visibility based on current selection state.
+-- Hides entirely when selectedCount == 0 because "Show Selected" is meaningless
+-- with an empty pool — hiding is cleaner than showing a greyed-out button.
 function MogCompanions:UpdateShowSelectedButton(button, showOnlySelected, selectedCount)
 	if button == nil then
 		return;
@@ -716,6 +906,9 @@ function MogCompanions:UpdateShowSelectedButton(button, showOnlySelected, select
 	button:Show();
 end
 
+-- Shows a "no results" message only when a search is active AND returns nothing.
+-- Does NOT show when the list is naturally empty (no mounts collected, etc.) —
+-- that case is handled by section titles and placeholder UI, not an error message.
 function MogCompanions:UpdateNoResultsText(textFrame, searchBox, itemCount)
 	if textFrame == nil then
 		return;
@@ -777,6 +970,10 @@ function MogCompanions:getRandomMount(type)
 		mounts = MogCompanions:getSortedRepairMounts();
 	elseif type == "random" then
 		mounts = MogCompanions:getSortedRandomMounts();
+	elseif type == "passenger_flying" then
+		mounts = MogCompanions:getSortedPassengerMounts("flying");
+	elseif type == "passenger_ground" then
+		mounts = MogCompanions:getSortedPassengerMounts("ground");
 	else
 		mounts = MogCompanions:getSortedFlyingMounts();
 	end
@@ -795,42 +992,46 @@ end
 -- ── Hearthstone Toy Helpers ──────────────────────────────────────────────────
 -- Fallback icon (plain Hearthstone) shown when no toy info is available yet.
 MogCompanions.EmptyHearthstoneIcon = 134414;
+
+-- The full list of hearthstone toy itemIDs to check for collection status.
+-- Source: https://warcraft.wiki.gg/wiki/Hearthstone#Hearthstone_equivalents
 MogCompanions.HearthstoneToyItemIDs = {
-    64488,  -- The Innkeeper's Daughter
-    93672,  -- Dark Portal
-    142542, -- Tome of Town Portal
-    162973, -- Greatfather Winter's Hearthstone
-    163045, -- Headless Horseman's Hearthstone
-    165669, -- Lunar Elder's Hearthstone
-    165670, -- Peddlefeet's Lovely Hearthstone
-    165802, -- Noble Gardener's Hearthstone
-    166746, -- Fire Eater's Hearthstone
-    166747, -- Brewfest Reveler's Hearthstone
-    168907, -- Holographic Digitalization Hearthstone
-    172179, -- Eternal Traveler's Hearthstone
-    180290, -- Night Fae Hearthstone
-    182773, -- Necrolord Hearthstone
-    183716, -- Venthyr Sinstone
-    184353, -- Kyrian Hearthstone
-    188952, -- Dominated Hearthstone
-    190196, -- Enlightened Hearthstone
-    190237, -- Broker Translocation Matrix
-    193588, -- Timewalker's Hearthstone
-    200630, -- Ohn'ir Windsage's Hearthstone
-    206195, -- Path of the Naaru
-    208704, -- Deepdweller's Earthen Hearthstone
-    209035, -- Hearthstone of the Flame
-    210455, -- Draenic Hologem
-    212337, -- Stone of the Hearth
-    228940, -- Notorious Thread's Hearthstone
-    235016, -- Redeployment Module
-    236687, -- Explosive Hearthstone
-    245970, -- P.O.S.T. Master's Express Hearthstone
-    246565, -- Cosmic Hearthstone
-    257736, -- Lightcalled Hearthstone
-    263489, -- Naaru's Enfold
-    263933, -- Preyseeker's Hearthstone
-    265100, -- Corewarden's Hearthstone
+	54452,  -- Ethereal Portal
+	64488,  -- The Innkeeper's Daughter
+	93672,  -- Dark Portal
+	142542, -- Tome of Town Portal
+	162973, -- Greatfather Winter's Hearthstone
+	163045, -- Headless Horseman's Hearthstone
+	165669, -- Lunar Elder's Hearthstone
+	165670, -- Peddlefeet's Lovely Hearthstone
+	165802, -- Noble Gardener's Hearthstone
+	166746, -- Fire Eater's Hearthstone
+	166747, -- Brewfest Reveler's Hearthstone
+	168907, -- Holographic Digitalization Hearthstone
+	172179, -- Eternal Traveler's Hearthstone
+	180290, -- Night Fae Hearthstone
+	182773, -- Necrolord Hearthstone
+	183716, -- Venthyr Sinstone
+	184353, -- Kyrian Hearthstone
+	188952, -- Dominated Hearthstone
+	190196, -- Enlightened Hearthstone
+	190237, -- Broker Translocation Matrix
+	193588, -- Timewalker's Hearthstone
+	200630, -- Ohn'ir Windsage's Hearthstone
+	206195, -- Path of the Naaru
+	208704, -- Deepdweller's Earthen Hearthstone
+	209035, -- Hearthstone of the Flame
+	210455, -- Draenic Hologem
+	212337, -- Stone of the Hearth
+	228940, -- Notorious Thread's Hearthstone
+	235016, -- Redeployment Module
+	236687, -- Explosive Hearthstone
+	245970, -- P.O.S.T. Master's Express Hearthstone
+	246565, -- Cosmic Hearthstone
+	257736, -- Lightcalled Hearthstone
+	263489, -- Naaru's Enfold
+	263933, -- Preyseeker's Hearthstone
+	265100, -- Corewarden's Hearthstone
 };
 
 -- Returns true if the toy name contains HearthstoneSearchString (case-insensitive),
@@ -1075,6 +1276,14 @@ function MogCompanions:CreateEmptyOutfit(id)
 
 	if outfit.PetMode == nil or (outfit.PetMode ~= "Selected" and outfit.PetMode ~= "None" and outfit.PetMode ~= "Random" and outfit.PetMode ~= "Favorite") then
 		outfit.PetMode = "Selected";
+	end
+
+	if outfit.FlyingMountMode == nil or (outfit.FlyingMountMode ~= "Selected" and outfit.FlyingMountMode ~= "Favorite" and outfit.FlyingMountMode ~= "Passenger") then
+		outfit.FlyingMountMode = "Selected";
+	end
+
+	if outfit.GroundMountMode == nil or (outfit.GroundMountMode ~= "Selected" and outfit.GroundMountMode ~= "Favorite" and outfit.GroundMountMode ~= "Passenger") then
+		outfit.GroundMountMode = "Selected";
 	end
 
 	if outfit.Title == nil then

@@ -74,10 +74,16 @@ local function IsValidHearthstoneSelection(itemID)
 	return type(itemID) == "number" and itemID > 1 and MogCompanions:IsHearthstoneToyCollected(itemID);
 end
 
+-- Delegates to the shared helper to filter pool entries that are no longer owned.
+-- Keeps the per-outfit Hearthstones pool clean without coupling this module
+-- to the internal pool structure.
 local function GetValidHearthstoneSelectionValues(outfit)
 	return MogCompanions:GetValidSelectionPoolValues(outfit, "Hearthstones", MogCompanions.IsHearthstoneToyCollected);
 end
 
+-- Returns the item ID of the hearthstone to use for this outfit.
+-- preferredItemID is checked first so clicking a row in the list gives immediate
+-- preview feedback. preferLast scrolls the list to the most recently added toy.
 local function GetValidHearthstoneSelection(outfit, preferLast, preferredItemID)
 	if outfit == nil then
 		return 1;
@@ -99,6 +105,9 @@ local function GetValidHearthstoneSelection(outfit, preferLast, preferredItemID)
 	return validSelections[1];
 end
 
+-- Writes the first valid pool toy back into the legacy scalar key (outfit.Hearthstone).
+-- Keeps backward compat with any code that reads outfit.Hearthstone directly
+-- instead of going through the pool. Must be called before reading the legacy key.
 local function SyncLegacyHearthstoneSelection(outfit)
 	if outfit == nil then
 		return 1;
@@ -109,6 +118,8 @@ local function SyncLegacyHearthstoneSelection(outfit)
 	return itemID;
 end
 
+-- Resolves full toy info tables for all valid pool entries.
+-- Used when building the slot tooltip so we can show names and icons, not just IDs.
 local function GetValidHearthstoneToyInfos(outfit)
 	local validSelections = GetValidHearthstoneSelectionValues(outfit);
 	local toys = {};
@@ -123,11 +134,15 @@ local function GetValidHearthstoneToyInfos(outfit)
 	return toys;
 end
 
+-- Returns only the toys from the full hearthstone list that are currently selected
+-- for this outfit. Used by the "Show Selected" toggle to narrow the visible list.
 local function GetFilteredSelectedHearthstones(outfit)
 	local toys = MogCompanions:getSortedHearthstoneToys(false);
 	return MogCompanions:FilterSelectedOnly(toys, outfit, "Hearthstones");
 end
 
+-- Updates the slot header text to include the selection count.
+-- Shows a blank header when count == 0 to avoid a confusing "(0)" label.
 local function SetHearthstoneSectionTitle(count)
 	if HearthstoneSlotTitle == nil then
 		return;
@@ -140,6 +155,8 @@ local function SetHearthstoneSectionTitle(count)
 	end
 end
 
+-- Builds tooltip lines for the hearthstone slot, capped at 3 toy names + overflow.
+-- Returns both the lines array and the count so callers can skip the tooltip when empty.
 local function GetHearthstoneTooltipLines(outfit)
 	local toys = GetValidHearthstoneToyInfos(outfit);
 	local tooltipLines = {};
@@ -159,6 +176,9 @@ local function GetHearthstoneTooltipLines(outfit)
 	return tooltipLines, #toys;
 end
 
+-- Updates checkmarks on already-visible scroll rows without rebuilding the data provider.
+-- Used after a pool toggle so the row highlight changes immediately without a full list
+-- refresh, which would reset scroll position and cause a visible flicker.
 local function RefreshVisibleHearthstoneRows()
 	if HearthstoneListScrollBox == nil or HearthstoneListScrollBox.ScrollTarget == nil then
 		return;

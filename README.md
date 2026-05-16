@@ -55,3 +55,20 @@ No third-party code is knowingly included beyond the work credited above and cod
 * Added dynamic icon support to macros
 * Added options to auto-dismiss pets in PvE/PvP
 * Improved auto-summon on login to include zone changes, resurrection, and flight path landing
+
+### 1.5
+* Added per-outfit mount modes for Flying and Ground mounts:
+  * Selected Mounts: summon from the mounts assigned to the current outfit.
+  * Random Favorite Mount: summon a random favorite mount from the Mount Journal.
+  * Random Passenger Mount: summon a random passenger-capable mount.
+* Added Passenger Mount support:
+  * Flying Passenger mode prefers passenger-capable flying mounts.
+  * Ground Passenger mode prefers passenger-capable ground mounts.
+  * Falls back to a regular mount when no matching passenger mount is available.
+* Added `/mcomp mount [category]` slash command support.
+* Added `/mcomp pet [category]` slash command support.
+* Added Favorite and Passenger buttons above the Flying and Ground mount lists.
+* Added Create Macro buttons to the Options panel.
+* Added Clone targeted pet setting.
+* Updated hearthstone toy list with missing hearthstones.
+* Updated aquatic mount list with missing mounts.

@@ -46,6 +46,10 @@ local function GetOptionsAquaticMount()
 	return container:GetData();
 end
 
+-- Returns dropdown entries for the repair/vendor mount setting.
+-- Entry 0 = "Random" (pick a random repair mount at summon time).
+-- Shows a "no mounts" fallback when the player hasn't collected any repair mounts
+-- so the dropdown is never empty.
 local function GetOptionsRepairMount()
 	local container = Settings.CreateControlTextContainer();
 	local mounts = MogCompanions:getSortedRepairMounts();
@@ -77,6 +81,10 @@ end
 local pendingMountMacroUpdate = false;
 local pendingPetMacroUpdate = false;
 
+-- Defers the mount macro update until after combat to avoid modifying macros during
+-- combat lockdown. Registers PLAYER_REGEN_ENABLED to apply the update when safe.
+-- Only updates existing macros (existingOnly=true) so the setting change never
+-- silently creates a macro the user did not request.
 local function SafeUpdateMountMacroExistingOnly()
 	if InCombatLockdown and InCombatLockdown() then
 		pendingMountMacroUpdate = true;
@@ -86,6 +94,8 @@ local function SafeUpdateMountMacroExistingOnly()
 	end
 end
 
+-- Same combat-safe deferral pattern as SafeUpdateMountMacroExistingOnly,
+-- applied to the pet macro which also encodes modifier-key behavior in its body.
 local function SafeUpdatePetMacroExistingOnly()
 	if InCombatLockdown and InCombatLockdown() then
 		pendingPetMacroUpdate = true;
@@ -95,14 +105,22 @@ local function SafeUpdatePetMacroExistingOnly()
 	end
 end
 
+-- Triggers a macro body refresh when a pet-related setting changes.
+-- The pet macro body encodes the configured modifier keys, so it must be
+-- regenerated whenever the modifier mapping changes.
 local function OnPetSettingChanged()
 	SafeUpdatePetMacroExistingOnly();
 end
 
+-- Triggers a mount macro body refresh when mount modifier settings change.
+-- The mount macro encodes which modifier key summons the repair/ground/random mount.
 local function OnMountMacroSettingChanged()
 	SafeUpdateMountMacroExistingOnly();
 end
 
+-- Triggers a pet macro refresh when the dynamic icon setting changes.
+-- Keeps the same callback shape as OnPetSettingChanged for consistency,
+-- even though only the icon regeneration is strictly needed here.
 local function OnPetDynamicMacroIconSettingChanged()
 	SafeUpdatePetMacroExistingOnly();
 end
@@ -121,6 +139,27 @@ local function arrayToMap(array)
 		map[item] = true;
 	end
 	return map;
+end
+
+-- Adds a button row to the Settings layout using CreateSettingsButtonInitializer.
+-- The 5th argument (true) is required by current Retail builds to avoid assertion errors.
+-- Guards against the API being absent in case of future Blizzard changes.
+local function AddSettingsButton(layout, name, buttonText, tooltip, onClick)
+	if type(CreateSettingsButtonInitializer) ~= "function" then
+		return;
+	end
+
+	local initializer = CreateSettingsButtonInitializer(
+		name,
+		buttonText,
+		function()
+			onClick(UIParent);
+		end,
+		tooltip,
+		true
+	);
+
+	layout:AddInitializer(initializer);
 end
 
 -- Registers all MogCompanions settings and creates the Settings panel layout.
@@ -274,9 +313,34 @@ local function InitSettings()
 	Settings.CreateCheckbox(category, setting, tooltip);
 	setting:SetValueChangedCallback(OnSettingChanged);
 
-	-- ── Macro icon behavior ──────────────────────────────────────────────────────
+	-- Random pet selection
 
-	layout:AddInitializer(CreateSettingsListSectionHeaderInitializer(L["Settings Macros Section Title"], ''));
+	layout:AddInitializer(CreateSettingsListSectionHeaderInitializer(L["Settings Random Pet Section Title"], ''));
+
+	local variable = CreateSettingIdentifier("CloneTargetedPet");
+	local defaultValue = false;
+	local name = L["Settings Clone Targeted Pet"];
+	local tooltip = L["Settings Clone Targeted Pet Tooltip"];
+	local variableKey = "CloneTargetedPet";
+	local variableTable = MogCompanionsSaved;
+
+	local setting = Settings.RegisterAddOnSetting(category, variable, variableKey, variableTable, type(defaultValue), name, defaultValue);
+	Settings.CreateCheckbox(category, setting, tooltip);
+	setting:SetValueChangedCallback(OnSettingChanged);
+
+	-- ── Mount Macro Modifier Keys ────────────────────────────────────────────────
+
+	layout:AddInitializer(CreateSettingsListSectionHeaderInitializer(L["Settings Mount Macro Title"], ''));
+
+	AddSettingsButton(
+		layout,
+		L["Settings Create Mount Macro"],
+		L["Settings Create Mount Macro"],
+		L["Settings Create Mount Macro Tooltip"],
+		function(parent)
+			MogCompanions:CreateMountMacro(parent);
+		end
+	);
 
 	local variable = CreateSettingIdentifier("DynamicMountMacroIcon");
 	local defaultValue = false;
@@ -288,21 +352,6 @@ local function InitSettings()
 	local setting = Settings.RegisterAddOnSetting(category, variable, variableKey, variableTable, type(defaultValue), name, defaultValue);
 	Settings.CreateCheckbox(category, setting, tooltip);
 	setting:SetValueChangedCallback(OnMountMacroSettingChanged);
-
-	local variable = CreateSettingIdentifier("DynamicPetMacroIcon");
-	local defaultValue = false;
-	local name = L["Settings Dynamic Pet Macro Icon"];
-	local tooltip = L["Settings Dynamic Pet Macro Icon Tooltip"];
-	local variableKey = "DynamicPetMacroIcon";
-	local variableTable = MogCompanionsSaved;
-
-	local setting = Settings.RegisterAddOnSetting(category, variable, variableKey, variableTable, type(defaultValue), name, defaultValue);
-	Settings.CreateCheckbox(category, setting, tooltip);
-	setting:SetValueChangedCallback(OnPetDynamicMacroIconSettingChanged);
-
-	-- ── Mount Macro Modifier Keys ────────────────────────────────────────────────
-
-	layout:AddInitializer(CreateSettingsListSectionHeaderInitializer(L["Settings Mount Macro Title"], ''));
 
 	local function GetOptionsMountMods()
 		local container = Settings.CreateControlTextContainer();
@@ -437,6 +486,16 @@ local function InitSettings()
 
 	layout:AddInitializer(CreateSettingsListSectionHeaderInitializer(L["Settings Hearthstone Macro Title"], ''));
 
+	AddSettingsButton(
+		layout,
+		L["Settings Create Hearthstone Macro"],
+		L["Settings Create Hearthstone Macro"],
+		L["Settings Create Hearthstone Macro Tooltip"],
+		function(parent)
+			MogCompanions:CreateHearthstoneMacro(parent);
+		end
+	);
+
 	local variable = CreateSettingIdentifier("HearthstoneModSelected");
 	local defaultValue = 1;
 	local name = L["Settings Use Selected Hearthstone"];
@@ -514,6 +573,27 @@ local function InitSettings()
 	end
 
 	layout:AddInitializer(CreateSettingsListSectionHeaderInitializer(L["Settings Pet Macro Title"], ''));
+
+	AddSettingsButton(
+		layout,
+		L["Settings Create Pet Macro"],
+		L["Settings Create Pet Macro"],
+		L["Settings Create Pet Macro Tooltip"],
+		function(parent)
+			MogCompanions:CreatePetMacro(parent);
+		end
+	);
+
+	local variable = CreateSettingIdentifier("DynamicPetMacroIcon");
+	local defaultValue = false;
+	local name = L["Settings Dynamic Pet Macro Icon"];
+	local tooltip = L["Settings Dynamic Pet Macro Icon Tooltip"];
+	local variableKey = "DynamicPetMacroIcon";
+	local variableTable = MogCompanionsSaved;
+
+	local setting = Settings.RegisterAddOnSetting(category, variable, variableKey, variableTable, type(defaultValue), name, defaultValue);
+	Settings.CreateCheckbox(category, setting, tooltip);
+	setting:SetValueChangedCallback(OnPetDynamicMacroIconSettingChanged);
 
 	local variable = CreateSettingIdentifier("PetModSelected");
 	local defaultValue = 1;
