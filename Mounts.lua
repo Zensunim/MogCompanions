@@ -589,8 +589,14 @@ function MogCompanionsSummonPassenger()
 		if not mount then
 			mount = MogCompanions:getRandomMount("passenger_ground");
 		end
+		if not mount then
+			mount = MogCompanions:getRandomMount("flying");
+		end
 	else
 		mount = MogCompanions:getRandomMount("passenger_ground");
+		if not mount then
+			mount = MogCompanions:getRandomMount("ground");
+		end
 	end
 	if mount then
 		C_MountJournal.SummonByID(mount.id);

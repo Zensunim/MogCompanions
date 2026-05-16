@@ -323,6 +323,7 @@ function MogCompanions:sortMounts(mountsRaw)
 		temp["id"] = mountID;
 		temp["model"] = creatureDisplayInfoID;
 		temp["mountTypeID"] = mountTypeID;
+		temp["isFavorite"] = isFavorite;
 		
 		if isCollected and not shouldHideOnChar and isUsable then
 			table.insert(mounts, temp);
@@ -1277,11 +1278,11 @@ function MogCompanions:CreateEmptyOutfit(id)
 		outfit.PetMode = "Selected";
 	end
 
-	if outfit.FlyingMountMode == nil or (outfit.FlyingMountMode ~= "Selected" and outfit.FlyingMountMode ~= "Favorite") then
+	if outfit.FlyingMountMode == nil or (outfit.FlyingMountMode ~= "Selected" and outfit.FlyingMountMode ~= "Favorite" and outfit.FlyingMountMode ~= "Passenger") then
 		outfit.FlyingMountMode = "Selected";
 	end
 
-	if outfit.GroundMountMode == nil or (outfit.GroundMountMode ~= "Selected" and outfit.GroundMountMode ~= "Favorite") then
+	if outfit.GroundMountMode == nil or (outfit.GroundMountMode ~= "Selected" and outfit.GroundMountMode ~= "Favorite" and outfit.GroundMountMode ~= "Passenger") then
 		outfit.GroundMountMode = "Selected";
 	end
 
