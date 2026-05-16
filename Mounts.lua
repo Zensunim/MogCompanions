@@ -1253,7 +1253,7 @@ function MogCompanions:InitMountTab()
 		-- Flying mount model preview frame and list
 
 		FlyingMountPreview = CreateFrame("Frame", "MountTabFlyingPreview", f);
-		FlyingMountPreview:SetPoint("TOPLEFT", f, "TOPLEFT", 24 * s, (-114 + topOffset) * s);
+		FlyingMountPreview:SetPoint("TOPLEFT", f, "TOPLEFT", 24 * s, (-134 + topOffset) * s);
 		FlyingMountPreview:SetFrameStrata("HIGH");
 		FlyingMountPreview:SetSize(x, y);
 		FlyingMountPreview:SetParent(f);
