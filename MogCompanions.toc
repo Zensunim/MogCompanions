@@ -3,7 +3,7 @@
 ## Notes: Companion pairings for your transmogs
 ## Author: Zensunim of Dragonblight
 ## IconTexture: 6841475
-## Version: 1.4
+## Version: 1.5
 ## DefaultState: Enabled
 ## Category: Transmogrification
 ## OptionalDeps: MogMount
