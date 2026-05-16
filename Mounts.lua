@@ -46,6 +46,7 @@ local ShowOnlySelectedGroundMounts = false;
 local FlyingMountModeButtons = {};
 local GroundMountModeButtons = {};
 local MOUNT_RANDOM_FAVORITE_ICON = 6013777;
+local MOUNT_PASSENGER_ICON = 134149;
 
 local MountListSearchBox, FilterDropdown, MountShortcuts;
 
@@ -171,7 +172,7 @@ local function GetViewedOutfitData()
 	return MogCompanionsCharacterSaved["Outfit"..outfitID];
 end
 
--- Normalizes a FlyingMountMode or GroundMountMode field to "Selected" or "Favorite".
+-- Normalizes a FlyingMountMode or GroundMountMode field to "Selected", "Favorite", or "Passenger".
 -- modeKey is "FlyingMountMode" or "GroundMountMode". Missing or unknown values
 -- default to "Selected" so existing outfits without the field behave as before.
 local function GetNormalizedMountMode(outfit, modeKey)
@@ -182,6 +183,9 @@ local function GetNormalizedMountMode(outfit, modeKey)
 	local mode = outfit[modeKey];
 	if mode == "Favorite" then
 		return "Favorite";
+	end
+	if mode == "Passenger" then
+		return "Passenger";
 	end
 
 	return "Selected";
@@ -408,6 +412,20 @@ local function UpdateMountSlot(type, legacyKey, poolKey, category, texture, fram
 		return;
 	end
 
+	-- Passenger mode: show group/passenger icon and skip pool/preview logic.
+	if GetNormalizedMountMode(outfit, type.."MountMode") == "Passenger" then
+		texture:SetTexture(MOUNT_PASSENGER_ICON);
+		texture:SetDesaturated(false);
+		texture:SetVertexColor(1, 1, 1);
+		borderTexture:SetAtlas("transmog-gearSlot-default");
+		borderHighlightTexture:SetAtlas("transmog-gearSlot-default");
+		ClearSelectedMountDetails(type);
+		texture:SetAllPoints(frame);
+		frame.texture = texture;
+		UpdateMountPreviewModel(previewModel, previewControls, nil);
+		return;
+	end
+
 	local mountID = SyncLegacyMountSelection(outfit, legacyKey, poolKey, category);
 	if mountID > 1 then
 		local name, spellID, icon = C_MountJournal.GetMountInfoByID(mountID);
@@ -474,6 +492,12 @@ function MogCompanionsSummonFlying()
 		C_MountJournal.SummonByID(0);
 		return;
 	end
+	if outfitData ~= nil and GetNormalizedMountMode(outfitData, "FlyingMountMode") == "Passenger" then
+		-- Passenger mode delegates to MogCompanionsSummonPassenger which prefers a
+		-- flying passenger mount in flyable areas and falls back to ground passengers.
+		MogCompanionsSummonPassenger();
+		return;
+	end
 	local validMounts = MogCompanions:GetValidMountPoolInfos(outfitData, "FlyingMounts", "flying");
 	if #validMounts > 0 then
 		local selectedMount = validMounts[math.random(1, #validMounts)];
@@ -490,6 +514,13 @@ function MogCompanionsSummonGround()
 		-- SummonByID(0) is the WoW-native "summon random favorite" API. It respects
 		-- the player's Mount Journal favorites without any manual filtering needed.
 		C_MountJournal.SummonByID(0);
+		return;
+	end
+	if outfitData ~= nil and GetNormalizedMountMode(outfitData, "GroundMountMode") == "Passenger" then
+		-- Passenger mode on the ground slot always picks a ground-capable passenger
+		-- mount. MogCompanionsSummonPassenger handles the area check internally.
+		local mount = MogCompanions:getRandomMount("passenger_ground");
+		if mount then C_MountJournal.SummonByID(mount.id); end
 		return;
 	end
 	local validMounts = MogCompanions:GetValidMountPoolInfos(outfitData, "GroundMounts", "ground");
@@ -860,6 +891,9 @@ function MogCompanions:InitMountSlots(reset)
 			if outfit ~= nil and GetNormalizedMountMode(outfit, "FlyingMountMode") == "Favorite" then
 				GameTooltip:AddLine(L["Random Favorite Mount"], 1, 1, 1);
 				FlyingMountClear:Show();
+			elseif outfit ~= nil and GetNormalizedMountMode(outfit, "FlyingMountMode") == "Passenger" then
+				GameTooltip:AddLine(L["Random Passenger Mount"], 1, 1, 1);
+				FlyingMountClear:Show();
 			else
 				local tooltipLines, count = GetMountTooltipLines(outfit, "FlyingMounts", "flying");
 				for i = 1, #tooltipLines do
@@ -892,6 +926,9 @@ function MogCompanions:InitMountSlots(reset)
 			local outfit = GetViewedOutfitData();
 			if outfit ~= nil and GetNormalizedMountMode(outfit, "GroundMountMode") == "Favorite" then
 				GameTooltip:AddLine(L["Random Favorite Mount"], 1, 1, 1);
+				GroundMountClear:Show();
+			elseif outfit ~= nil and GetNormalizedMountMode(outfit, "GroundMountMode") == "Passenger" then
+				GameTooltip:AddLine(L["Random Passenger Mount"], 1, 1, 1);
 				GroundMountClear:Show();
 			else
 				local tooltipLines, count = GetMountTooltipLines(outfit, "GroundMounts", "ground");
@@ -1283,7 +1320,8 @@ function MogCompanions:InitMountTab()
 		flyingFavoriteBtn:SetFrameLevel(FlyingMountList:GetFrameLevel() + 5);
 		flyingFavoriteBtn:SetHighlightTexture("Interface\\Buttons\\ButtonHilight-Square", "ADD");
 		flyingFavoriteBtn.icon = flyingFavoriteBtn:CreateTexture(nil, "ARTWORK");
-		flyingFavoriteBtn.icon:SetAllPoints(flyingFavoriteBtn);
+		flyingFavoriteBtn.icon:SetPoint("TOPLEFT", flyingFavoriteBtn, "TOPLEFT", -2, 2);
+		flyingFavoriteBtn.icon:SetPoint("BOTTOMRIGHT", flyingFavoriteBtn, "BOTTOMRIGHT", 2, -2);
 		flyingFavoriteBtn.icon:SetTexture(MOUNT_RANDOM_FAVORITE_ICON);
 		flyingFavoriteBtn.selectedBorder = flyingFavoriteBtn:CreateTexture(nil, "OVERLAY");
 		flyingFavoriteBtn.selectedBorder:SetTexture("Interface\\Buttons\\UI-ActionButton-Border");
@@ -1317,6 +1355,50 @@ function MogCompanions:InitMountTab()
 		FlyingMountModeButtons["Favorite"] = flyingFavoriteBtn;
 		UpdateMountModeButtonHighlights(GetViewedOutfitData(), "FlyingMountMode", FlyingMountModeButtons);
 
+		-- Flying mount Passenger mode button. Sits to the right of the Favorite button.
+		-- Clicking it clears the flying pool and enters Passenger mode; clicking any mount
+		-- in the list exits Passenger mode by setting FlyingMountMode back to "Selected".
+		local flyingPassengerBtn = CreateFrame("Button", nil, f, "UIPanelButtonTemplate");
+		flyingPassengerBtn:SetSize(30, 30);
+		flyingPassengerBtn:SetPoint("BOTTOMLEFT", FlyingMountList, "TOPLEFT", 46, 6);
+		flyingPassengerBtn:SetFrameStrata("HIGH");
+		flyingPassengerBtn:SetFrameLevel(FlyingMountList:GetFrameLevel() + 5);
+		flyingPassengerBtn:SetHighlightTexture("Interface\\Buttons\\ButtonHilight-Square", "ADD");
+		flyingPassengerBtn.icon = flyingPassengerBtn:CreateTexture(nil, "ARTWORK");
+		flyingPassengerBtn.icon:SetAllPoints(flyingPassengerBtn);
+		flyingPassengerBtn.icon:SetTexture(MOUNT_PASSENGER_ICON);
+		flyingPassengerBtn.selectedBorder = flyingPassengerBtn:CreateTexture(nil, "OVERLAY");
+		flyingPassengerBtn.selectedBorder:SetTexture("Interface\\Buttons\\UI-ActionButton-Border");
+		flyingPassengerBtn.selectedBorder:SetBlendMode("ADD");
+		flyingPassengerBtn.selectedBorder:SetAlpha(0.9);
+		flyingPassengerBtn.selectedBorder:SetSize(48, 48);
+		flyingPassengerBtn.selectedBorder:SetPoint("CENTER", flyingPassengerBtn, "CENTER", 0, 0);
+		flyingPassengerBtn.selectedBorder:Hide();
+		flyingPassengerBtn:SetScript("OnEnter", function(self)
+			GameTooltip:SetOwner(self, "ANCHOR_RIGHT");
+			GameTooltip:SetText(L["Random Passenger Mount"]);
+			GameTooltip:AddLine(L["Random Passenger Flying Mount Tooltip"], 1, 1, 1, true);
+			GameTooltip:Show();
+		end)
+		flyingPassengerBtn:SetScript("OnLeave", function()
+			GameTooltip:Hide();
+		end)
+		flyingPassengerBtn:SetScript("OnClick", function()
+			local outfit = GetViewedOutfitData();
+			if outfit then
+				outfit.FlyingMountMode = "Passenger";
+				MogCompanions:ClearSelectionPool(outfit, "FlyingMounts");
+				LastClickedFlyingMountID = nil;
+				RefreshMountSlots();
+				if RefreshFlyingMountList ~= nil then
+					RefreshFlyingMountList(false);
+				end
+				PlaySound(SOUNDKIT.UI_TRANSMOG_ITEM_CLICK);
+			end
+		end)
+		FlyingMountModeButtons["Passenger"] = flyingPassengerBtn;
+		UpdateMountModeButtonHighlights(GetViewedOutfitData(), "FlyingMountMode", FlyingMountModeButtons);
+
 		-- Flying mount scroll box and list controls
 
 		FlyingMountListScrollBox = CreateFrame("Frame", "FlyingMountListScrollBox", FlyingMountList, "WowScrollBoxList");
@@ -1344,7 +1426,7 @@ function MogCompanions:InitMountTab()
 				MogCompanions:ClearSelectionPool(outfit, "FlyingMounts");
 			else
 				-- Selecting a specific mount always switches back to Selected mode so
-				-- Favorite mode does not silently override the user's explicit choice.
+				-- Favorite or Passenger mode does not silently override the user's explicit choice.
 				outfit.FlyingMountMode = "Selected";
 				MogCompanions:ToggleSelectionPoolValue(outfit, "FlyingMounts", value);
 			end
@@ -1520,7 +1602,8 @@ function MogCompanions:InitMountTab()
 		groundFavoriteBtn:SetFrameLevel(GroundMountList:GetFrameLevel() + 5);
 		groundFavoriteBtn:SetHighlightTexture("Interface\\Buttons\\ButtonHilight-Square", "ADD");
 		groundFavoriteBtn.icon = groundFavoriteBtn:CreateTexture(nil, "ARTWORK");
-		groundFavoriteBtn.icon:SetAllPoints(groundFavoriteBtn);
+		groundFavoriteBtn.icon:SetPoint("TOPLEFT", groundFavoriteBtn, "TOPLEFT", -2, 2);
+		groundFavoriteBtn.icon:SetPoint("BOTTOMRIGHT", groundFavoriteBtn, "BOTTOMRIGHT", 2, -2);
 		groundFavoriteBtn.icon:SetTexture(MOUNT_RANDOM_FAVORITE_ICON);
 		groundFavoriteBtn.selectedBorder = groundFavoriteBtn:CreateTexture(nil, "OVERLAY");
 		groundFavoriteBtn.selectedBorder:SetTexture("Interface\\Buttons\\UI-ActionButton-Border");
@@ -1552,6 +1635,48 @@ function MogCompanions:InitMountTab()
 			end
 		end)
 		GroundMountModeButtons["Favorite"] = groundFavoriteBtn;
+		UpdateMountModeButtonHighlights(GetViewedOutfitData(), "GroundMountMode", GroundMountModeButtons);
+
+		-- Ground mount Passenger mode button. Mirrors the flying mount Passenger button above.
+		local groundPassengerBtn = CreateFrame("Button", nil, f, "UIPanelButtonTemplate");
+		groundPassengerBtn:SetSize(30, 30);
+		groundPassengerBtn:SetPoint("BOTTOMLEFT", GroundMountList, "TOPLEFT", 46, 6);
+		groundPassengerBtn:SetFrameStrata("HIGH");
+		groundPassengerBtn:SetFrameLevel(GroundMountList:GetFrameLevel() + 5);
+		groundPassengerBtn:SetHighlightTexture("Interface\\Buttons\\ButtonHilight-Square", "ADD");
+		groundPassengerBtn.icon = groundPassengerBtn:CreateTexture(nil, "ARTWORK");
+		groundPassengerBtn.icon:SetAllPoints(groundPassengerBtn);
+		groundPassengerBtn.icon:SetTexture(MOUNT_PASSENGER_ICON);
+		groundPassengerBtn.selectedBorder = groundPassengerBtn:CreateTexture(nil, "OVERLAY");
+		groundPassengerBtn.selectedBorder:SetTexture("Interface\\Buttons\\UI-ActionButton-Border");
+		groundPassengerBtn.selectedBorder:SetBlendMode("ADD");
+		groundPassengerBtn.selectedBorder:SetAlpha(0.9);
+		groundPassengerBtn.selectedBorder:SetSize(48, 48);
+		groundPassengerBtn.selectedBorder:SetPoint("CENTER", groundPassengerBtn, "CENTER", 0, 0);
+		groundPassengerBtn.selectedBorder:Hide();
+		groundPassengerBtn:SetScript("OnEnter", function(self)
+			GameTooltip:SetOwner(self, "ANCHOR_RIGHT");
+			GameTooltip:SetText(L["Random Passenger Mount"]);
+			GameTooltip:AddLine(L["Random Passenger Ground Mount Tooltip"], 1, 1, 1, true);
+			GameTooltip:Show();
+		end)
+		groundPassengerBtn:SetScript("OnLeave", function()
+			GameTooltip:Hide();
+		end)
+		groundPassengerBtn:SetScript("OnClick", function()
+			local outfit = GetViewedOutfitData();
+			if outfit then
+				outfit.GroundMountMode = "Passenger";
+				MogCompanions:ClearSelectionPool(outfit, "GroundMounts");
+				LastClickedGroundMountID = nil;
+				RefreshMountSlots();
+				if RefreshGroundMountList ~= nil then
+					RefreshGroundMountList(false);
+				end
+				PlaySound(SOUNDKIT.UI_TRANSMOG_ITEM_CLICK);
+			end
+		end)
+		GroundMountModeButtons["Passenger"] = groundPassengerBtn;
 		UpdateMountModeButtonHighlights(GetViewedOutfitData(), "GroundMountMode", GroundMountModeButtons);
 
 		local GroundMountListBackground = GroundMountList:CreateTexture(nil, "BACKGROUND");
@@ -1590,7 +1715,7 @@ function MogCompanions:InitMountTab()
 				MogCompanions:ClearSelectionPool(outfit, "GroundMounts");
 			else
 				-- Selecting a specific mount always switches back to Selected mode so
-				-- Favorite mode does not silently override the user's explicit choice.
+				-- Favorite or Passenger mode does not silently override the user's explicit choice.
 				outfit.GroundMountMode = "Selected";
 				MogCompanions:ToggleSelectionPoolValue(outfit, "GroundMounts", value);
 			end
