@@ -17,6 +17,9 @@ Some modifications in this version were developed with assistance from AI coding
 
 No third-party code is knowingly included beyond the work credited above and code otherwise permitted by applicable licenses. If you believe any part of this project improperly includes code or patterns from another project, please open an issue with details so it can be reviewed and corrected.
 
+## Contributions
+Simplified Chinese localization contributed by XingDVD.
+
 ## Version History
 
 ### 1.0
@@ -72,3 +75,6 @@ No third-party code is knowingly included beyond the work credited above and cod
 * Added Clone targeted pet setting.
 * Updated hearthstone toy list with missing hearthstones.
 * Updated aquatic mount list with missing mounts.
+
+### 1.5.1
+* Added Simplified Chinese localization - Thank you XingDVD for the localization contribution.
