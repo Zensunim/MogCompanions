@@ -78,3 +78,6 @@ Simplified Chinese localization contributed by XingDVD.
 
 ### 1.5.1
 * Added Simplified Chinese localization - Thank you XingDVD for the localization contribution.
+
+### 1.5.2
+* Added missing Simplified Chinese localization file
