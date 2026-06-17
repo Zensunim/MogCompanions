@@ -81,3 +81,7 @@ Simplified Chinese localization contributed by XingDVD.
 
 ### 1.5.2
 * Added missing Simplified Chinese localization file
+
+### 1.5.3
+* Updated for WoW 12.0.7
+* Added Mycomancer's Hearthspore to the hearthstone toy list
