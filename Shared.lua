@@ -1031,6 +1031,7 @@ MogCompanions.HearthstoneToyItemIDs = {
 	257736, -- Lightcalled Hearthstone
 	263489, -- Naaru's Enfold
 	263933, -- Preyseeker's Hearthstone
+	264367, -- Mycomancer's Hearthspore
 	265100, -- Corewarden's Hearthstone
 };
 
