@@ -103,3 +103,6 @@ Simplified Chinese localization contributed by XingDVD.
 * Ground passenger randomization now includes flying passenger mounts when the setting is enabled
 * Properly detect if the character has "Ride Along" enabled for flying passenger random mount selection
 * Fixed taint issues with mount cloning in areas when detection is locked down
+
+### 1.9
+* Fixed a bug with secret values when cloning pets in raids

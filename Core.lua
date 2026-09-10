@@ -525,10 +525,13 @@ local function tryCloneTargetedPet()
 	end
 
 	local targetName = UnitName("target");
-	if targetName then
-		local guid = petCloneCache[targetName:lower()];
-		if guid then return guid; end
+	-- Target names may be secret on restricted maps; cloning is unavailable when Blizzard hides identity.
+	if not targetName or issecretvalue(targetName) then
+		return nil;
 	end
+
+	local guid = petCloneCache[targetName:lower()];
+	if guid then return guid; end
 
 	return nil;
 end
