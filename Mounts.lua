@@ -617,7 +617,7 @@ end
 
 -- Summons the repair/vendor mount for this character.
 -- Falls back to a random repair mount when no default is saved (value <= 1).
--- Repair mounts are matched by hardcoded mount IDs in Shared.lua (repairMountIDs).
+-- Repair mounts are matched by consolidated metadata in Shared.lua.
 function MogCompanionsSummonRepair()
 	if MogCompanionsCharacterSaved.Default.Repair <= 1 then
 		local randomMount = MogCompanions:getRandomMount("repair");

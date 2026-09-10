@@ -16,101 +16,100 @@ MogCompanions.TransmogSlotOffsets = {
 
 local playerName = UnitName("player");
 
--- Mount type IDs that identify aquatic mounts.
--- Source: https://wago.tools/db2/Mount
-local aquaticMountTypeIDs = {
-	[231] = true, -- Turtles
-	[232] = true, -- Vashj'ir Seahorse
-	[254] = true, -- Poseidus, Brinedeep Bottom-Feeder, Fathom Dweller
-	[407] = true, -- Deepstar Polyp, Otter
-	[412] = true, -- Dragonflight Otters
+-- Random ground selection uses priority tiers, not measured movement speed values.
+-- Unspecified mounts are treated as the implicit "normal" tier.
+local NORMAL_MOUNT_SPEED_PRIORITY = 1000;
+
+-- Authoritative per-mount metadata for exceptional behavior and overrides.
+-- Any non-nil property here takes precedence over mountTypeInfo for that property.
+-- Passenger eligibility is implied by capacity ~= nil.
+local specialMountInfo = {
+	[125]  = { ground = true, speedPriority = 110 }, -- Riding Turtle
+	[240]  = { ground = true, capacity = 2 }, -- Mechano-Hog
+	[273]  = { repair = true }, -- Grand Caravan Mammoth (Alliance)
+	[274]  = { repair = true }, -- Grand Caravan Mammoth (Horde)
+	[275]  = { ground = true, capacity = 2 }, -- Mekgineer's Chopper
+	[280]  = { ground = true, capacity = 3, repair = true, utility = true }, -- Traveler's Tundra Mammoth (Alliance)
+	[284]  = { ground = true, capacity = 3, repair = true, utility = true }, -- Traveler's Tundra Mammoth (Horde)
+	[286]  = { ground = true, capacity = 3 }, -- Grand Black War Mammoth
+	[287]  = { ground = true, capacity = 3 }, -- Grand Black War Mammoth
+	[288]  = { ground = true, capacity = 3 }, -- Grand Ice Mammoth
+	[289]  = { ground = true, capacity = 3 }, -- Grand Ice Mammoth
+	[312]  = { ground = true, speedPriority = 110 }, -- Sea Turtle
+	[382]  = { flying = true, capacity = 2 }, -- X-53 Touring Rocket
+	[407]  = { flying = true, capacity = 2 }, -- Sandstone Drake
+	[455]  = { flying = true, capacity = 2 }, -- Obsidian Nightwing
+	[460]  = { ground = true, capacity = 3, repair = true, utility = true }, -- Grand Expedition Yak
+	[678]  = { ground = true, speedPriority = 170 }, -- Chauffeured Mekgineer's Chopper
+	[679]  = { ground = true, speedPriority = 170 }, -- Chauffeured Mechano-Hog
+	[959]  = { flying = true, capacity = 2 }, -- Stormwind Skychaser
+	[960]  = { flying = true, capacity = 2 }, -- Orgrimmar Interceptor
+	[1039] = { ground = true, capacity = 3, repair = true, utility = true }, -- Mighty Caravan Brutosaur
+	[1287] = { flying = true, capacity = 2 }, -- Explorer's Jungle Hopper
+	[1288] = { ground = true, capacity = 2 }, -- Explorer's Dunetrekker
+	[1539] = { ground = true, speedPriority = 110 }, -- Unsuccessful Prototype Fleetpod
+	[1563] = { flying = true, capacity = 2, rideAlong = true }, -- Highland Drake
+	[1582] = { ground = true, speedPriority = 110 }, -- Savage Green Battle Turtle
+	[1588] = { flying = true, capacity = 2, rideAlong = true }, -- Winding Slitherdrake
+	[1589] = { flying = true, capacity = 2, rideAlong = true }, -- Renewed Proto-Drake
+	[1590] = { flying = true, capacity = 2, rideAlong = true }, -- Windborne Velocidrake
+	[1591] = { flying = true, capacity = 2, rideAlong = true }, -- Cliffside Wylderdrake
+	[1698] = { flying = true, capacity = 2 }, -- Rocket Shredder 9001
+	[1744] = { flying = true, capacity = 2, rideAlong = true }, -- Grotto Netherwing Drake
+	[1792] = { flying = true, capacity = 2, rideAlong = true }, -- Algarian Stormrider
+	[1795] = { flying = true, capacity = 2, rideAlong = true }, -- Auspicious Arborwyrm
+	[1818] = { flying = true, capacity = 2, rideAlong = true }, -- Anu'relos, Flame's Guidance
+	[1830] = { flying = true, capacity = 2, rideAlong = true }, -- Flourishing Whimsydrake
+	[2039] = { ground = true, speedPriority = 110 }, -- Savage Blue Battle Turtle
+	[2090] = { flying = true, capacity = 2, rideAlong = true }, -- Polly Roger
+	[2091] = { flying = true, capacity = 2, rideAlong = true }, -- Voyaging Wilderling
+	[2144] = { flying = true, capacity = 2, rideAlong = true }, -- Delver's Dirigible
+	[2232] = { ground = true, speedPriority = 110 }, -- Savage Ebony Battle Turtle
+	[2237] = { repair = true }, -- Grizzly Hills Packmaster
+	[2265] = { ground = true, capacity = 3, utility = true }, -- Trader's Gilded Brutosaur
+	[2296] = { flying = true, capacity = 2, rideAlong = true }, -- Delver's Gob-Trotter
+	[2324] = { flying = true, capacity = 2, rideAlong = true }, -- Hooktalon
+	[2347] = { ground = true, speedPriority = 110 }, -- Savage Alabaster Battle Turtle
+	[2512] = { flying = true, capacity = 2, rideAlong = true }, -- Delver's Mana-Skimmer
+	[2823] = { ground = true, speedPriority = 110 }, -- Savage Crimson Battle Turtle
+	[2982] = { ground = true, capacity = 3, repair = true, utility = true }, -- Hearthkeeper's Wandering Caravan
 };
 
--- Mount IDs of repair/vendor/utility mounts.
--- Update when Blizzard adds new vendor mounts.
-local repairMountIDs = {
-	[273]    = true, -- Grand Caravan Mammoth (Alliance)
-	[274]    = true, -- Grand Caravan Mammoth (Horde)
-	[280]    = true, -- Traveler's Tundra Mammoth (Alliance)
-	[284]    = true, -- Traveler's Tundra Mammoth (Horde)
-	[460]    = true, -- Grand Expedition Yak
-	[1039]   = true, -- Mighty Caravan Brutosaur
-	[2237]   = true, -- Grizzly Hills Packmaster
-	[2982]   = true, -- Hearthkeeper's Wandering Caravan
-};
-
--- Mount IDs of unusually slow ground mounts (60% run speed) that are jarring when
--- summoned by pure random. Excluded from the random ground pool so the player only
--- gets these intentionally (selected, favorited, or via the aquatic slot).
-local slowGroundMountIDs = {
-	[125] = true, -- Riding Turtle
-	[312] = true, -- Sea Turtle
-	[1582] = true, -- Savage Green Battle Turtle
-	[2039] = true, -- Savage Blue Battle Turtle
-	[2232] = true, -- Savage Ebony Battle Turtle
-	[2347] = true, -- Savage Alabaster Battle Turtle
-	[2823] = true, -- Savage Crimson Battle Turtle
-};
-
--- Canonical passenger mount metadata used by every random passenger summon path.
--- capacity includes the driver; utility marks mounts whose extra seats are usually
--- occupied by service NPCs and are therefore opt-in for surprise summons.
-local passengerMountInfo = {
-	[382]  = { capacity = 2, mode = "flying" }, -- X-53 Touring Rocket
-	[407]  = { capacity = 2, mode = "flying" }, -- Sandstone Drake
-	[455]  = { capacity = 2, mode = "flying" }, -- Obsidian Nightwing
-	[959]  = { capacity = 2, mode = "flying" }, -- Stormwind Skychaser
-	[960]  = { capacity = 2, mode = "flying" }, -- Orgrimmar Interceptor
-	[1287] = { capacity = 2, mode = "flying" }, -- Explorer's Jungle Hopper
-	[1563] = { capacity = 2, mode = "flying", rideAlong = true }, -- Highland Drake
-	[1588] = { capacity = 2, mode = "flying", rideAlong = true }, -- Winding Slitherdrake
-	[1589] = { capacity = 2, mode = "flying", rideAlong = true }, -- Renewed Proto-Drake
-	[1590] = { capacity = 2, mode = "flying", rideAlong = true }, -- Windborne Velocidrake
-	[1591] = { capacity = 2, mode = "flying", rideAlong = true }, -- Cliffside Wylderdrake
-	[1698] = { capacity = 2, mode = "flying" }, -- Rocket Shredder 9001
-	[1744] = { capacity = 2, mode = "flying", rideAlong = true }, -- Grotto Netherwing Drake
-	[1792] = { capacity = 2, mode = "flying", rideAlong = true }, -- Algarian Stormrider
-	[1795] = { capacity = 2, mode = "flying", rideAlong = true }, -- Auspicious Arborwyrm
-	[1818] = { capacity = 2, mode = "flying", rideAlong = true }, -- Anu'relos, Flame's Guidance
-	[1830] = { capacity = 2, mode = "flying", rideAlong = true }, -- Flourishing Whimsydrake
-	[2090] = { capacity = 2, mode = "flying", rideAlong = true }, -- Polly Roger
-	[2091] = { capacity = 2, mode = "flying", rideAlong = true }, -- Voyaging Wilderling
-	[2144] = { capacity = 2, mode = "flying", rideAlong = true }, -- Delver's Dirigible
-	[2296] = { capacity = 2, mode = "flying", rideAlong = true }, -- Delver's Gob-Trotter
-	[2324] = { capacity = 2, mode = "flying", rideAlong = true }, -- Hooktalon
-	[2512] = { capacity = 2, mode = "flying", rideAlong = true }, -- Delver's Mana-Skimmer
-	[240]  = { capacity = 2, mode = "ground" }, -- Mechano-Hog
-	[275]  = { capacity = 2, mode = "ground" }, -- Mekgineer's Chopper
-	[1288] = { capacity = 2, mode = "ground" }, -- Explorer's Dunetrekker
-	[280]  = { capacity = 3, mode = "ground", utility = true }, -- Traveler's Tundra Mammoth
-	[284]  = { capacity = 3, mode = "ground", utility = true }, -- Traveler's Tundra Mammoth
-	[286]  = { capacity = 3, mode = "ground" }, -- Grand Black War Mammoth
-	[287]  = { capacity = 3, mode = "ground" }, -- Grand Black War Mammoth
-	[288]  = { capacity = 3, mode = "ground" }, -- Grand Ice Mammoth
-	[289]  = { capacity = 3, mode = "ground" }, -- Grand Ice Mammoth
-	[460]  = { capacity = 3, mode = "ground", utility = true }, -- Grand Expedition Yak
-	[1039] = { capacity = 3, mode = "ground", utility = true }, -- Mighty Caravan Brutosaur
-	[2265] = { capacity = 3, mode = "ground", utility = true }, -- Trader's Gilded Brutosaur
-	[2982] = { capacity = 3, mode = "ground", utility = true }, -- Hearthkeeper's Wandering Caravan
+-- Lower-trust fallback metadata by mountTypeID for coarse behavior only.
+-- This is intentionally narrow: only mount categories needed by this addon.
+local mountTypeInfo = {
+	[230] = { ground = true },
+	[231] = { aquatic = true }, -- Turtles
+	[232] = { aquatic = true }, -- Vashj'ir Seahorse
+	[254] = { aquatic = true }, -- Poseidus, Brinedeep Bottom-Feeder, Fathom Dweller
+	[284] = { ground = true, speedPriority = 170 }, -- Chauffeur
+	[407] = { aquatic = true }, -- Deepstar Polyp, Otter
+	[408] = { ground = true, speedPriority = 110 }, -- Fleetpod
+	[412] = { aquatic = true }, -- Dragonflight Otters
 };
 
 -- The Hivemind is intentionally excluded because its passenger eligibility depends
 -- on ritual attunement state the addon cannot query.
 
-local function IsAquaticMountType(mountTypeID)
-	return mountTypeID ~= nil and aquaticMountTypeIDs[mountTypeID] == true;
-end
+-- Resolves a single metadata property without constructing merged tables.
+-- A non-nil per-mount value always wins, including explicit false overrides;
+-- mountTypeInfo is only consulted when the per-mount property is nil.
+local function ResolveMountMetadataProperty(mountID, mountTypeID, property)
+	if mountID ~= nil then
+		local specialInfo = specialMountInfo[mountID];
+		if specialInfo ~= nil and specialInfo[property] ~= nil then
+			return specialInfo[property];
+		end
+	end
 
-local function IsRepairMount(mountID)
-	return mountID ~= nil and repairMountIDs[mountID] == true;
-end
+	if mountTypeID ~= nil then
+		local typeInfo = mountTypeInfo[mountTypeID];
+		if typeInfo ~= nil then
+			return typeInfo[property];
+		end
+	end
 
-local function IsSlowGroundMount(mountID)
-	return mountID ~= nil and slowGroundMountIDs[mountID] == true;
-end
-
-local function GetPassengerMountInfo(mountID)
-	return mountID ~= nil and passengerMountInfo[mountID] or nil;
+	return nil;
 end
 
 local function addUniquePoolValue(pool, value)
@@ -565,15 +564,21 @@ function MogCompanions:getSortedFlyingMounts()
 	return mounts;
 end
 
--- Returns a filtered, alphabetically sorted list of collected ground mounts (mountTypeID 230).
+-- Returns a filtered, alphabetically sorted list of collected ground-capable mounts.
+-- Ground capability is resolved from per-mount metadata first, then mountType fallback.
 -- If MogCompanionsSaved.ShowFlyingInGround is true, flying mounts are also included.
 function MogCompanions:getSortedGroundMounts()
 	local mountsRaw = MogCompanions:sortMounts(MogCompanions:GetCollectedMounts());
 	local mounts = {};
+	local flyingMountIDs = C_MountJournal.GetCollectedDragonridingMounts();
 
 	for i = 1, #mountsRaw do
 		local mount = mountsRaw[i];
-		if (mount.mountTypeID == 230 or MogCompanionsSaved.ShowFlyingInGround) and MogCompanions:listSearchString(mount.name) then
+		local isGroundCapable = ResolveMountMetadataProperty(mount.id, mount.mountTypeID, "ground") == true;
+		local isFlyingCapable = MogCompanions:hasValue(flyingMountIDs, mount.id);
+
+		if (isGroundCapable or (MogCompanionsSaved.ShowFlyingInGround and isFlyingCapable))
+				and MogCompanions:listSearchString(mount.name) then
 			table.insert(mounts, mount);
 		end
 	end
@@ -581,15 +586,15 @@ function MogCompanions:getSortedGroundMounts()
 	return mounts;
 end
 
--- Returns collected aquatic mounts matched by mountTypeID.
--- Aquatic type IDs: 231, 232, 254, 407, 436. No search filter applied.
+-- Returns collected aquatic mounts resolved from per-mount metadata first,
+-- then mountType fallback metadata. No search filter applied.
 function MogCompanions:getSortedAquaticMounts()
 	local mountsRaw = MogCompanions:sortMounts(MogCompanions:GetCollectedMounts());
 	local mounts = {};
 
 	for i = 1, #mountsRaw do
 		local mount = mountsRaw[i];
-		if IsAquaticMountType(mount.mountTypeID) then
+		if ResolveMountMetadataProperty(mount.id, mount.mountTypeID, "aquatic") == true then
 			table.insert(mounts, mount);
 		end
 	end
@@ -597,16 +602,15 @@ function MogCompanions:getSortedAquaticMounts()
 	return mounts;
 end
 
--- Returns collected repair/vendor/utility mounts matched by hardcoded mount ID.
--- IDs: 460 (Grand Expedition Yak), 280 (Traveler's Tundra Mammoth), 284, 273, 274, 1039, 2237.
--- Update this list when Blizzard adds new vendor mounts.
+-- Returns collected repair/vendor/utility mounts resolved from metadata.
+-- Per-mount metadata remains authoritative for the exact allowed mount set.
 function MogCompanions:getSortedRepairMounts()
 	local mountsRaw = MogCompanions:sortMounts(MogCompanions:GetCollectedMounts());
 	local mounts = {};
 
 	for i = 1, #mountsRaw do
 		local mount = mountsRaw[i];
-		if IsRepairMount(mount.id) then
+		if ResolveMountMetadataProperty(mount.id, mount.mountTypeID, "repair") == true then
 			table.insert(mounts, mount);
 		end
 	end
@@ -660,15 +664,18 @@ function MogCompanions:getSortedPassengerMounts(category)
 
 	for i = 1, #mountsRaw do
 		local mount = mountsRaw[i];
-		local info = GetPassengerMountInfo(mount.id);
-		local isAllowed = info ~= nil
-			and (includeVendorMounts or not info.utility)
-			and (not info.rideAlong or rideAlongEnabled);
+		local capacity = ResolveMountMetadataProperty(mount.id, mount.mountTypeID, "capacity");
+		local isPassenger = capacity ~= nil;
+		local isAllowed = isPassenger
+			and (includeVendorMounts or ResolveMountMetadataProperty(mount.id, mount.mountTypeID, "utility") ~= true)
+			and (ResolveMountMetadataProperty(mount.id, mount.mountTypeID, "rideAlong") ~= true or rideAlongEnabled);
+		local hasGroundCapability = ResolveMountMetadataProperty(mount.id, mount.mountTypeID, "ground") == true;
+		local hasFlyingCapability = ResolveMountMetadataProperty(mount.id, mount.mountTypeID, "flying") == true;
 		local matchesCategory = category == nil
-			or (info ~= nil and info.mode == category)
+			or (category == "flying" and hasFlyingCapability)
+			or (category == "ground" and hasGroundCapability)
 			or (category == "ground"
-				and info ~= nil
-				and info.mode == "flying"
+				and hasFlyingCapability
 				and MogCompanionsSaved.RandomGroundAllowFlying);
 
 		if isAllowed and matchesCategory then
@@ -698,9 +705,8 @@ local function getRandomPassengerMount(category)
 	local largestCapacity = nil;
 
 	for i = 1, #mounts do
-		local info = GetPassengerMountInfo(mounts[i].id);
-		if info ~= nil then
-			local capacity = info.capacity;
+		local capacity = ResolveMountMetadataProperty(mounts[i].id, mounts[i].mountTypeID, "capacity");
+		if capacity ~= nil then
 			if capacityBuckets[capacity] == nil then
 				capacityBuckets[capacity] = {};
 			end
@@ -731,17 +737,30 @@ end
 -- Builds the pool of ground mounts used by random ground selection.
 -- Ignores the UI search filter and the ShowFlyingInGround display toggle.
 -- Includes flying mounts only when MogCompanionsSaved.RandomGroundAllowFlying is true.
--- Slow ground mounts (Riding Turtle, Sea Turtle) are excluded — they are aquatic/low-speed
--- mounts that would be unpleasant to summon by accident; players can still pick them manually.
+-- The pool is filtered to only the highest available speedPriority tier so that
+-- full-speed candidates beat fallback-speed mounts when both are available.
 local function buildRandomGroundPool()
 	local mountsRaw = MogCompanions:sortMounts(MogCompanions:GetCollectedMounts());
 	local mounts = {};
+	local highestPriority = nil;
+	local flyingMountIDs = C_MountJournal.GetCollectedDragonridingMounts();
 
 	for i = 1, #mountsRaw do
 		local mount = mountsRaw[i];
-		if (mount.mountTypeID == 230 or MogCompanionsSaved.RandomGroundAllowFlying)
-				and not IsSlowGroundMount(mount.id) then
-			table.insert(mounts, mount);
+		local isGroundCapable = ResolveMountMetadataProperty(mount.id, mount.mountTypeID, "ground") == true;
+		local isFlyingCapable = MogCompanions:hasValue(flyingMountIDs, mount.id);
+		if isGroundCapable or (MogCompanionsSaved.RandomGroundAllowFlying and isFlyingCapable) then
+			local priority = ResolveMountMetadataProperty(mount.id, mount.mountTypeID, "speedPriority");
+			if priority == nil then
+				priority = NORMAL_MOUNT_SPEED_PRIORITY;
+			end
+
+			if highestPriority == nil or priority > highestPriority then
+				highestPriority = priority;
+				mounts = { mount };
+			elseif priority == highestPriority then
+				table.insert(mounts, mount);
+			end
 		end
 	end
 
@@ -766,11 +785,19 @@ function MogCompanions:IsMountUsableForCategory(mountID, category)
 	if category == "flying" then
 		return MogCompanions:hasValue(C_MountJournal.GetCollectedDragonridingMounts(), mountID);
 	elseif category == "ground" then
-		return mountTypeID == 230 or MogCompanionsSaved.RandomGroundAllowFlying;
+		if ResolveMountMetadataProperty(mountID, mountTypeID, "ground") == true then
+			return true;
+		end
+
+		if MogCompanionsSaved.RandomGroundAllowFlying then
+			return MogCompanions:hasValue(C_MountJournal.GetCollectedDragonridingMounts(), mountID);
+		end
+
+		return false;
 	elseif category == "aquatic" then
-		return IsAquaticMountType(mountTypeID);
+		return ResolveMountMetadataProperty(mountID, mountTypeID, "aquatic") == true;
 	elseif category == "repair" then
-		return IsRepairMount(mountID);
+		return ResolveMountMetadataProperty(mountID, mountTypeID, "repair") == true;
 	elseif category == "random" then
 		return true;
 	end

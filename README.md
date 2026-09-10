@@ -105,4 +105,5 @@ Simplified Chinese localization contributed by XingDVD.
 * Fixed taint issues with mount cloning in areas when detection is locked down
 
 ### 1.9
+* Prioritize high-speed mounts over low-speed mounts when on dry land
 * Fixed a bug with secret values when cloning pets in raids
